@@ -10,13 +10,60 @@ type User {
   firstName: String!
   lastName: String!
   email: String!
-  password: String!
   role: Role!
   isVerified: Boolean!
-  accessToken: String
-  refreshToken: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+input PaginationInput {
+  page: Int!
+  limit: Int!
+}
+
+type AuthPayload {
+  user: User!
+  accessToken: String!
+  refreshToken: String!
+}
+
+type RefreshPayload {
+  accessToken: String!
+  refreshToken: String!
+}
+
+input RegisterInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+  role: Role
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
 }
 
 type Query {
-  users(pagination: PaginationInput): [User!]
+  users(pagination: PaginationInput): [User!]!
+  me: User!
+  user(id: ID!): User
+}
+
+type Mutation {
+  register(input: RegisterInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+  refreshToken(input: RefreshTokenInput!): RefreshPayload!
+  logout: Boolean!
+
+  ---
+  updateMe
+  updateUser
+  deleteMe
+  deleteUser
 }
