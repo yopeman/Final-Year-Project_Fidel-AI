@@ -1,0 +1,28 @@
+input PaginationInput {
+  page: Int
+  limit: Int
+}
+
+
+enum Role {
+  ADMIN
+  STUDENT
+  TUTOR
+  UNDETERMINED
+}
+
+type User {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+  role: Role!
+  isVerified: Boolean!
+  accessToken: String
+  refreshToken: String
+}
+
+type Query {
+  users(pagination: PaginationInput): [User!]
+}

@@ -1,31 +1,29 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from .config.settings import settings
+from fastapi import FastAPI, Request
+from ariadne import make_executable_schema
+from ariadne.asgi import GraphQL
+from .schema import type_defs
+from .resolver.user import query, user
+from .config.database import get_db, create_table
 
-# Database configuration
-DATABASE_URL = settings.database_url
+app = FastAPI(title="Fidel AI Backend API", description="GraphQL API for Fidel AI platform")
 
-# Create SQLAlchemy engine
-engine = create_engine(DATABASE_URL, echo=True)  # echo=True for debugging, set to False in production
+create_table()
 
-# Create a configured "Session" class
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+bindables = [query, user]
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+schema = make_executable_schema(type_defs, *bindables)
 
-def main():
-    print("Hello from backend-api/app/main.py")
-    # Test database connection
-    try:
-        with engine.connect() as connection:
-            print("Database connection successful!")
-    except Exception as e:
-        print(f"Database connection failed: {e}")
+def get_context_value(request: Request):
+    return {"db": next(get_db())}
 
-if __name__ == "__main__":
-    main()
+graphql_app = GraphQL(schema, debug=True, context_value=get_context_value)
+
+app.mount("/graphql", graphql_app)
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to Fidel AI Backend API", "graphql_endpoint": "/graphql"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
