@@ -1,0 +1,12 @@
+type LessonInteractions {
+  id: ID!
+  lessonId: ID!
+  question: String!
+  answer: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  lesson: ModuleLessons!
+}

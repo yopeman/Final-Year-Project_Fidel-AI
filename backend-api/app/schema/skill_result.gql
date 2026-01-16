@@ -1,0 +1,13 @@
+type SkillResult {
+  id: ID!
+  enrollmentId: ID!
+  skillId: ID!
+  score: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  enrollment: BatchEnrollment!
+  skillTest: SkillTests!
+}

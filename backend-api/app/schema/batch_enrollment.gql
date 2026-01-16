@@ -1,0 +1,26 @@
+enum EnrollmentStatus {
+  APPLIED
+  ENROLLED
+  COMPLETED
+  DROPPED
+}
+
+type BatchEnrollment {
+  id: ID!
+  profileId: ID!
+  batchId: ID!
+  enrollmentDate: Date!
+  completionDate: Date
+  status: EnrollmentStatus!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  profile: StudentProfile!
+  batch: Batch!
+  quizResults: [QuizResults!]!
+  skillResults: [SkillResult!]!
+  payments: [Payment!]!
+  certificates: [Certificate!]!
+}

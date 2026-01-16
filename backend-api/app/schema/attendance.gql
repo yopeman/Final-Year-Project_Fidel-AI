@@ -1,0 +1,26 @@
+enum UserType {
+  STUDENT
+  TUTOR
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+type Attendance {
+  id: ID!
+  courseScheduleId: ID!
+  userId: ID!
+  userType: UserType!
+  status: AttendanceStatus!
+  attendanceDate: Date!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  courseSchedule: CourseSchedule!
+  user: User!
+}

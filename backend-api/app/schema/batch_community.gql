@@ -1,0 +1,17 @@
+type BatchCommunity {
+  id: ID!
+  batchId: ID!
+  userId: ID!
+  content: String!
+  isEdited: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  batch: Batch!
+  user: User!
+  reactions: [CommunityReactions!]!
+  comments: [CommunityComment!]!
+  attachments: [CommunityAttachmentFiles!]!
+}

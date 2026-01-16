@@ -1,0 +1,13 @@
+type Feedback {
+  id: ID!
+  userId: ID
+  context: String
+  content: String!
+  rate: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User
+}

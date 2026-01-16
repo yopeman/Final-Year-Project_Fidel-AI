@@ -1,0 +1,12 @@
+type Interactions {
+  id: ID!
+  conversationId: ID!
+  question: String!
+  answer: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  conversation: FreeConversation!
+}

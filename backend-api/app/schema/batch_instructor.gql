@@ -1,0 +1,18 @@
+enum InstructorRole {
+  MAIN
+  ASSISTANT
+}
+
+type BatchInstructor {
+  id: ID!
+  userId: ID!
+  batchCourseId: ID!
+  role: InstructorRole!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User!
+  batchCourse: BatchCourse!
+}

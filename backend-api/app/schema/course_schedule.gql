@@ -1,0 +1,13 @@
+type CourseSchedule {
+  id: ID!
+  scheduleId: ID!
+  batchCourseId: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  schedule: Schedule!
+  batchCourse: BatchCourse!
+  attendances: [Attendance!]!
+}

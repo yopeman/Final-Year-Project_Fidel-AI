@@ -1,0 +1,20 @@
+enum QuizType {
+  MATCHING
+  TRUE_FALSE
+  FILLING_THE_GAP
+}
+
+type Quiz {
+  id: ID!
+  batchCourseId: ID!
+  question: String!
+  answer: String!
+  type: QuizType!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  batchCourse: BatchCourse!
+  results: [QuizResults!]!
+}

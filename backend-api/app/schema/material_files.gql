@@ -1,0 +1,13 @@
+type MaterialFiles {
+  id: ID!
+  materialId: ID!
+  fileName: String!
+  filePath: String!
+  fileExtension: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  material: CourseMaterial!
+}

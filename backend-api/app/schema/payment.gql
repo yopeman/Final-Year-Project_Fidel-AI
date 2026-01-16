@@ -1,0 +1,23 @@
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+type Payment {
+  id: ID!
+  enrollmentId: ID!
+  amount: Float!
+  currency: String!
+  method: String!
+  status: PaymentStatus!
+  paidAt: DateTime
+  transactionId: String
+  receiptUrl: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  enrollment: BatchEnrollment!
+}

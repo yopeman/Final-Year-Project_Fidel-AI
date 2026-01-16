@@ -1,0 +1,13 @@
+type CourseMaterial {
+  id: ID!
+  courseId: ID!
+  name: String!
+  description: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  course: Course!
+  files: [MaterialFiles!]!
+}

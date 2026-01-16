@@ -1,0 +1,12 @@
+type Certificate {
+  id: ID!
+  enrollmentId: ID!
+  result: String!
+  certificateHtml: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  enrollment: BatchEnrollment!
+}

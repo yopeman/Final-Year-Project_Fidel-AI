@@ -1,0 +1,15 @@
+type Modules {
+  id: ID!
+  profileId: ID!
+  name: String!
+  description: String
+  displayOrder: Int!
+  isLocked: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  profile: StudentProfile!
+  lessons: [ModuleLessons!]!
+}

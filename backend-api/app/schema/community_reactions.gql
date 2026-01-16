@@ -1,0 +1,19 @@
+enum ReactionType {
+  LIKE
+  DISLIKE
+  LOVE
+}
+
+type CommunityReactions {
+  id: ID!
+  userId: ID!
+  communityId: ID!
+  reactionType: ReactionType!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User!
+  community: BatchCommunity!
+}

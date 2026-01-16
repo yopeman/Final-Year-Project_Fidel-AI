@@ -1,0 +1,12 @@
+type Schedule {
+  id: ID!
+  dayOfWeek: String!
+  startTime: Time!
+  endTime: Time!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  courseSchedules: [CourseSchedule!]!
+}

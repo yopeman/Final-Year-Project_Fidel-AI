@@ -1,0 +1,19 @@
+enum SkillTestType {
+  READING
+  WRITING
+  SPEAKING
+  LISTENING
+}
+
+type SkillTests {
+  id: ID!
+  evaluatorId: ID!
+  type: SkillTestType!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  evaluator: User!
+  results: [SkillResult!]!
+}

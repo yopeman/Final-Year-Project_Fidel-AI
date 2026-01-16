@@ -1,0 +1,13 @@
+type Notification {
+  id: ID!
+  userId: ID!
+  title: String!
+  content: String!
+  isRead: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User!
+}

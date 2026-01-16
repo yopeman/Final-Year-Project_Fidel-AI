@@ -1,0 +1,12 @@
+type Course {
+  id: ID!
+  name: String!
+  description: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  materials: [CourseMaterial!]!
+  batchCourses: [BatchCourse!]!
+}

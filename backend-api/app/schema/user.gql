@@ -1,4 +1,4 @@
-enum Role {
+enum UserRole {
   ADMIN
   STUDENT
   TUTOR
@@ -10,60 +10,23 @@ type User {
   firstName: String!
   lastName: String!
   email: String!
-  role: Role!
+  password: String!
+  role: UserRole!
   isVerified: Boolean!
-  createdAt: String!
-  updatedAt: String!
-}
-
-input PaginationInput {
-  page: Int!
-  limit: Int!
-}
-
-type AuthPayload {
-  user: User!
-  accessToken: String!
-  refreshToken: String!
-}
-
-type RefreshPayload {
-  accessToken: String!
-  refreshToken: String!
-}
-
-input RegisterInput {
-  firstName: String!
-  lastName: String!
-  email: String!
-  password: String!
-  role: Role
-}
-
-input LoginInput {
-  email: String!
-  password: String!
-}
-
-input RefreshTokenInput {
-  refreshToken: String!
-}
-
-type Query {
-  users(pagination: PaginationInput): [User!]!
-  me: User!
-  user(id: ID!): User
-}
-
-type Mutation {
-  register(input: RegisterInput!): AuthPayload!
-  login(input: LoginInput!): AuthPayload!
-  refreshToken(input: RefreshTokenInput!): RefreshPayload!
-  logout: Boolean!
-
-  ---
-  updateMe
-  updateUser
-  deleteMe
-  deleteUser
+  accessToken: String
+  refreshToken: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  profile: StudentProfile
+  batchInstructors: [BatchInstructor!]!
+  batchCommunities: [BatchCommunity!]!
+  communityReactions: [CommunityReactions!]!
+  communityComments: [CommunityComment!]!
+  commentReactions: [CommentReactions!]!
+  feedbacks: [Feedback!]!
+  notifications: [Notification!]!
+  attendances: [Attendance!]!
 }

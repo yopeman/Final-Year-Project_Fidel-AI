@@ -1,0 +1,15 @@
+type BatchCourse {
+  id: ID!
+  batchId: ID!
+  courseId: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  batch: Batch!
+  course: Course!
+  schedules: [CourseSchedule!]!
+  quizzes: [Quiz!]!
+  instructors: [BatchInstructor!]!
+}

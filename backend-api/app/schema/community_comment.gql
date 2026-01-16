@@ -1,0 +1,15 @@
+type CommunityComment {
+  id: ID!
+  communityId: ID!
+  userId: ID!
+  content: String!
+  isEdited: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  community: BatchCommunity!
+  user: User!
+  reactions: [CommentReactions!]!
+}

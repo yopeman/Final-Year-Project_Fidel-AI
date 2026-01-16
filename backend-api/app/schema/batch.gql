@@ -1,0 +1,35 @@
+enum BatchLevel {
+  BEGINNER
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum BatchStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+type Batch {
+  id: ID!
+  name: String!
+  description: String
+  level: BatchLevel!
+  language: String!
+  startDate: Date!
+  endDate: Date
+  maxStudents: Int!
+  status: BatchStatus!
+  feeAmount: Float!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  batchCourses: [BatchCourse!]!
+  enrollments: [BatchEnrollment!]!
+  communities: [BatchCommunity!]!
+  instructors: [BatchInstructor!]!
+}

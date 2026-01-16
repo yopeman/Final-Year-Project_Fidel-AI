@@ -1,0 +1,13 @@
+type LessonVocabularies {
+  id: ID!
+  lessonId: ID!
+  vocabulary: String!
+  meaning: String!
+  description: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  lesson: ModuleLessons!
+}

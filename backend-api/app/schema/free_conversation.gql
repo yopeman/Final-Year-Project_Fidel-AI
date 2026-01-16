@@ -1,0 +1,13 @@
+type FreeConversation {
+  id: ID!
+  profileId: ID!
+  startingTopic: String!
+  topicSummaryPhrase: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  profile: StudentProfile!
+  interactions: [Interactions!]!
+}

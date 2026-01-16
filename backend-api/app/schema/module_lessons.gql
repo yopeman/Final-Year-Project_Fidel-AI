@@ -1,0 +1,19 @@
+type ModuleLessons {
+  id: ID!
+  moduleId: ID!
+  title: String!
+  content: String!
+  displayOrder: Int!
+  isCompleted: Boolean!
+  isLocked: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  module: Modules!
+  vocabularies: [LessonVocabularies!]!
+  onlineArticles: [LessonOnlineArticles!]!
+  youtubeVideos: [LessonYouTubeVideos!]!
+  interactions: [LessonInteractions!]!
+}

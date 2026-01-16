@@ -1,0 +1,43 @@
+enum AgeRange {
+  UNDER_18
+  _18_25
+  _26_35
+  _36_45
+  _45_PLUS
+}
+
+enum Proficiency {
+  BEGINNER
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum DurationUnit {
+  DAYS
+  WEEKS
+  MONTHS
+  YEARS
+}
+
+type StudentProfile {
+  id: ID!
+  userId: ID!
+  ageRange: AgeRange!
+  proficiency: Proficiency!
+  nativeLanguage: String!
+  learningGoal: String!
+  targetDuration: Int!
+  durationUnit: DurationUnit!
+  constraints: String
+  aiLearningPlan: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User!
+  modules: [Modules!]!
+  freeConversations: [FreeConversation!]!
+  batchEnrollments: [BatchEnrollment!]!
+}

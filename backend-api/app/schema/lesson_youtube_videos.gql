@@ -1,0 +1,14 @@
+type LessonYouTubeVideos {
+  id: ID!
+  lessonId: ID!
+  title: String!
+  thumbnailUrl: String
+  description: String
+  videoUrl: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  lesson: ModuleLessons!
+}

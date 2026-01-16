@@ -1,0 +1,14 @@
+type LessonOnlineArticles {
+  id: ID!
+  lessonId: ID!
+  title: String!
+  faviconUrl: String
+  description: String
+  pageUrl: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  lesson: ModuleLessons!
+}

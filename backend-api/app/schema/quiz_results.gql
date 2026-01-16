@@ -1,0 +1,13 @@
+type QuizResults {
+  id: ID!
+  enrollmentId: ID!
+  quizId: ID!
+  score: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  enrollment: BatchEnrollment!
+  quiz: Quiz!
+}
