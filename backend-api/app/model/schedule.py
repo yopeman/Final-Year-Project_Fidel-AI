@@ -1,11 +1,13 @@
-from sqlalchemy import Column, String, Time, ForeignKey
+from sqlalchemy import Column, String, Time
 from sqlalchemy.orm import relationship
+
 from .base import BaseModel
 
-class Schedule(BaseModel):
-    __tablename__ = "schedule"
 
-    day_of_week = Column(String(20), nullable=False)
+class Schedule(BaseModel):
+    __tablename__ = "schedules"
+
+    day_of_week = Column(String(10), nullable=False)  # e.g., 'monday', 'tuesday'
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
 

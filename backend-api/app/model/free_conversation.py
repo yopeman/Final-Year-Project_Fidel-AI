@@ -1,14 +1,16 @@
-from sqlalchemy import Column, String, Text, ForeignKey
+from sqlalchemy import Column, ForeignKey, String, Text
 from sqlalchemy.orm import relationship
+
 from .base import BaseModel
 
-class FreeConversation(BaseModel):
-    __tablename__ = "free_conversation"
 
-    profile_id = Column(String(36), ForeignKey("student_profile.id"), nullable=False)
-    starting_topic = Column(String(255), nullable=False)
-    topic_summary_phrase = Column(String(255), nullable=False)
+class FreeConversation(BaseModel):
+    __tablename__ = "free_conversations"
+
+    profile_id = Column(String(36), ForeignKey("student_profiles.id"), nullable=False)
+    starting_topic = Column(String(200), nullable=False)
+    topic_summary_phrase = Column(Text, nullable=True)
 
     # Relationships
     profile = relationship("StudentProfile", back_populates="free_conversations")
-    interactions = relationship("Interaction", back_populates="conversation")
+    interactions = relationship("Interactions", back_populates="conversation")

@@ -1,11 +1,15 @@
-from sqlalchemy import Column, String, Text, ForeignKey
+from sqlalchemy import Column, ForeignKey, String, Text
 from sqlalchemy.orm import relationship
+
 from .base import BaseModel
 
-class Interaction(BaseModel):
-    __tablename__ = "interaction"
 
-    conversation_id = Column(String(36), ForeignKey("free_conversation.id"), nullable=False)
+class Interactions(BaseModel):
+    __tablename__ = "interactions"
+
+    conversation_id = Column(
+        String(36), ForeignKey("free_conversations.id"), nullable=False
+    )
     question = Column(Text, nullable=False)
     answer = Column(Text, nullable=False)
 

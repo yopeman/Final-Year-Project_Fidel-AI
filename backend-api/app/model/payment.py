@@ -1,19 +1,30 @@
-from sqlalchemy import Column, String, Numeric, Boolean, DateTime, ForeignKey, Enum
+from enum import Enum as PyEnum
+
+from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, String, Text
 from sqlalchemy.orm import relationship
+
 from .base import BaseModel
-from .enums import PaymentStatus
+
+
+class PaymentStatus(PyEnum):
+    pending = "pending"
+    completed = "completed"
+    failed = "failed"
+
 
 class Payment(BaseModel):
-    __tablename__ = "payment"
+    __tablename__ = "payments"
 
-    enrollment_id = Column(String(36), ForeignKey("batch_enrollment.id"), nullable=False)
-    amount = Column(Numeric(10, 2), nullable=False)
+    enrollment_id = Column(
+        String(36), ForeignKey("batch_enrollments.id"), nullable=False
+    )
+    amount = Column(Float, nullable=False)
     currency = Column(String(3), nullable=False)
     method = Column(String(50), nullable=False)
     status = Column(Enum(PaymentStatus), nullable=False)
-    paid_at = Column(DateTime(timezone=True))
-    transaction_id = Column(String(100))
-    receipt_URL = Column(String(500))
+    paid_at = Column(DateTime(timezone=True), nullable=True)
+    transaction_id = Column(String(100), nullable=True)
+    receipt_url = Column(String(500), nullable=True)
 
     # Relationships
     enrollment = relationship("BatchEnrollment", back_populates="payments")

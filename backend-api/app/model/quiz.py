@@ -1,16 +1,25 @@
-from sqlalchemy import Column, String, Text, ForeignKey, Enum
+from enum import Enum as PyEnum
+
+from sqlalchemy import Column, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import relationship
+
 from .base import BaseModel
-from .enums import QuizType
+
+
+class QuizType(PyEnum):
+    matching = "matching"
+    true_false = "true_false"
+    filling_the_gap = "filling_the_gap"
+
 
 class Quiz(BaseModel):
-    __tablename__ = "quiz"
+    __tablename__ = "quizzes"
 
-    batch_course_id = Column(String(36), ForeignKey("batch_course.id"), nullable=False)
+    batch_course_id = Column(String(36), ForeignKey("batch_courses.id"), nullable=False)
     question = Column(Text, nullable=False)
     answer = Column(Text, nullable=False)
     type = Column(Enum(QuizType), nullable=False)
 
     # Relationships
     batch_course = relationship("BatchCourse", back_populates="quizzes")
-    results = relationship("QuizResult", back_populates="quiz")
+    results = relationship("QuizResults", back_populates="quiz")
