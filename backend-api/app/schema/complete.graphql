@@ -1,0 +1,702 @@
+enum ReactionType {
+  LIKE
+  DISLIKE
+  LOVE
+}
+
+
+type Notification {
+  id: ID!
+  userId: ID!
+  title: String!
+  content: String!
+  isRead: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User!
+}
+
+
+type LessonYouTubeVideos {
+  id: ID!
+  lessonId: ID!
+  title: String!
+  thumbnailUrl: String
+  description: String
+  videoUrl: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  lesson: ModuleLessons!
+}
+
+
+enum UserType {
+  STUDENT
+  TUTOR
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+type Attendance {
+  id: ID!
+  courseScheduleId: ID!
+  userId: ID!
+  userType: UserType!
+  status: AttendanceStatus!
+  attendanceDate: Date!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  courseSchedule: CourseSchedule!
+  user: User!
+}
+
+
+type CourseSchedule {
+  id: ID!
+  scheduleId: ID!
+  batchCourseId: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  schedule: Schedule!
+  batchCourse: BatchCourse!
+  attendances: [Attendance!]!
+}
+
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+type Payment {
+  id: ID!
+  enrollmentId: ID!
+  amount: Float!
+  currency: String!
+  method: String!
+  status: PaymentStatus!
+  paidAt: DateTime
+  transactionId: String
+  receiptUrl: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  enrollment: BatchEnrollment!
+}
+
+
+type BatchCourse {
+  id: ID!
+  batchId: ID!
+  courseId: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  batch: Batch!
+  course: Course!
+  schedules: [CourseSchedule!]!
+  quizzes: [Quiz!]!
+  instructors: [BatchInstructor!]!
+}
+
+
+type CommunityAttachmentFiles {
+  id: ID!
+  communityId: ID!
+  fileName: String!
+  filePath: String!
+  fileExtension: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  community: BatchCommunity!
+}
+
+
+type Interactions {
+  id: ID!
+  conversationId: ID!
+  question: String!
+  answer: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  conversation: FreeConversation!
+}
+
+
+type Feedback {
+  id: ID!
+  userId: ID
+  context: String
+  content: String!
+  rate: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User
+}
+
+
+enum EnrollmentStatus {
+  APPLIED
+  ENROLLED
+  COMPLETED
+  DROPPED
+}
+
+type BatchEnrollment {
+  id: ID!
+  profileId: ID!
+  batchId: ID!
+  enrollmentDate: Date!
+  completionDate: Date
+  status: EnrollmentStatus!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  profile: StudentProfile!
+  batch: Batch!
+  quizResults: [QuizResults!]!
+  skillResults: [SkillResult!]!
+  payments: [Payment!]!
+  certificates: [Certificate!]!
+}
+
+
+type SkillResult {
+  id: ID!
+  enrollmentId: ID!
+  skillId: ID!
+  score: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  enrollment: BatchEnrollment!
+  skillTest: SkillTests!
+}
+
+
+type LessonVocabularies {
+  id: ID!
+  lessonId: ID!
+  vocabulary: String!
+  meaning: String!
+  description: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  lesson: ModuleLessons!
+}
+
+
+enum BatchLevel {
+  BEGINNER
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum BatchStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+type Batch {
+  id: ID!
+  name: String!
+  description: String
+  level: BatchLevel!
+  language: String!
+  startDate: Date!
+  endDate: Date
+  maxStudents: Int!
+  status: BatchStatus!
+  feeAmount: Float!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  batchCourses: [BatchCourse!]!
+  enrollments: [BatchEnrollment!]!
+  communities: [BatchCommunity!]!
+  instructors: [BatchInstructor!]!
+}
+
+
+enum SkillTestType {
+  READING
+  WRITING
+  SPEAKING
+  LISTENING
+}
+
+type SkillTests {
+  id: ID!
+  evaluatorId: ID!
+  type: SkillTestType!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  evaluator: User!
+  results: [SkillResult!]!
+}
+
+
+type ModuleLessons {
+  id: ID!
+  moduleId: ID!
+  title: String!
+  content: String!
+  displayOrder: Int!
+  isCompleted: Boolean!
+  isLocked: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  module: Modules!
+  vocabularies: [LessonVocabularies!]!
+  onlineArticles: [LessonOnlineArticles!]!
+  youtubeVideos: [LessonYouTubeVideos!]!
+  interactions: [LessonInteractions!]!
+}
+
+
+type QuizResults {
+  id: ID!
+  enrollmentId: ID!
+  quizId: ID!
+  score: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  enrollment: BatchEnrollment!
+  quiz: Quiz!
+}
+
+
+type Modules {
+  id: ID!
+  profileId: ID!
+  name: String!
+  description: String
+  displayOrder: Int!
+  isLocked: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  profile: StudentProfile!
+  lessons: [ModuleLessons!]!
+}
+
+
+type CommentReactions {
+  id: ID!
+  userId: ID!
+  commentId: ID!
+  reactionType: ReactionType!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User!
+  comment: CommunityComment!
+}
+
+
+enum AgeRange {
+  UNDER_18
+  _18_25
+  _26_35
+  _36_45
+  _45_PLUS
+}
+
+enum Proficiency {
+  BEGINNER
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum DurationUnit {
+  DAYS
+  WEEKS
+  MONTHS
+  YEARS
+}
+
+type StudentProfile {
+  id: ID!
+  userId: ID!
+  ageRange: AgeRange!
+  proficiency: Proficiency!
+  nativeLanguage: String!
+  learningGoal: String!
+  targetDuration: Int!
+  durationUnit: DurationUnit!
+  constraints: String
+  aiLearningPlan: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User!
+  modules: [Modules!]!
+  freeConversations: [FreeConversation!]!
+  batchEnrollments: [BatchEnrollment!]!
+}
+
+
+type Course {
+  id: ID!
+  name: String!
+  description: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  materials: [CourseMaterial!]!
+  batchCourses: [BatchCourse!]!
+}
+
+
+scalar DateTime
+scalar Date
+scalar Time
+
+input PaginationInput {
+  page: Int
+  limit: Int
+}
+
+
+type CourseMaterial {
+  id: ID!
+  courseId: ID!
+  name: String!
+  description: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  course: Course!
+  files: [MaterialFiles!]!
+}
+
+
+type Certificate {
+  id: ID!
+  enrollmentId: ID!
+  result: String!
+  certificateHtml: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  enrollment: BatchEnrollment!
+}
+
+
+type CommunityComment {
+  id: ID!
+  communityId: ID!
+  userId: ID!
+  content: String!
+  isEdited: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  community: BatchCommunity!
+  user: User!
+  reactions: [CommentReactions!]!
+}
+
+
+type LessonInteractions {
+  id: ID!
+  lessonId: ID!
+  question: String!
+  answer: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  lesson: ModuleLessons!
+}
+
+
+type MaterialFiles {
+  id: ID!
+  materialId: ID!
+  fileName: String!
+  filePath: String!
+  fileExtension: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  material: CourseMaterial!
+}
+
+
+type BatchCommunity {
+  id: ID!
+  batchId: ID!
+  userId: ID!
+  content: String!
+  isEdited: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  batch: Batch!
+  user: User!
+  reactions: [CommunityReactions!]!
+  comments: [CommunityComment!]!
+  attachments: [CommunityAttachmentFiles!]!
+}
+
+
+type CommunityReactions {
+  id: ID!
+  userId: ID!
+  communityId: ID!
+  reactionType: ReactionType!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User!
+  community: BatchCommunity!
+}
+
+
+enum UserRole {
+  ADMIN
+  STUDENT
+  TUTOR
+  UNDETERMINED
+}
+
+input RegisterInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+  role: UserRole
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input UpdateUserInput {
+  firstName: String
+  lastName: String
+  email: String
+  password: String
+  role: UserRole
+  isVerified: Boolean
+}
+
+input UpdateMeInput {
+  firstName: String
+  lastName: String
+  email: String
+  password: String
+}
+
+type AuthResponse {
+  user: User!
+  accessToken: String!
+  refreshToken: String!
+}
+
+type User {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+  role: UserRole!
+  isVerified: Boolean!
+  accessToken: String
+  refreshToken: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  profile: StudentProfile
+  batchInstructors: [BatchInstructor!]!
+  batchCommunities: [BatchCommunity!]!
+  communityReactions: [CommunityReactions!]!
+  communityComments: [CommunityComment!]!
+  commentReactions: [CommentReactions!]!
+  feedbacks: [Feedback!]!
+  notifications: [Notification!]!
+  attendances: [Attendance!]!
+}
+
+type Query {
+  users: [User!]!
+  user(id: ID!): User
+  me: User
+}
+
+type Mutation {
+  register(input: RegisterInput!): AuthResponse!
+  login(input: LoginInput!): AuthResponse!
+  logout: Boolean!
+  refreshToken: String!
+
+  updateUser(input: UpdateUserInput!): User!
+  updateMe(input: UpdateMeInput!): User!
+
+  deleteUser(id: ID!): Boolean!
+  deleteMe: Boolean!
+}
+
+
+type Schedule {
+  id: ID!
+  dayOfWeek: String!
+  startTime: Time!
+  endTime: Time!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  courseSchedules: [CourseSchedule!]!
+}
+
+
+enum QuizType {
+  MATCHING
+  TRUE_FALSE
+  FILLING_THE_GAP
+}
+
+type Quiz {
+  id: ID!
+  batchCourseId: ID!
+  question: String!
+  answer: String!
+  type: QuizType!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  batchCourse: BatchCourse!
+  results: [QuizResults!]!
+}
+
+
+type FreeConversation {
+  id: ID!
+  profileId: ID!
+  startingTopic: String!
+  topicSummaryPhrase: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  profile: StudentProfile!
+  interactions: [Interactions!]!
+}
+
+
+enum InstructorRole {
+  MAIN
+  ASSISTANT
+}
+
+type BatchInstructor {
+  id: ID!
+  userId: ID!
+  batchCourseId: ID!
+  role: InstructorRole!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User!
+  batchCourse: BatchCourse!
+}
+
+
+type LessonOnlineArticles {
+  id: ID!
+  lessonId: ID!
+  title: String!
+  faviconUrl: String
+  description: String
+  pageUrl: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  lesson: ModuleLessons!
+}

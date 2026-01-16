@@ -5,6 +5,41 @@ enum UserRole {
   UNDETERMINED
 }
 
+input RegisterInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+  role: UserRole
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input UpdateUserInput {
+  firstName: String
+  lastName: String
+  email: String
+  password: String
+  role: UserRole
+  isVerified: Boolean
+}
+
+input UpdateMeInput {
+  firstName: String
+  lastName: String
+  email: String
+  password: String
+}
+
+type AuthResponse {
+  user: User!
+  accessToken: String!
+  refreshToken: String!
+}
+
 type User {
   id: ID!
   firstName: String!
@@ -29,4 +64,23 @@ type User {
   feedbacks: [Feedback!]!
   notifications: [Notification!]!
   attendances: [Attendance!]!
+}
+
+type Query {
+  users: [User!]!
+  user(id: ID!): User
+  me: User
+}
+
+type Mutation {
+  register(input: RegisterInput!): AuthResponse!
+  login(input: LoginInput!): AuthResponse!
+  logout: Boolean!
+  refreshToken: String!
+
+  updateUser(input: UpdateUserInput!): User!
+  updateMe(input: UpdateMeInput!): User!
+
+  deleteUser(id: ID!): Boolean!
+  deleteMe: Boolean!
 }

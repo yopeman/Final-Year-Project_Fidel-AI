@@ -1,9 +1,3 @@
-enum ReactionType {
-  LIKE
-  DISLIKE
-  LOVE
-}
-
 type CommunityReactions {
   id: ID!
   userId: ID!
