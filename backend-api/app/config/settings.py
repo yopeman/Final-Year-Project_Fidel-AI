@@ -7,6 +7,10 @@ class Settings(BaseSettings):
     db_user: str
     db_password: str
     db_name: str
+    jwt_secret_key: str
+    jwt_algorithm: str
+    jwt_access_token_expire_days: int
+    jwt_refresh_token_expire_days: int
 
     @property
     def database_url(self) -> str:

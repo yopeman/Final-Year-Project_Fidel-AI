@@ -596,7 +596,7 @@ type User {
 }
 
 type Query {
-  users: [User!]!
+  users(pagination: PaginationInput): [User!]!
   user(id: ID!): User
   me: User
 }
