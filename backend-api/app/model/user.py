@@ -35,3 +35,4 @@ class User(BaseModel):
     feedbacks = relationship("Feedback", back_populates="user")
     notifications = relationship("Notification", back_populates="user")
     attendances = relationship("Attendance", back_populates="user")
+    verification_codes = relationship("VerificationCode", back_populates="user")

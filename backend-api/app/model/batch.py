@@ -6,6 +6,8 @@ from sqlalchemy import (Column, Date, Enum, Float, ForeignKey, Integer, String,
 from sqlalchemy.orm import relationship
 
 from .base import BaseModel
+from .batch_course import BatchCourse
+from .batch_instructor import BatchInstructor
 
 
 class BatchLevel(PyEnum):
@@ -39,4 +41,10 @@ class Batch(BaseModel):
     batch_courses = relationship("BatchCourse", back_populates="batch")
     enrollments = relationship("BatchEnrollment", back_populates="batch")
     communities = relationship("BatchCommunity", back_populates="batch")
-    instructors = relationship("BatchInstructor", back_populates="batch")
+    instructors = relationship(
+        "BatchInstructor",
+        secondary="batch_courses",
+        primaryjoin="Batch.id == BatchCourse.batch_id",
+        secondaryjoin="BatchCourse.id == BatchInstructor.batch_course_id",
+        viewonly=True
+    )

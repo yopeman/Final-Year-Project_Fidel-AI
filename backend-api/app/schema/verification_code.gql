@@ -1,0 +1,14 @@
+type VerificationCode {
+  id: ID!
+  email: String!
+  code: String!
+  expiresAt: DateTime!
+  isUsed: Boolean!
+  userId: ID
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User
+}

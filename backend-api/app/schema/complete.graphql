@@ -417,6 +417,12 @@ input PaginationInput {
   limit: Int
 }
 
+type Query {
+  _: String
+}
+type Mutation {
+  _: String
+}
 
 type CourseMaterial {
   id: ID!
@@ -461,6 +467,22 @@ type CommunityComment {
   community: BatchCommunity!
   user: User!
   reactions: [CommentReactions!]!
+}
+
+
+type VerificationCode {
+  id: ID!
+  email: String!
+  code: String!
+  expiresAt: DateTime!
+  isUsed: Boolean!
+  userId: ID
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  user: User
 }
 
 
@@ -534,12 +556,17 @@ enum UserRole {
   UNDETERMINED
 }
 
+enum RegisterUserRole {
+  STUDENT
+  UNDETERMINED
+}
+
 input RegisterInput {
   firstName: String!
   lastName: String!
   email: String!
   password: String!
-  role: UserRole
+  role: RegisterUserRole
 }
 
 input LoginInput {
@@ -561,6 +588,15 @@ input UpdateMeInput {
   lastName: String
   email: String
   password: String
+}
+
+input VerifyInput {
+  email: String!
+  verificationCode: String!
+}
+
+input ResendVerificationInput {
+  email: String!
 }
 
 type AuthResponse {
@@ -593,16 +629,19 @@ type User {
   feedbacks: [Feedback!]!
   notifications: [Notification!]!
   attendances: [Attendance!]!
+  verificationCodes: [VerificationCode!]!
 }
 
-type Query {
+extend type Query {
   users(pagination: PaginationInput): [User!]!
   user(id: ID!): User
   me: User
 }
 
-type Mutation {
-  register(input: RegisterInput!): AuthResponse!
+extend type Mutation {
+  register(input: RegisterInput!): Boolean!
+  verify(input: VerifyInput!): Boolean!
+  resendVerification(input: ResendVerificationInput!): Boolean!
   login(input: LoginInput!): AuthResponse!
   logout: Boolean!
   refreshToken: String!

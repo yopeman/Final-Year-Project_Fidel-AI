@@ -1,5 +1,9 @@
 from datetime import datetime, timedelta
 from typing import Optional
+from collections import defaultdict
+import time
+import random
+import string
 
 from ariadne import MutationType, ObjectType, QueryType
 from jose import JWTError, jwt
@@ -9,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from ..config.settings import settings
 from ..model.user import User, UserRole
+from ..model.verification_code import VerificationCode
 from ..model.student_profile import StudentProfile
 from ..model.batch_instructor import BatchInstructor
 from ..model.batch_community import BatchCommunity
@@ -18,6 +23,7 @@ from ..model.comment_reactions import CommentReactions
 from ..model.feedback import Feedback
 from ..model.notification import Notification
 from ..model.attendance import Attendance
+from ..util.email_service import send_verification_email
 
 # Auth utilities
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -29,6 +35,11 @@ REFRESH_TOKEN_EXPIRE_DAYS = settings.jwt_refresh_token_expire_days
 query = QueryType()
 mutation = MutationType()
 user = ObjectType("User")
+
+# Rate limiting for verification attempts
+verification_attempts = defaultdict(list)
+MAX_VERIFICATION_ATTEMPTS = 5
+VERIFICATION_WINDOW_SECONDS = 300  # 5 minutes
 
 
 def verify_password(plain_password, hashed_password):
@@ -106,6 +117,35 @@ def map_role(role_str: str) -> UserRole:
     }
     return role_map.get(role_str.upper(), UserRole.undetermined)
 
+def generate_verification_code():
+    """Generate a 6-digit verification code"""
+    return ''.join(random.choices(string.digits, k=6))
+
+
+def create_verification_code(db: Session, email: str, user_id: Optional[int] = None):
+    """Create and store a new verification code in database"""
+    # Invalidate any existing unused codes for this email
+    db.query(VerificationCode).filter(
+        VerificationCode.email == email,
+        VerificationCode.is_used == 0
+    ).update({"is_used": 1})
+
+    # Generate new code
+    code = generate_verification_code()
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+
+    verification_code = VerificationCode(
+        email=email,
+        code=code,
+        expires_at=expires_at,
+        user_id=user_id
+    )
+
+    db.add(verification_code)
+    db.commit()
+    db.refresh(verification_code)
+
+    return verification_code
 
 @mutation.field("register")
 def resolve_register(_, info, input):
@@ -114,10 +154,10 @@ def resolve_register(_, info, input):
     existing_user = db.query(User).filter(User.email == input["email"]).first()
     if existing_user:
         raise Exception("Email already registered")
-    
+
     hashed_password = get_password_hash(input["password"])
     role = map_role(input.get("role", "UNDETERMINED"))
-    
+
     new_user = User(
         first_name=input["firstName"],
         last_name=input["lastName"],
@@ -128,21 +168,90 @@ def resolve_register(_, info, input):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
-    access_token = create_access_token(
-        data={"sub": new_user.email}, expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
-    )
-    refresh_token = create_refresh_token(data={"sub": new_user.email})
-    
-    new_user.access_token = access_token
-    new_user.refresh_token = refresh_token
+
+    # Create verification code
+    verification_code = create_verification_code(db, input["email"], new_user.id)
+
+    # Send verification email
+    email_sent = send_verification_email(input["email"], verification_code.code)
+    if not email_sent:
+        # Log error but don't fail registration
+        print(f"Failed to send verification email to {input['email']}")
+
+    return True
+
+@mutation.field('resendVerification')
+def resolve_resend_verification(_, info, input):
+    db: Session = info.context["db"]
+
+    # Check if user exists
+    user = db.query(User).filter(User.email == input["email"]).first()
+    if not user:
+        raise Exception("User not found")
+
+    # Check if user is already verified
+    if user.is_verified:
+        raise Exception("User is already verified")
+
+    # Create new verification code
+    verification_code = create_verification_code(db, input["email"], user.id)
+
+    # Send verification email
+    email_sent = send_verification_email(input["email"], verification_code.code)
+    if not email_sent:
+        raise Exception("Failed to send verification email")
+
+    return True
+
+@mutation.field("verify")
+def resolve_verify(_, info, input):
+    email = input["email"]
+    current_time = time.time()
+
+    # Rate limiting check
+    attempts = verification_attempts[email]
+    # Remove old attempts outside the window
+    attempts[:] = [t for t in attempts if current_time - t < VERIFICATION_WINDOW_SECONDS]
+
+    if len(attempts) >= MAX_VERIFICATION_ATTEMPTS:
+        raise Exception(f"Too many verification attempts. Please try again in {VERIFICATION_WINDOW_SECONDS // 60} minutes.")
+
+    # Record this attempt
+    attempts.append(current_time)
+
+    db: Session = info.context["db"]
+
+    # Get the latest unused verification code for this email
+    verification_code = db.query(VerificationCode).filter(
+        VerificationCode.email == email,
+        VerificationCode.is_used == 0
+    ).order_by(VerificationCode.created_at.desc()).first()
+
+    if not verification_code:
+        raise Exception('No verification code found. Please request a new one.')
+
+    if verification_code.code != input['verificationCode']:
+        raise Exception("Invalid verification code")
+
+    if verification_code.expires_at < datetime.utcnow():
+        raise Exception('Verification code has expired. Please request a new one.')
+
+    # Clear rate limiting on successful verification
+    verification_attempts[email].clear()
+
+    # Mark code as used
+    verification_code.is_used = 1
+
+    # Verify the user
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise Exception('User not found')
+
+    user.is_verified = True
     db.commit()
-    
-    return {
-        "user": new_user,
-        "accessToken": access_token,
-        "refreshToken": refresh_token,
-    }
+    db.refresh(user)
+
+    return True
 
 
 @mutation.field("login")
@@ -273,45 +382,68 @@ def resolve_delete_me(_, info):
 @user.field("profile")
 def resolve_profile(user_obj, info):
     db: Session = info.context["db"]
-    user_profile = db.query(StudentProfile).filter(StudentProfile.id == user_obj.id).all()
-    return user_profile
+    student_profile = db.query(StudentProfile).filter(StudentProfile.user_id == user_obj.id).first()
+    return student_profile
 
 
 @user.field("batchInstructors")
 def resolve_batch_instructors(user_obj, info):
-    return user_obj.batch_instructors
+    db: Session = info.context["db"]
+    batch_instructors = db.query(BatchInstructor).filter(BatchInstructor.user_id == user_obj.id).all()
+    return batch_instructors
 
 
 @user.field("batchCommunities")
 def resolve_batch_communities(user_obj, info):
-    return user_obj.batch_communities
+    db: Session = info.context["db"]
+    batch_communities = db.query(BatchCommunity).filter(BatchCommunity.user_id == user_obj.id).all()
+    return batch_communities
 
 
 @user.field("communityReactions")
 def resolve_community_reactions(user_obj, info):
-    return user_obj.community_reactions
+    db: Session = info.context["db"]
+    community_reactions = db.query(CommentReactions).filter(CommentReactions.user_id == user_obj.id).all()
+    return community_reactions
 
 
 @user.field("communityComments")
 def resolve_community_comments(user_obj, info):
-    return user_obj.community_comments
+    db: Session = info.context["db"]
+    community_comments = db.query(CommunityComment).filter(CommunityComment.user_id == user_obj.id).all()
+    return community_comments
 
 
 @user.field("commentReactions")
 def resolve_comment_reactions(user_obj, info):
-    return user_obj.comment_reactions
+    db: Session = info.context["db"]
+    comment_reactions = db.query(CommentReactions).filter(CommentReactions.user_id == user_obj.id).all()
+    return comment_reactions
 
 
 @user.field("feedbacks")
 def resolve_feedbacks(user_obj, info):
-    return user_obj.feedbacks
+    db: Session = info.context["db"]
+    feedback = db.query(Feedback).filter(Feedback.user_id == user_obj.id).all()
+    return feedback
 
 
 @user.field("notifications")
 def resolve_notifications(user_obj, info):
-    return user_obj.notifications
+    db: Session = info.context["db"]
+    notifications = db.query(Notification).filter(Notification.user_id == user_obj.id).all()
+    return notifications
 
 
 @user.field("attendances")
 def resolve_attendances(user_obj, info):
-    return user_obj.attendances
+    db: Session = info.context["db"]
+    attendances = db.query(Attendance).filter(Attendance.user_id == user_obj.id).all()
+    return attendances
+
+
+@user.field("verificationCodes")
+def resolve_user_verification_codes(user_obj, info):
+    db: Session = info.context["db"]
+    verification_codes = db.query(VerificationCode).filter(VerificationCode.user_id == user_obj.id).all()
+    return verification_codes

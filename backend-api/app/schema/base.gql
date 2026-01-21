@@ -6,3 +6,10 @@ input PaginationInput {
   page: Int
   limit: Int
 }
+
+type Query {
+  _: String
+}
+type Mutation {
+  _: String
+}
