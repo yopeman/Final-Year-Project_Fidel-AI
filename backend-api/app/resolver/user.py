@@ -447,3 +447,63 @@ def resolve_user_verification_codes(user_obj, info):
     db: Session = info.context["db"]
     verification_codes = db.query(VerificationCode).filter(VerificationCode.user_id == user_obj.id).all()
     return verification_codes
+
+
+@user.field("firstName")
+def resolve_first_name(user_obj, info):
+    return user_obj.first_name
+
+
+@user.field("lastName")
+def resolve_last_name(user_obj, info):
+    return user_obj.last_name
+
+
+@user.field("email")
+def resolve_email(user_obj, info):
+    return user_obj.email
+
+
+@user.field("password")
+def resolve_password(user_obj, info):
+    return user_obj.password
+
+
+@user.field("role")
+def resolve_role(user_obj, info):
+    return user_obj.role.value.upper()  # Since enum
+
+
+@user.field("isVerified")
+def resolve_is_verified(user_obj, info):
+    return user_obj.is_verified
+
+
+@user.field("accessToken")
+def resolve_access_token(user_obj, info):
+    return user_obj.access_token
+
+
+@user.field("refreshToken")
+def resolve_refresh_token(user_obj, info):
+    return user_obj.refresh_token
+
+
+@user.field("createdAt")
+def resolve_created_at(user_obj, info):
+    return user_obj.created_at
+
+
+@user.field("updatedAt")
+def resolve_updated_at(user_obj, info):
+    return user_obj.updated_at
+
+
+@user.field("isDeleted")
+def resolve_is_deleted(user_obj, info):
+    return user_obj.is_deleted
+
+
+@user.field("deletedAt")
+def resolve_deleted_at(user_obj, info):
+    return user_obj.deleted_at

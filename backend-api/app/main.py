@@ -1,4 +1,4 @@
-from ariadne import make_executable_schema
+from ariadne import make_executable_schema, ScalarType
 from ariadne.asgi import GraphQL
 from fastapi import FastAPI, Request
 
@@ -14,7 +14,16 @@ app = FastAPI(
 
 create_table()
 
-bindables = [query, mutation, user, vc_type]
+# DateTime scalar
+datetime_scalar = ScalarType("DateTime")
+
+@datetime_scalar.serializer
+def serialize_datetime(value):
+    if value is None:
+        return None
+    return value.isoformat()
+
+bindables = [query, mutation, user, vc_type, datetime_scalar]
 
 schema = make_executable_schema(type_defs, *bindables)
 
