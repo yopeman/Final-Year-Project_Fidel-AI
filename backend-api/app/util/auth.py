@@ -51,5 +51,5 @@ def get_current_user(token: str, db: Session):
             return None
     except JWTError:
         return None
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == email, User.is_deleted == False).first()
     return user

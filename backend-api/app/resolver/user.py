@@ -9,7 +9,7 @@ from ariadne import MutationType, ObjectType, QueryType
 from sqlalchemy.orm import Session
 
 from ..model.user import User, UserRole
-from ..util.auth import verify_password, get_password_hash, create_access_token, create_refresh_token, get_current_user
+from ..util.auth import verify_password, get_password_hash, create_access_token, create_refresh_token
 from ..model.verification_code import VerificationCode
 from ..model.student_profile import StudentProfile
 from ..model.batch_instructor import BatchInstructor
@@ -31,12 +31,17 @@ user = ObjectType("User")
 verification_attempts = defaultdict(list)
 MAX_VERIFICATION_ATTEMPTS = 5
 VERIFICATION_WINDOW_SECONDS = 300  # 5 minutes
+
 ACCESS_TOKEN_EXPIRE_DAYS = settings.jwt_access_token_expire_days
 
 @query.field("users")
 def resolve_users(_, info, pagination=None):
+    current_user: User = info.context.get("current_user")
+    if not current_user or current_user.role != UserRole.admin:
+        raise Exception("Unauthorized")
+
     db: Session = info.context["db"]
-    query_obj = db.query(User)
+    query_obj = db.query(User).filter(User.is_deleted == False)
     if pagination:
         page = pagination.get("page", 1)
         limit = pagination.get("limit", 10)
@@ -47,14 +52,18 @@ def resolve_users(_, info, pagination=None):
 
 @query.field("user")
 def resolve_user(_, info, id):
+    current_user: User = info.context.get("current_user")
+    if not current_user or current_user.role != UserRole.admin:
+        raise Exception("Unauthorized")
+
     db: Session = info.context["db"]
-    return db.query(User).filter(User.id == id).first()
+    return db.query(User).filter(User.id == id, User.is_deleted == False).first()
 
 
 @query.field("me")
 def resolve_me(_, info):
     # Assuming user is in context, need to add auth middleware
-    current_user = info.context.get("current_user")
+    current_user: User = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
     return current_user
@@ -102,13 +111,27 @@ def create_verification_code(db: Session, email: str, user_id: Optional[int] = N
 @mutation.field("register")
 def resolve_register(_, info, input):
     db: Session = info.context["db"]
-    # Check if user exists
-    existing_user = db.query(User).filter(User.email == input["email"]).first()
-    if existing_user:
-        raise Exception("Email already registered")
 
     hashed_password = get_password_hash(input["password"])
     role = map_role(input.get("role", "UNDETERMINED"))
+
+    # Check if user exists
+    existing_user = db.query(User).filter(User.email == input["email"]).first()
+    if existing_user:
+        if existing_user.is_deleted:
+            existing_user.first_name = input["firstName"]
+            existing_user.last_name = input["lastName"]
+            existing_user.email = input["email"]
+            existing_user.password = hashed_password
+            existing_user.role = role
+            existing_user.is_verified = False
+            existing_user.access_token = None
+            existing_user.refresh_token = None
+            db.commit()
+            db.refresh(existing_user)
+            return True
+        else:
+            raise Exception("Email already registered")
 
     new_user = User(
         first_name=input["firstName"],
@@ -137,7 +160,7 @@ def resolve_resend_verification(_, info, input):
     db: Session = info.context["db"]
 
     # Check if user exists
-    user = db.query(User).filter(User.email == input["email"]).first()
+    user = db.query(User).filter(User.email == input["email"], User.is_deleted == False).first()
     if not user:
         raise Exception("User not found")
 
@@ -195,7 +218,7 @@ def resolve_verify(_, info, input):
     verification_code.is_used = 1
 
     # Verify the user
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == email, User.is_deleted == False).first()
     if not user:
         raise Exception('User not found')
 
@@ -209,7 +232,7 @@ def resolve_verify(_, info, input):
 @mutation.field("login")
 def resolve_login(_, info, input):
     db: Session = info.context["db"]
-    user = db.query(User).filter(User.email == input["email"]).first()
+    user = db.query(User).filter(User.email == input["email"], User.is_deleted == False).first()
     if not user or not verify_password(input["password"], user.password):
         raise Exception("Invalid credentials")
     
@@ -261,7 +284,7 @@ def resolve_refresh_token(_, info):
 def resolve_update_user(_, info, input):
     # Assuming admin check, but for now allow
     db: Session = info.context["db"]
-    user = db.query(User).filter(User.id == input["id"]).first()
+    user = db.query(User).filter(User.id == input["id"], User.is_deleted == False).first()
     if not user:
         raise Exception("User not found")
     
@@ -308,7 +331,7 @@ def resolve_update_me(_, info, input):
 def resolve_delete_user(_, info, id):
     # Assuming admin check
     db: Session = info.context["db"]
-    user = db.query(User).filter(User.id == id).first()
+    user = db.query(User).filter(User.id == id, User.is_deleted == False).first()
     if not user:
         raise Exception("User not found")
     

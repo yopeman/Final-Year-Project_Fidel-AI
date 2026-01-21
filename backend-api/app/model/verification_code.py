@@ -12,8 +12,7 @@ class VerificationCode(BaseModel):
     expires_at = Column(DateTime, nullable=False)
     is_used = Column(Integer, default=0)  # 0 = not used, 1 = used
 
-    # Optional: link to user if exists
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="verification_codes")
