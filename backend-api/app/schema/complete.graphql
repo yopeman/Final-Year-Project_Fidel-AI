@@ -634,8 +634,8 @@ type User {
 
 extend type Query {
   users(pagination: PaginationInput): [User!]!
-  user(id: ID!): User
-  me: User
+  user(id: ID!): User!
+  me: User!
 }
 
 extend type Mutation {

@@ -57,7 +57,11 @@ def resolve_user(_, info, id):
         raise Exception("Unauthorized")
 
     db: Session = info.context["db"]
-    return db.query(User).filter(User.id == id, User.is_deleted == False).first()
+    user = db.query(User).filter(User.id == id, User.is_deleted == False).first()
+
+    if not user:
+        raise Exception("User not found")
+    return user
 
 
 @query.field("me")
@@ -125,6 +129,7 @@ def resolve_register(_, info, input):
             existing_user.password = hashed_password
             existing_user.role = role
             existing_user.is_verified = False
+            existing_user.is_deleted = False
             existing_user.access_token = None
             existing_user.refresh_token = None
             db.commit()
