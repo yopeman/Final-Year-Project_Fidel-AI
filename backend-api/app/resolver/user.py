@@ -133,7 +133,6 @@ def resolve_register(_, info, input):
             existing_user.access_token = None
             existing_user.refresh_token = None
             db.commit()
-            db.refresh(existing_user)
             return True
         else:
             raise Exception("Email already registered")
@@ -287,6 +286,10 @@ def resolve_refresh_token(_, info):
 
 @mutation.field("updateUser")
 def resolve_update_user(_, info, input):
+    current_user: User = info.context.get("current_user")
+    if not current_user or current_user.role != UserRole.admin:
+        raise Exception("Unauthorized")
+
     # Assuming admin check, but for now allow
     db: Session = info.context["db"]
     user = db.query(User).filter(User.id == input["id"], User.is_deleted == False).first()
@@ -334,6 +337,10 @@ def resolve_update_me(_, info, input):
 
 @mutation.field("deleteUser")
 def resolve_delete_user(_, info, id):
+    current_user: User = info.context.get("current_user")
+    if not current_user or current_user.role != UserRole.admin:
+        raise Exception("Unauthorized")
+
     # Assuming admin check
     db: Session = info.context["db"]
     user = db.query(User).filter(User.id == id, User.is_deleted == False).first()
