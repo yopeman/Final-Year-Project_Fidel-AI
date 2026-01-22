@@ -6,6 +6,7 @@ from .config.database import create_table, get_db
 from . import model  # Import all models to register them with SQLAlchemy
 from .resolver.user import mutation, query, user
 from .resolver.verification_code import verification_code as vc_type
+from .resolver.student_profile import mutation as sp_mutation, query as sp_query, student_profile as sp_type
 from .schema import type_defs
 from .util.auth import get_current_user
 
@@ -24,7 +25,7 @@ def serialize_datetime(value):
         return None
     return value.isoformat()
 
-bindables = [query, mutation, user, vc_type, datetime_scalar]
+bindables = [query, mutation, user, vc_type, sp_query, sp_mutation, sp_type, datetime_scalar]
 
 schema = make_executable_schema(type_defs, *bindables)
 

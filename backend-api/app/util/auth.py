@@ -52,4 +52,6 @@ def get_current_user(token: str, db: Session):
     except JWTError:
         return None
     user = db.query(User).filter(User.email == email, User.is_deleted == False).first()
+    if user.access_token != token:
+        raise Exception('You are signout')
     return user

@@ -371,6 +371,30 @@ enum DurationUnit {
   YEARS
 }
 
+input CreateProfileInput {
+  ageRange: AgeRange!
+  proficiency: Proficiency!
+  nativeLanguage: String!
+  learningGoal: String!
+  targetDuration: Int!
+  durationUnit: DurationUnit!
+  constraints: String
+}
+
+input UpdateProfileInput {
+  ageRange: AgeRange
+  proficiency: Proficiency
+  nativeLanguage: String
+  learningGoal: String
+  targetDuration: Int
+  durationUnit: DurationUnit
+  constraints: String
+}
+
+input UpdateLearningPlanInput {
+  improvements: String!
+}
+
 type StudentProfile {
   id: ID!
   userId: ID!
@@ -391,6 +415,21 @@ type StudentProfile {
   modules: [Modules!]!
   freeConversations: [FreeConversation!]!
   batchEnrollments: [BatchEnrollment!]!
+}
+
+extend type Query {
+  myProfile: StudentProfile
+  studentProfile(userId: ID!): StudentProfile!
+}
+
+extend type Mutation {
+  createProfile(input: CreateProfileInput!): StudentProfile!
+  updateProfile(input: UpdateProfileInput!): StudentProfile!
+  generateLearningPlan: StudentProfile!
+  updateLearningPlan(input: UpdateLearningPlanInput!): StudentProfile!
+  installLearningPlan: StudentProfile!
+  deletePlan: StudentProfile!
+  deleteProfile: Boolean!
 }
 
 
