@@ -295,7 +295,11 @@ def resolve_install_learning_plan(_, info):
             "No learning plan to install. Generate or update a learning plan first."
         )
 
-    if not install_learning_plan(profile):
+    sample_module = db.query(Modules).filter(Modules.profile_id == profile.id).first()
+    if sample_module:
+        return profile
+
+    if not install_learning_plan(profile, db):
         raise Exception('Error when installing the plan')
 
     return profile
@@ -434,19 +438,19 @@ def resolve_user(profile, info):
 @student_profile.field("modules")
 def resolve_modules(profile, info):
     db: Session = info.context["db"]
-    modules = db.query(Modules).filter(Modules.profile_id == profile.id).first()
+    modules = db.query(Modules).filter(Modules.profile_id == profile.id).all()
     return modules
 
 
 @student_profile.field("freeConversations")
 def resolve_free_conversations(profile, info):
     db: Session = info.context["db"]
-    free_conversations = db.query(FreeConversation).filter(FreeConversation.profile_id == profile.id).first()
+    free_conversations = db.query(FreeConversation).filter(FreeConversation.profile_id == profile.id).all()
     return free_conversations
 
 
 @student_profile.field("batchEnrollments")
 def resolve_batch_enrollments(profile, info):
     db: Session = info.context["db"]
-    batch_enrollments = db.query(BatchEnrollment).filter(BatchEnrollment.profile_id == profile.id).first()
+    batch_enrollments = db.query(BatchEnrollment).filter(BatchEnrollment.profile_id == profile.id).all()
     return batch_enrollments

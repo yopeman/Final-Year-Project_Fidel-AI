@@ -1,11 +1,13 @@
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import tool
+from langchain_core.messages import HumanMessage
 from langchain_community.tools import DuckDuckGoSearchResults
 from youtube_search import YoutubeSearch
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from sqlalchemy.orm import Session
+import logging
 
 from .ai_agent import AIAgent
 from ...model.student_profile import StudentProfile
@@ -15,8 +17,9 @@ from ...model.lesson_vocabularies import LessonVocabularies
 from ...model.lesson_online_articles import LessonOnlineArticles
 from ...model.lesson_youtube_videos import LessonYouTubeVideos
 
-MODEL_NAME = 'gemma3:4b'
+MODEL_NAME = 'llama3.1:8b'
 llm = ChatOllama(model=MODEL_NAME, verbose=True)
+logger = logging.getLogger(__name__)
 
 def generate_learning_plan(profile: StudentProfile) -> str:
     """
@@ -143,8 +146,6 @@ class ModuleLessonResponse(BaseModel):
     title: str
     content: str
     vocabularies: List[LessonVocabularyResponse]
-    # online_articles: List[OnlineArticleResponse]
-    # youtube_videos: List[YouTubeVideoResponse]
 
 class ModuleResponse(BaseModel):
     name: str
@@ -155,8 +156,8 @@ class Response(BaseModel):
     modules: List[ModuleResponse]
 
 
-@tool
-def search_youtube_video(search_terms: str, max_results=5, retries=3):
+web_search = DuckDuckGoSearchResults(output_format='list')
+def youtube_search(search_terms: str, max_results=5, retries=3):
     """
     Search YouTube video for educational videos and return results.
     """
@@ -174,23 +175,22 @@ def search_youtube_video(search_terms: str, max_results=5, retries=3):
 
 def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
     """
-    Install or activate the learning plan for the student.
-
-    This function is not yet implemented.
+    Install or activate the learning plan for the student by creating modules, lessons,
+    vocabularies, online articles, and YouTube videos in the database.
 
     Args:
         profile (StudentProfile): The student's profile.
+        db (Session): Database session for operations.
 
     Returns:
-        bool: The installation is successful.
+        bool: True if the installation is successful, False otherwise.
     """
-    
-    system_prompts = """
-You are Language teacher. give me structured relevant resources.
-"""
 
-    prompts = """
-Based on the following information give me structured learning resources
+    logger.info(f"Starting installation of learning plan for profile {profile.id}")
+
+    try:
+        prompts = """
+You are a language teacher. Based on the following information, provide structured learning resources.
 
 Student Profile:
 - Age range: {age_range}
@@ -204,87 +204,86 @@ Learning Plan:
 {learning_plan}
 """
 
-    user_prompts = PromptTemplate.from_template(prompts).format({
-        'age_range': profile.age_range,
-        'proficiency': profile.proficiency,
-        'native_language': profile.native_language,
-        'learning_goal': profile.learning_goal,
-        'target_duration': profile.target_duration,
-        'duration_unit': profile.duration_unit,
-        'constraints': profile.constraints,
-        'learning_plan': profile.ai_learning_plan,
-    })
+        user_prompts = PromptTemplate.from_template(prompts).format(**{
+            'age_range': profile.age_range,
+            'proficiency': profile.proficiency,
+            'native_language': profile.native_language,
+            'learning_goal': profile.learning_goal,
+            'target_duration': profile.target_duration,
+            'duration_unit': profile.duration_unit,
+            'constraints': profile.constraints,
+            'learning_plan': profile.ai_learning_plan,
+        })
 
-    search_tool = DuckDuckGoSearchResults(output_format='json')
-    tools = [search_youtube_video, search_tool]
-    agent = AIAgent(llm=llm, tools=tools, system_prompt=system_prompts, response_format=Response, debug=True)
+        structured_llm = llm.with_structured_output(Response)
+        response: Response = structured_llm.invoke([HumanMessage(content=user_prompts)])
 
-    response: Response = agent.invoke(user_prompts)
-
-    print('\n\n\n', response, '\n\n\n')
-
-    for i, module in enumerate(response.modules, start=1):
-        new_module = Modules(
-            profile_id=profile.id,
-            name=module.name,
-            description=module.description,
-            display_order=i,
-            is_locked= not (i==1)
-        )
-        
-        db.add(new_module)
-        db.commit()
-        db.flush()
-
-        for j, lesson in enumerate(module.lessons, start=1):
-            new_lesson = ModuleLessons(
-                module_id=new_module.id,
-                title=lesson.title,
-                content=lesson.content,
-                display_order=j,
-                is_locked= not (i==1 and j==1)
+        for i, module in enumerate(response.modules, start=1):
+            new_module = Modules(
+                profile_id=profile.id,
+                name=module.name,
+                description=module.description,
+                display_order=i,
+                is_locked= not (i==1)
             )
 
-            db.add(new_lesson)
-            db.commit()
-            db.flush()
+            db.add(new_module)
+            db.flush()  # Flush to get module.id
 
-            for vocabulary in lesson.vocabularies:
-                new_vocabulary = LessonVocabularies(
-                    lesson_id=new_lesson.id,
-                    vocabulary=vocabulary.vocabulary,
-                    meaning=vocabulary.meaning,
-                    description=vocabulary.description
+            for j, lesson in enumerate(module.lessons, start=1):
+                new_lesson = ModuleLessons(
+                    module_id=new_module.id,
+                    title=lesson.title,
+                    content=lesson.content,
+                    display_order=j,
+                    is_locked= not (i==1 and j==1)
                 )
 
-                db.add(new_vocabulary)
-                db.commit()
-                db.flush()
+                db.add(new_lesson)
+                db.flush()  # Flush to get lesson.id
 
-            for online_article in lesson.online_articles:
-                new_article = LessonOnlineArticles(
-                    lesson_id=new_lesson.id,
-                    title=online_article.title,
-                    favicon_url=online_article.favicon_url,
-                    description=online_article.description,
-                    page_url=online_article.page_url
-                )
+                for vocabulary in lesson.vocabularies:
+                    new_vocabulary = LessonVocabularies(
+                        lesson_id=new_lesson.id,
+                        vocabulary=vocabulary.vocabulary,
+                        meaning=vocabulary.meaning,
+                        description=vocabulary.description
+                    )
 
-                db.add(new_article)
-                db.commit()
-                db.flush()
+                    db.add(new_vocabulary)
 
-            for youtube_video in lesson.youtube_videos:
-                new_video = LessonYouTubeVideos(
-                    lesson_id=new_lesson.id,
-                    title=youtube_video.title,
-                    thumbnail_url=youtube_video.thumbnail_url,
-                    description=youtube_video.description,
-                    video_url=youtube_video.video_url
-                )
+                # Limit to 3 articles per lesson
+                online_articles = web_search.invoke(new_lesson.title)[:3]
+                for online_article in online_articles:
+                    new_article = LessonOnlineArticles(
+                        lesson_id=new_lesson.id,
+                        title=online_article.get('title', '')[:200],
+                        favicon_url=online_article.get('favicon_url', [None]),
+                        description=online_article.get('snippet', ''),
+                        page_url=online_article.get('link', '')
+                    )
 
-                db.add(new_video)
-                db.commit()
-                db.flush()
+                    db.add(new_article)
 
-    return True
+                # Limit to 3 videos per lesson
+                youtube_videos = youtube_search(new_lesson.title)[:3]
+                for youtube_video in youtube_videos:
+                    thumbnail_url = youtube_video.get('thumbnails', [None])[0] if youtube_video.get('thumbnails') else None
+                    new_video = LessonYouTubeVideos(
+                        lesson_id=new_lesson.id,
+                        title=youtube_video.get('title', '')[:200],
+                        thumbnail_url=thumbnail_url,
+                        description=youtube_video.get('long_desc', ''),
+                        video_url=youtube_video.get('full_url', '')
+                    )
+
+                    db.add(new_video)
+
+        db.commit()
+        logger.info(f"Successfully installed learning plan for profile {profile.id}")
+        return True
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to install learning plan for profile {profile.id}: {e}")
+        return False
