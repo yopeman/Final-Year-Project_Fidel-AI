@@ -4,8 +4,8 @@ from sqlalchemy.orm import relationship
 from .base import BaseModel
 
 
-class Interactions(BaseModel):
-    __tablename__ = "interactions"
+class ConversationInteractions(BaseModel):
+    __tablename__ = "conversation_interactions"
 
     conversation_id = Column(
         String(36), ForeignKey("free_conversations.id"), nullable=False

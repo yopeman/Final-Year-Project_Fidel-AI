@@ -9,5 +9,5 @@ type FreeConversation {
   deletedAt: DateTime
   # Relationships
   profile: StudentProfile!
-  interactions: [Interactions!]!
+  interactions: [ConversationInteractions!]!
 }

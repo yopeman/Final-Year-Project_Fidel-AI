@@ -1,4 +1,4 @@
-type Interactions {
+type ConversationInteractions {
   id: ID!
   conversationId: ID!
   question: String!

@@ -19,7 +19,7 @@ from .course_material import CourseMaterial
 from .course_schedule import CourseSchedule
 from .course import Course
 from .free_conversation import FreeConversation
-from .interactions import Interactions
+from .conversation_interactions import ConversationInteractions
 from .lesson_interactions import LessonInteractions
 from .lesson_online_articles import LessonOnlineArticles
 from .lesson_vocabularies import LessonVocabularies

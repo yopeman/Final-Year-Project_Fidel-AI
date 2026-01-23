@@ -30,7 +30,31 @@ def serialize_datetime(value):
         return None
     return value.isoformat()
 
-bindables = [query, mutation, user, vc_type, sp_query, sp_mutation, sp_type, m_query, m_mutation, m_type, ml_query, ml_mutation, ml_type, lv_query, lv_mutation, lv_type, loa_query, loa_mutation, loa_type, lyv_query, lyv_mutation, lyv_type, datetime_scalar]
+bindables = [
+    query,
+    mutation,
+    user,
+    vc_type,
+    sp_query,
+    sp_mutation,
+    sp_type,
+    m_query,
+    m_mutation,
+    m_type,
+    ml_query,
+    ml_mutation,
+    ml_type,
+    lv_query,
+    lv_mutation,
+    lv_type,
+    loa_query,
+    loa_mutation,
+    loa_type,
+    lyv_query,
+    lyv_mutation,
+    lyv_type,
+    datetime_scalar
+]
 
 schema = make_executable_schema(type_defs, *bindables)
 

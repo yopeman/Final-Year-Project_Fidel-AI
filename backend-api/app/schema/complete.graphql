@@ -153,20 +153,6 @@ type CommunityAttachmentFiles {
 }
 
 
-type Interactions {
-  id: ID!
-  conversationId: ID!
-  question: String!
-  answer: String!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  isDeleted: Boolean!
-  deletedAt: DateTime
-  # Relationships
-  conversation: FreeConversation!
-}
-
-
 type Feedback {
   id: ID!
   userId: ID
@@ -290,6 +276,20 @@ type Batch {
   enrollments: [BatchEnrollment!]!
   communities: [BatchCommunity!]!
   instructors: [BatchInstructor!]!
+}
+
+
+type ConversationInteractions {
+  id: ID!
+  conversationId: ID!
+  question: String!
+  answer: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  conversation: FreeConversation!
 }
 
 
@@ -809,7 +809,7 @@ type FreeConversation {
   deletedAt: DateTime
   # Relationships
   profile: StudentProfile!
-  interactions: [Interactions!]!
+  interactions: [ConversationInteractions!]!
 }
 
 
