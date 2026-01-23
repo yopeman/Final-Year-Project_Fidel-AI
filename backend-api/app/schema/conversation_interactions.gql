@@ -10,3 +10,18 @@ type ConversationInteractions {
   # Relationships
   conversation: FreeConversation!
 }
+
+input CreateConversationInteractionInput {
+  conversationId: ID!
+  question: String!
+}
+
+extend type Query {
+  conversationInteractions(conversationId: ID!): [ConversationInteractions!]!
+  conversationInteraction(id: ID!): ConversationInteractions
+}
+
+extend type Mutation {
+  createConversationInteraction(input: CreateConversationInteractionInput!): ConversationInteractions!
+  deleteConversationInteraction(id: ID!): Boolean!
+}

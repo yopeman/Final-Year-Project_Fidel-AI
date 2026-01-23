@@ -11,3 +11,19 @@ type FreeConversation {
   profile: StudentProfile!
   interactions: [ConversationInteractions!]!
 }
+
+input CreateConversationInput {
+  profileId: ID!
+  startingTopic: String!
+}
+
+extend type Query {
+  freeConversations(profileId: ID!): [FreeConversation!]!
+  freeConversation(id: ID!): FreeConversation
+}
+
+extend type Mutation {
+  createConversation(input: CreateConversationInput!): FreeConversation!
+  generateConversation(profileId: ID!): FreeConversation!
+  deleteConversation(id: ID!): Boolean!
+}

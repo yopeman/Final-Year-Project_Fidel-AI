@@ -10,3 +10,18 @@ type LessonInteractions {
   # Relationships
   lesson: ModuleLessons!
 }
+
+input CreateLessonInteractionInput {
+  lessonId: ID!
+  question: String!
+}
+
+extend type Query {
+  lessonInteractions(lessonId: ID!): [LessonInteractions!]!
+  lessonInteraction(id: ID!): LessonInteractions
+}
+
+extend type Mutation {
+  createLessonInteraction(input: CreateLessonInteractionInput!): LessonInteractions!
+  deleteLessonInteraction(id: ID!): Boolean!
+}

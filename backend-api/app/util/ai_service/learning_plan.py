@@ -1,4 +1,3 @@
-from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
@@ -8,6 +7,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from sqlalchemy.orm import Session
 import logging
+from . import llm
 
 from ...model.student_profile import StudentProfile
 from ...model.modules import Modules
@@ -16,8 +16,6 @@ from ...model.lesson_vocabularies import LessonVocabularies
 from ...model.lesson_online_articles import LessonOnlineArticles
 from ...model.lesson_youtube_videos import LessonYouTubeVideos
 
-MODEL_NAME = 'llama3.1:8b'
-llm = ChatOllama(model=MODEL_NAME, verbose=True)
 logger = logging.getLogger(__name__)
 
 def generate_learning_plan(profile: StudentProfile) -> str:

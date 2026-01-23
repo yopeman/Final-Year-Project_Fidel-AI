@@ -292,6 +292,22 @@ type ConversationInteractions {
   conversation: FreeConversation!
 }
 
+input CreateConversationInteractionInput {
+  conversationId: ID!
+  question: String!
+  answer: String!
+}
+
+extend type Query {
+  conversationInteractions(conversationId: ID!): [ConversationInteractions!]!
+  conversationInteraction(id: ID!): ConversationInteractions
+}
+
+extend type Mutation {
+  createConversationInteraction(input: CreateConversationInteractionInput!): ConversationInteractions!
+  deleteConversationInteraction(id: ID!): Boolean!
+}
+
 
 enum SkillTestType {
   READING
@@ -607,6 +623,21 @@ type LessonInteractions {
   lesson: ModuleLessons!
 }
 
+input CreateLessonInteractionInput {
+  lessonId: ID!
+  question: String!
+}
+
+extend type Query {
+  lessonInteractions(lessonId: ID!): [LessonInteractions!]!
+  lessonInteraction(id: ID!): LessonInteractions
+}
+
+extend type Mutation {
+  createLessonInteraction(input: CreateLessonInteractionInput!): LessonInteractions!
+  deleteLessonInteraction(id: ID!): Boolean!
+}
+
 
 type MaterialFiles {
   id: ID!
@@ -810,6 +841,22 @@ type FreeConversation {
   # Relationships
   profile: StudentProfile!
   interactions: [ConversationInteractions!]!
+}
+
+input CreateConversationInput {
+  profileId: ID!
+  startingTopic: String!
+}
+
+extend type Query {
+  freeConversations(profileId: ID!): [FreeConversation!]!
+  freeConversation(id: ID!): FreeConversation
+}
+
+extend type Mutation {
+  createConversation(input: CreateConversationInput!): FreeConversation!
+  generateConversation(profileId: ID!): FreeConversation!
+  deleteConversation(id: ID!): Boolean!
 }
 
 
