@@ -134,6 +134,14 @@ def resolve_create_profile(_, info, input):
         .first()
     )
 
+    sample_module = db.query(Modules).filter(
+        Modules.profile_id == existing_profile.id,
+        Modules.is_deleted == False,
+    ).first()
+    if sample_module:
+        raise Exception('Already you install learning plan!')
+
+
     if existing_profile:
         if existing_profile.is_deleted:
             existing_profile.age_range = map_age_range(input["ageRange"])
@@ -188,6 +196,14 @@ def resolve_update_profile(_, info, input):
 
     if not profile:
         raise Exception("Profile not found. Create a profile first.")
+
+    sample_module = db.query(Modules).filter(
+        Modules.profile_id == profile.id,
+        Modules.is_deleted == False,
+    ).first()
+    if sample_module:
+        raise Exception('Already you install learning plan!')
+
 
     # Update fields if provided
     if "ageRange" in input:
@@ -259,6 +275,14 @@ def resolve_update_learning_plan(_, info, input):
 
     if not profile:
         raise Exception("Profile not found. Create a profile first.")
+
+    sample_module = db.query(Modules).filter(
+        Modules.profile_id == profile.id,
+        Modules.is_deleted == False,
+    ).first()
+    if sample_module:
+        raise Exception('Already you install learning plan!')
+
 
     if "improvements" not in input:
         raise Exception("Learning improvement is required")

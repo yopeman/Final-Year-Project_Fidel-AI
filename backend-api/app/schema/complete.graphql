@@ -295,7 +295,6 @@ type ConversationInteractions {
 input CreateConversationInteractionInput {
   conversationId: ID!
   question: String!
-  answer: String!
 }
 
 extend type Query {
