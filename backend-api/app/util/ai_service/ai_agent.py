@@ -32,7 +32,7 @@ if not logger.handlers:
 
 
 ResultLike = Dict[str, Any]
-
+from . import llm
 
 class AIAgent:
     """
@@ -47,7 +47,7 @@ class AIAgent:
     def __init__(
         self,
         *,
-        llm: Union[str, BaseChatModel],
+        llm: Union[str, BaseChatModel] = llm,
         tools: Optional[List[BaseTool]] = None,
         system_prompt: Optional[str] = "You are a helpful AI assistant.",
         response_format: Optional[Type[BaseModel]] = None,

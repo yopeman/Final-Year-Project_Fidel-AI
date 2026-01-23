@@ -28,7 +28,7 @@ def generate_learning_plan(profile: StudentProfile) -> str:
     Returns:
         str: The generated learning plan structured in modules and lessons.
     """
-    prompt = PromptTemplate.from_template("""
+    prompts = PromptTemplate.from_template("""
 Based on the following student profile, create a structured learning plan for English language.
 
 Student Profile:
@@ -49,7 +49,7 @@ Requirements:
 Generate the learning plan:
 """)
 
-    chain = prompt | llm
+    chain = prompts | llm
     try:
         response = chain.invoke({
             'age_range': profile.age_range,
@@ -76,7 +76,7 @@ def update_learning_plan(profile: StudentProfile, improvements: str) -> str:
     Returns:
         str: The updated learning plan structured in modules and lessons.
     """
-    prompt = PromptTemplate.from_template("""
+    prompts = PromptTemplate.from_template("""
 Based on the following student profile and current plan, improve the plan according to the given instructions.
 
 Student Profile:
@@ -103,7 +103,7 @@ Requirements:
 Generate the updated learning plan:
 """)
 
-    chain = prompt | llm
+    chain = prompts | llm
     try:
         response = chain.invoke({
             'age_range': profile.age_range,
@@ -277,6 +277,9 @@ Learning Plan:
                     db.add(new_video)
 
         db.commit()
+        if not _insert_learning_plan(profile, db):
+            pass
+        
         logger.info(f"Successfully installed learning plan for profile {profile.id}")
         return True
 
@@ -284,3 +287,105 @@ Learning Plan:
         db.rollback()
         logger.error(f"Failed to install learning plan for profile {profile.id}: {e}")
         return False
+
+
+def _insert_learning_plan(profile: StudentProfile, db: Session) -> bool:
+    modules = (
+        db.query(Modules)
+        .filter(
+            Modules.profile_id == profile.id,
+            Modules.is_deleted == False
+        )
+        .all()
+    )
+
+    for module in modules:
+        lessons = (
+            db.query(ModuleLessons)
+            .filter(
+                ModuleLessons.module_id == module.id,
+                ModuleLessons.is_deleted == False
+            )
+            .all()
+        )
+
+        for lesson in lessons:
+            prompts = PromptTemplate.from_template("""
+You are an experienced and supportive language teacher and curriculum designer.
+
+Your task is to teach the lesson below in a way that is:
+- Age-appropriate
+- Aligned with the student's proficiency level
+- Adapted to the student's native language (anticipate common difficulties)
+- Focused on the stated learning goal
+- Sized to fit the target duration
+
+====================
+STUDENT PROFILE
+====================
+- Age range: {age_range}
+- Proficiency level: {proficiency}
+- Native language: {native_language}
+- Learning goal: {learning_goal}
+- Target duration: {target_duration} {duration_unit}
+- Constraints (if any): {constraints}
+
+====================
+CURRICULUM CONTEXT
+====================
+Learning Plan:
+{learning_plan}
+
+Module:
+- Title: {module_title}
+- Description: {module_description}
+
+Lesson:
+- Title: {lesson_title}
+- Description: {lesson_description}
+
+====================
+TEACHING INSTRUCTIONS
+====================
+Teach this lesson step by step. Follow these guidelines:
+
+1. Begin with a brief, friendly overview of what the student will learn and why it matters.
+2. Explain concepts clearly using simple language appropriate for the student's proficiency.
+3. Use examples, short dialogues, or mini-scenarios when helpful.
+4. Highlight common mistakes learners with the student's native language might make.
+5. Include light comprehension checks (questions or quick exercises).
+6. Keep the pacing realistic for the target duration.
+7. Avoid unnecessary jargon unless it is explicitly part of the lesson.
+8. End with a concise summary and 1–2 suggested practice activities.
+
+If constraints limit the lesson, strictly follow them.
+
+====================
+START THE LESSON
+====================
+""")
+
+
+    chain = prompts | llm
+    try:
+        response = chain.invoke({
+            'age_range': profile.age_range,
+            'proficiency': profile.proficiency,
+            'native_language': profile.native_language,
+            'learning_goal': profile.learning_goal,
+            'target_duration': profile.target_duration,
+            'duration_unit': profile.duration_unit,
+            'constraints': profile.constraints,
+            'learning_plan': profile.ai_learning_plan,
+
+            'module_title': module.name,
+            'module_description': module.description,
+            'lesson_title': lesson.title,
+            'lesson_description': lesson.content
+        })
+
+        lesson.content = response.content
+        db.commit()
+        return True
+    except Exception as err:
+        raise err

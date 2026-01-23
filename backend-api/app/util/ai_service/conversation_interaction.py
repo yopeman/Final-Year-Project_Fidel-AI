@@ -62,8 +62,8 @@ def ai_topic_summary(idea: str) -> str:
     if not idea or not idea.strip():
         raise ValueError("Idea cannot be empty")
 
-    prompt = PromptTemplate.from_template(TOPIC_SUMMARY_PROMPT)
-    chain = prompt | llm
+    prompts = PromptTemplate.from_template(TOPIC_SUMMARY_PROMPT)
+    chain = prompts | llm
     response = chain.invoke({'idea': idea})
     return response.content
 
@@ -75,8 +75,8 @@ def ai_generated_topic(profile: StudentProfile) -> Dict[str, str]:
     if not profile:
         raise ValueError("Student profile is required")
 
-    prompt = PromptTemplate.from_template(TOPIC_GENERATION_PROMPT)
-    chain = prompt | llm
+    prompts = PromptTemplate.from_template(TOPIC_GENERATION_PROMPT)
+    chain = prompts | llm
     response = chain.invoke({
         'age_range': profile.age_range,
         'proficiency': profile.proficiency,
@@ -116,9 +116,9 @@ def ask_on_conversation(question: str, profile: StudentProfile, conversation: Fr
             interactions.append(f"AI: {interaction.answer}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
-    prompt = PromptTemplate.from_template(CONVERSATION_RESPONSE_PROMPT)
+    prompts = PromptTemplate.from_template(CONVERSATION_RESPONSE_PROMPT)
     try:
-        chain = prompt | llm
+        chain = prompts | llm
         response = chain.invoke({
             'age_range': profile.age_range,
             'proficiency': profile.proficiency,
