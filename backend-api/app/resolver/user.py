@@ -241,6 +241,9 @@ def resolve_login(_, info, input):
     if not user or not verify_password(input["password"], user.password):
         raise Exception("Invalid credentials")
     
+    if user.is_verified == False:
+        raise Exception('Your email is not verified')
+
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     )

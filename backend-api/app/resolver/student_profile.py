@@ -134,15 +134,14 @@ def resolve_create_profile(_, info, input):
         .first()
     )
 
-    sample_module = db.query(Modules).filter(
-        Modules.profile_id == existing_profile.id,
-        Modules.is_deleted == False,
-    ).first()
-    if sample_module:
-        raise Exception('Already you install learning plan!')
-
-
     if existing_profile:
+        sample_module = db.query(Modules).filter(
+            Modules.profile_id == existing_profile.id,
+            Modules.is_deleted == False,
+        ).first()
+        if sample_module:
+            raise Exception('Already you install learning plan!')
+
         if existing_profile.is_deleted:
             existing_profile.age_range = map_age_range(input["ageRange"])
             existing_profile.proficiency = map_proficiency(input["proficiency"])
