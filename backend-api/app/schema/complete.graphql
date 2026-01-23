@@ -20,6 +20,13 @@ type Notification {
 }
 
 
+input UpdateVideoInput {
+  title: String
+  thumbnailUrl: String
+  description: String
+  videoUrl: String
+}
+
 type LessonYouTubeVideos {
   id: ID!
   lessonId: ID!
@@ -33,6 +40,16 @@ type LessonYouTubeVideos {
   deletedAt: DateTime
   # Relationships
   lesson: ModuleLessons!
+}
+
+extend type Query {
+  videos(lessonId: ID!): [LessonYouTubeVideos!]!
+  video(id: ID!): LessonYouTubeVideos!
+}
+
+extend type Mutation {
+  updateVideo(id: ID!, input: UpdateVideoInput!): LessonYouTubeVideos!
+  deleteVideo(id: ID!): Boolean!
 }
 
 
@@ -208,6 +225,12 @@ type SkillResult {
 }
 
 
+input UpdateVocabularyInput {
+  vocabulary: String
+  meaning: String
+  description: String
+}
+
 type LessonVocabularies {
   id: ID!
   lessonId: ID!
@@ -220,6 +243,16 @@ type LessonVocabularies {
   deletedAt: DateTime
   # Relationships
   lesson: ModuleLessons!
+}
+
+extend type Query {
+  vocabularies(lessonId: ID!): [LessonVocabularies!]!
+  vocabulary(id: ID!): LessonVocabularies!
+}
+
+extend type Mutation {
+  updateVocabulary(id: ID!, input: UpdateVocabularyInput!): LessonVocabularies!
+  deleteVocabulary(id: ID!): Boolean!
 }
 
 
@@ -281,6 +314,14 @@ type SkillTests {
 }
 
 
+input UpdateLessonInput {
+  title: String
+  content: String
+  displayOrder: Int
+  isCompleted: Boolean
+  isLocked: Boolean
+}
+
 type ModuleLessons {
   id: ID!
   moduleId: ID!
@@ -301,6 +342,17 @@ type ModuleLessons {
   interactions: [LessonInteractions!]!
 }
 
+extend type Query {
+  lessons(moduleId: ID!): [ModuleLessons!]!
+  lesson(id: ID!): ModuleLessons!
+}
+
+extend type Mutation {
+  completeLesson(id: ID!): ModuleLessons!
+  updateLesson(id: ID!, input: UpdateLessonInput!): ModuleLessons!
+  deleteLesson(id: ID!): Boolean!
+}
+
 
 type QuizResults {
   id: ID!
@@ -317,6 +369,13 @@ type QuizResults {
 }
 
 
+input UpdateModuleInput {
+  name: String
+  description: String
+  displayOrder: Int
+  isLocked: Boolean
+}
+
 type Modules {
   id: ID!
   profileId: ID!
@@ -331,6 +390,16 @@ type Modules {
   # Relationships
   profile: StudentProfile!
   lessons: [ModuleLessons!]!
+}
+
+extend type Query {
+  modules(profileId: ID!): [Modules!]!
+  module(id: ID!): Modules!
+}
+
+extend type Mutation {
+  updateModule(id: ID!, input: UpdateModuleInput!): Modules!
+  deleteModule(id: ID!): Boolean!
 }
 
 
@@ -649,7 +718,7 @@ type User {
   firstName: String!
   lastName: String!
   email: String!
-  password: String!
+  password: String
   role: UserRole!
   isVerified: Boolean!
   accessToken: String
@@ -764,6 +833,13 @@ type BatchInstructor {
 }
 
 
+input UpdateArticleInput {
+  title: String
+  faviconUrl: String
+  description: String
+  pageUrl: String
+}
+
 type LessonOnlineArticles {
   id: ID!
   lessonId: ID!
@@ -777,4 +853,14 @@ type LessonOnlineArticles {
   deletedAt: DateTime
   # Relationships
   lesson: ModuleLessons!
+}
+
+extend type Query {
+  articles(lessonId: ID!): [LessonOnlineArticles!]!
+  article(id: ID!): LessonOnlineArticles!
+}
+
+extend type Mutation {
+  updateArticle(id: ID!, input: UpdateArticleInput!): LessonOnlineArticles!
+  deleteArticle(id: ID!): Boolean!
 }

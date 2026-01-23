@@ -1,3 +1,10 @@
+input UpdateModuleInput {
+  name: String
+  description: String
+  displayOrder: Int
+  isLocked: Boolean
+}
+
 type Modules {
   id: ID!
   profileId: ID!
@@ -12,4 +19,14 @@ type Modules {
   # Relationships
   profile: StudentProfile!
   lessons: [ModuleLessons!]!
+}
+
+extend type Query {
+  modules(profileId: ID!): [Modules!]!
+  module(id: ID!): Modules!
+}
+
+extend type Mutation {
+  updateModule(id: ID!, input: UpdateModuleInput!): Modules!
+  deleteModule(id: ID!): Boolean!
 }

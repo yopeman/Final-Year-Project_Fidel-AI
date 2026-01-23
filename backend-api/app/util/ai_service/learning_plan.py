@@ -9,7 +9,6 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 import logging
 
-from .ai_agent import AIAgent
 from ...model.student_profile import StudentProfile
 from ...model.modules import Modules
 from ...model.module_lessons import ModuleLessons

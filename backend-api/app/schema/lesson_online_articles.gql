@@ -1,3 +1,10 @@
+input UpdateArticleInput {
+  title: String
+  faviconUrl: String
+  description: String
+  pageUrl: String
+}
+
 type LessonOnlineArticles {
   id: ID!
   lessonId: ID!
@@ -11,4 +18,14 @@ type LessonOnlineArticles {
   deletedAt: DateTime
   # Relationships
   lesson: ModuleLessons!
+}
+
+extend type Query {
+  articles(lessonId: ID!): [LessonOnlineArticles!]!
+  article(id: ID!): LessonOnlineArticles!
+}
+
+extend type Mutation {
+  updateArticle(id: ID!, input: UpdateArticleInput!): LessonOnlineArticles!
+  deleteArticle(id: ID!): Boolean!
 }

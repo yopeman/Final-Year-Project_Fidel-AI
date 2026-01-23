@@ -1,3 +1,10 @@
+input UpdateVideoInput {
+  title: String
+  thumbnailUrl: String
+  description: String
+  videoUrl: String
+}
+
 type LessonYouTubeVideos {
   id: ID!
   lessonId: ID!
@@ -11,4 +18,14 @@ type LessonYouTubeVideos {
   deletedAt: DateTime
   # Relationships
   lesson: ModuleLessons!
+}
+
+extend type Query {
+  videos(lessonId: ID!): [LessonYouTubeVideos!]!
+  video(id: ID!): LessonYouTubeVideos!
+}
+
+extend type Mutation {
+  updateVideo(id: ID!, input: UpdateVideoInput!): LessonYouTubeVideos!
+  deleteVideo(id: ID!): Boolean!
 }

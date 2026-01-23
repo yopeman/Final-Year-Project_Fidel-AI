@@ -1,3 +1,9 @@
+input UpdateVocabularyInput {
+  vocabulary: String
+  meaning: String
+  description: String
+}
+
 type LessonVocabularies {
   id: ID!
   lessonId: ID!
@@ -10,4 +16,14 @@ type LessonVocabularies {
   deletedAt: DateTime
   # Relationships
   lesson: ModuleLessons!
+}
+
+extend type Query {
+  vocabularies(lessonId: ID!): [LessonVocabularies!]!
+  vocabulary(id: ID!): LessonVocabularies!
+}
+
+extend type Mutation {
+  updateVocabulary(id: ID!, input: UpdateVocabularyInput!): LessonVocabularies!
+  deleteVocabulary(id: ID!): Boolean!
 }

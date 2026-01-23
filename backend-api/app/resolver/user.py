@@ -133,6 +133,7 @@ def resolve_register(_, info, input):
             existing_user.access_token = None
             existing_user.refresh_token = None
             db.commit()
+            db.refresh(existing_user)
             return True
         else:
             raise Exception("Email already registered")
@@ -248,6 +249,7 @@ def resolve_login(_, info, input):
     user.access_token = access_token
     user.refresh_token = refresh_token
     db.commit()
+    db.refresh(user)
     
     return {
         "user": user,
@@ -266,6 +268,7 @@ def resolve_logout(_, info):
     current_user.access_token = None
     current_user.refresh_token = None
     db.commit()
+    db.refresh(current_user)
     return True
 
 
@@ -281,6 +284,7 @@ def resolve_refresh_token(_, info):
     )
     current_user.access_token = access_token
     db.commit()
+    db.refresh(current_user)
     return access_token
 
 
@@ -350,6 +354,7 @@ def resolve_delete_user(_, info, id):
     user.is_deleted = True
     user.deleted_at = datetime.utcnow()
     db.commit()
+    db.refresh(user)
     return True
 
 
@@ -363,6 +368,7 @@ def resolve_delete_me(_, info):
     current_user.is_deleted = True
     current_user.deleted_at = datetime.utcnow()
     db.commit()
+    db.refresh(current_user)
     return True
 
 
@@ -453,7 +459,7 @@ def resolve_email(user_obj, info):
 
 @user.field("password")
 def resolve_password(user_obj, info):
-    return user_obj.password
+    return None
 
 
 @user.field("role")

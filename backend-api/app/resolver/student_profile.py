@@ -295,7 +295,10 @@ def resolve_install_learning_plan(_, info):
             "No learning plan to install. Generate or update a learning plan first."
         )
 
-    sample_module = db.query(Modules).filter(Modules.profile_id == profile.id).first()
+    sample_module = db.query(Modules).filter(
+        Modules.profile_id == profile.id,
+        Modules.is_deleted == False,
+    ).first()
     if sample_module:
         return profile
 

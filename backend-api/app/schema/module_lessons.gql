@@ -1,3 +1,11 @@
+input UpdateLessonInput {
+  title: String
+  content: String
+  displayOrder: Int
+  isCompleted: Boolean
+  isLocked: Boolean
+}
+
 type ModuleLessons {
   id: ID!
   moduleId: ID!
@@ -16,4 +24,15 @@ type ModuleLessons {
   onlineArticles: [LessonOnlineArticles!]!
   youtubeVideos: [LessonYouTubeVideos!]!
   interactions: [LessonInteractions!]!
+}
+
+extend type Query {
+  lessons(moduleId: ID!): [ModuleLessons!]!
+  lesson(id: ID!): ModuleLessons!
+}
+
+extend type Mutation {
+  completeLesson(id: ID!): ModuleLessons!
+  updateLesson(id: ID!, input: UpdateLessonInput!): ModuleLessons!
+  deleteLesson(id: ID!): Boolean!
 }
