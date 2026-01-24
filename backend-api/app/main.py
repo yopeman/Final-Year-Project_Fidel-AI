@@ -12,6 +12,7 @@ from .resolver.module_lessons import mutation as ml_mutation, query as ml_query,
 from .resolver.lesson_vocabularies import mutation as lv_mutation, query as lv_query, lesson_vocabularies as lv_type
 from .resolver.lesson_online_articles import mutation as loa_mutation, query as loa_query, lesson_online_articles as loa_type
 from .resolver.lesson_youtube_videos import mutation as lyv_mutation, query as lyv_query, lesson_youtube_videos as lyv_type
+from .resolver.translator import mutation as t_mutation, query as t_query
 from .schema import type_defs
 from .util.auth import get_current_user
 
@@ -53,6 +54,8 @@ bindables = [
     lyv_query,
     lyv_mutation,
     lyv_type,
+    t_query,
+    t_mutation,
     datetime_scalar
 ]
 

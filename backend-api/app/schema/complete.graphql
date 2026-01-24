@@ -20,6 +20,40 @@ type Notification {
 }
 
 
+input TranslateInput {
+    text: String!
+    dest: String!
+    src: String! = "auto"
+}
+
+type TranslateResponse {
+    src: String!
+    dest: String!
+    origin: String!
+    text: String!
+    pronunciation: String!
+}
+
+input DetectInput {
+    text: String!
+}
+
+type DetectResponse {
+    lang: String!
+    confidence: Float!
+}
+
+extend type Query {
+    languages: JSON!
+    langcodes: JSON!
+}
+
+extend type Mutation {
+    translate(input: TranslateInput!): TranslateResponse!
+    detect(input: DetectInput!): DetectResponse!
+}
+
+
 input UpdateVideoInput {
   title: String
   thumbnailUrl: String
@@ -357,9 +391,19 @@ type ModuleLessons {
   interactions: [LessonInteractions!]!
 }
 
+type StudentProgress {
+  totalModules: Int!
+  totalLessons: Int!
+  completedLessons: Int!
+  remainingLessons: Int!
+  progressPercentage: Int!
+}
+
 extend type Query {
   lessons(moduleId: ID!): [ModuleLessons!]!
   lesson(id: ID!): ModuleLessons!
+  studentProgress(studentId: ID!): StudentProgress!
+  myProgress: StudentProgress!
 }
 
 extend type Mutation {
@@ -534,6 +578,7 @@ type Course {
 scalar DateTime
 scalar Date
 scalar Time
+scalar JSON
 
 input PaginationInput {
   page: Int

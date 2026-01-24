@@ -1,0 +1,32 @@
+input TranslateInput {
+    text: String!
+    dest: String!
+    src: String! = "auto"
+}
+
+type TranslateResponse {
+    src: String!
+    dest: String!
+    origin: String!
+    text: String!
+    pronunciation: String!
+}
+
+input DetectInput {
+    text: String!
+}
+
+type DetectResponse {
+    lang: String!
+    confidence: Float!
+}
+
+extend type Query {
+    languages: JSON!
+    langcodes: JSON!
+}
+
+extend type Mutation {
+    translate(input: TranslateInput!): TranslateResponse!
+    detect(input: DetectInput!): DetectResponse!
+}

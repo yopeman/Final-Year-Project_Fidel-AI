@@ -26,9 +26,19 @@ type ModuleLessons {
   interactions: [LessonInteractions!]!
 }
 
+type StudentProgress {
+  totalModules: Int!
+  totalLessons: Int!
+  completedLessons: Int!
+  remainingLessons: Int!
+  progressPercentage: Int!
+}
+
 extend type Query {
   lessons(moduleId: ID!): [ModuleLessons!]!
   lesson(id: ID!): ModuleLessons!
+  studentProgress(studentId: ID!): StudentProgress!
+  myProgress: StudentProgress!
 }
 
 extend type Mutation {

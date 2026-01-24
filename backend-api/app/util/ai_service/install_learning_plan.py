@@ -164,7 +164,7 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
             for article in articles:
                 new_article = LessonOnlineArticles(
                     lesson_id=new_lesson.id,
-                    title=article.get('title', ''),
+                    title=article.get('title', '')[:200],
                     favicon_url=article.get('favicon_url', [None]),
                     description=article.get('snippet', ''),
                     page_url=article.get('link', '')

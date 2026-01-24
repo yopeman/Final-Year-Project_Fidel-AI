@@ -334,3 +334,66 @@ def resolve_interactions(lesson, info):
         .all()
     )
     return interactions
+
+@query.field("studentProgress")
+def resolve_get_student_progress(_, info, studentId: str):
+    current_user: User = info.context.get("current_user")
+    if not current_user:
+        raise Exception("Not authenticated")
+
+    db: Session = info.context["db"]
+
+    # Check if current user is admin or the student themselves
+    if current_user.role != UserRole.admin and current_user.id != studentId:
+        raise Exception("Unauthorized")
+
+    # Get all modules and lessons for the student
+    from ..model.student_profile import StudentProfile
+    from ..model.modules import Modules
+
+    # Find student profile
+    profile = (
+        db.query(StudentProfile)
+        .filter(StudentProfile.user_id == studentId)
+        .first()
+    )
+
+    if not profile:
+        raise Exception("Student profile not found")
+
+    # Get all modules for this student
+    modules = (
+        db.query(Modules)
+        .filter(Modules.profile_id == profile.id, Modules.is_deleted == False)
+        .all()
+    )
+
+    total_modules = len(modules)
+    # Get all lessons for these modules
+    lessons = (
+        db.query(ModuleLessons)
+        .filter(ModuleLessons.module_id.in_([module.id for module in modules]), ModuleLessons.is_deleted == False)
+        .all()
+    )
+
+    total_lessons = len(lessons)
+    completed_lessons = sum(1 for lesson in lessons if lesson.is_completed)
+    remaining_lessons = total_lessons - completed_lessons
+    progress_percentage = (completed_lessons * 100 // total_lessons) if total_lessons > 0 else 0
+
+    return {
+        "totalModules": total_modules,
+        "totalLessons": total_lessons,
+        "completedLessons": completed_lessons,
+        "remainingLessons": remaining_lessons,
+        "progressPercentage": progress_percentage,
+    }
+
+@query.field("myProgress")
+def resolve_get_my_progress(_, info):
+    current_user: User = info.context.get("current_user")
+    if not current_user:
+        raise Exception("Not authenticated")
+
+    # Get the current user's progress
+    return resolve_get_student_progress(_, info, current_user.id)
