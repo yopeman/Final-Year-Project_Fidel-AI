@@ -24,6 +24,7 @@ from langchain.agents import create_agent
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.tools import BaseTool
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_ollama import ChatOllama
 
 # One logging configuration at module import
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ if not logger.handlers:
 
 
 ResultLike = Dict[str, Any]
-from . import llm
+llm = ChatOllama(model='llama3.1:8b')
 
 class AIAgent:
     """

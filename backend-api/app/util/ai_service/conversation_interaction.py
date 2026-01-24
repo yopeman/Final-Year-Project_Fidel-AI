@@ -1,9 +1,9 @@
 from langchain_core.prompts import PromptTemplate
+from langchain_ollama import ChatOllama
 from ...model.student_profile import StudentProfile
 from ...model.free_conversation import FreeConversation
 from ...model.conversation_interactions import ConversationInteractions
 from typing import Dict, List
-from . import llm
 
 # Prompt templates as constants for better readability and maintainability
 TOPIC_SUMMARY_PROMPT = """
@@ -61,7 +61,8 @@ def ai_topic_summary(idea: str) -> str:
     """
     if not idea or not idea.strip():
         raise ValueError("Idea cannot be empty")
-
+    
+    llm = ChatOllama(model='gemma3:4b')
     prompts = PromptTemplate.from_template(TOPIC_SUMMARY_PROMPT)
     chain = prompts | llm
     response = chain.invoke({'idea': idea})
@@ -75,6 +76,7 @@ def ai_generated_topic(profile: StudentProfile) -> Dict[str, str]:
     if not profile:
         raise ValueError("Student profile is required")
 
+    llm = ChatOllama(model='gemma3:4b')
     prompts = PromptTemplate.from_template(TOPIC_GENERATION_PROMPT)
     chain = prompts | llm
     response = chain.invoke({
@@ -116,6 +118,7 @@ def ask_on_conversation(question: str, profile: StudentProfile, conversation: Fr
             interactions.append(f"AI: {interaction.answer}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
+    llm = ChatOllama(model='gemma3:4b')
     prompts = PromptTemplate.from_template(CONVERSATION_RESPONSE_PROMPT)
     try:
         chain = prompts | llm

@@ -1,10 +1,10 @@
 from langchain_core.prompts import PromptTemplate
+from langchain_ollama import ChatOllama
 from typing import List
 from ...model.student_profile import StudentProfile
 from ...model.modules import Modules
 from ...model.module_lessons import ModuleLessons
 from ...model.lesson_interactions import LessonInteractions
-from . import llm
 
 def ask_on_lesson(question: str, profile: StudentProfile, module: Modules, lesson: ModuleLessons, prev_lesson_interactions: List[LessonInteractions]) -> str:
     """
@@ -31,6 +31,7 @@ def ask_on_lesson(question: str, profile: StudentProfile, module: Modules, lesso
             interactions.append(f"Teacher: {interaction.answer}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
+    llm = ChatOllama(model='gemma3:4b')
     prompts = PromptTemplate.from_template("""
 You are an experienced language teacher helping a student learn. Answer the student's question based on the provided context.
 

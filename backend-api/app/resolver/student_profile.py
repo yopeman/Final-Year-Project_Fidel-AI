@@ -8,7 +8,8 @@ from ..model.user import User, UserRole
 from ..model.modules import Modules
 from ..model.free_conversation import FreeConversation
 from ..model.batch_enrollment import BatchEnrollment
-from ..util.ai_service.learning_plan import generate_learning_plan, update_learning_plan, install_learning_plan
+from ..util.ai_service.learning_plan import generate_learning_plan, update_learning_plan
+from ..util.ai_service.install_learning_plan import install_learning_plan
 
 query = QueryType()
 mutation = MutationType()
