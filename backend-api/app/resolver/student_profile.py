@@ -9,7 +9,8 @@ from ..model.modules import Modules
 from ..model.free_conversation import FreeConversation
 from ..model.batch_enrollment import BatchEnrollment
 from ..util.ai_service.learning_plan import generate_learning_plan, update_learning_plan
-from ..util.ai_service.install_learning_plan import install_learning_plan
+# from ..util.ai_service.install_learning_plan import install_learning_plan
+from ..util.ai_service.false_install_learning_plan import install_learning_plan
 
 query = QueryType()
 mutation = MutationType()
@@ -160,6 +161,7 @@ def resolve_create_profile(_, info, input):
 
     # Create new profile
     profile = StudentProfile(
+        id=current_user.id,
         user_id=current_user.id,
         age_range=map_age_range(input["ageRange"]),
         proficiency=map_proficiency(input["proficiency"]),

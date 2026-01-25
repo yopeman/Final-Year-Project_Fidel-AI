@@ -44,7 +44,17 @@ input VerifyInput {
   verificationCode: String!
 }
 
+input PasswordRecoveryInput {
+  email: String!
+  verificationCode: String!
+  newPassword: String!
+}
+
 input ResendVerificationInput {
+  email: String!
+}
+
+input ForgetPasswordInput {
   email: String!
 }
 
@@ -94,6 +104,8 @@ extend type Mutation {
   login(input: LoginInput!): AuthResponse!
   logout: Boolean!
   refreshToken: String!
+  forgetPassword(input: ForgetPasswordInput!): Boolean!
+  passwordRecovery(input: PasswordRecoveryInput!): Boolean!
 
   updateUser(input: UpdateUserInput!): User!
   updateMe(input: UpdateMeInput!): User!

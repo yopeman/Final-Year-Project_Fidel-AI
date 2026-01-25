@@ -108,7 +108,7 @@ def resolve_complete_lesson(_, info, id: str):
     # Check ownership
     module = (
         db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
+        .filter(Modules.id == lesson.module_id, Modules.is_deleted == False)
         .first()
     )
 
@@ -125,6 +125,30 @@ def resolve_complete_lesson(_, info, id: str):
     lesson.is_completed = True
     db.commit()
     db.refresh(lesson)
+
+    next_lesson = (
+        db.query(ModuleLessons)
+        .filter(
+            ModuleLessons.module_id == module.id, 
+            ModuleLessons.display_order == (lesson.display_order + 1), 
+            ModuleLessons.is_deleted == False
+        )
+        .first()
+    )
+
+    if not next_lesson:
+        next_module = (
+            db.query(Modules)
+            .filter(
+                Modules.profile_id == module.profile_id, 
+                Modules.display_order == (module.display_order + 1), 
+                Modules.is_deleted == False
+            )
+            .first()
+        )
+        next_module.is_locked = False
+        db.commit()
+        db.refresh(next_module)
 
     return lesson
 
