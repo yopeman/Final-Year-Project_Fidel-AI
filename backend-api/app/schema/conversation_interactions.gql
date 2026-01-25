@@ -1,8 +1,8 @@
 type ConversationInteractions {
   id: ID!
   conversationId: ID!
-  question: String!
-  answer: String!
+  studentInteraction: String!
+  aiResponse: String!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!

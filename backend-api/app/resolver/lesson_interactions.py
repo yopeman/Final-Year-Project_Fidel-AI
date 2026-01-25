@@ -140,8 +140,8 @@ def resolve_create_lesson_interaction(_, info, input):
     # Create interaction
     interaction = LessonInteractions(
         lesson_id=input["lessonId"],
-        question=input["question"],
-        answer=answer
+        student_question=input["question"],
+        ai_answer=answer
     )
 
     db.add(interaction)
@@ -201,14 +201,14 @@ def resolve_lesson_id(interaction, info):
     return interaction.lesson_id
 
 
-@lesson_interactions.field("question")
-def resolve_question(interaction, info):
-    return interaction.question
+@lesson_interactions.field("studentQuestion")
+def resolve_student_question(interaction, info):
+    return interaction.student_question
 
 
-@lesson_interactions.field("answer")
-def resolve_answer(interaction, info):
-    return interaction.answer
+@lesson_interactions.field("aiAnswer")
+def resolve_ai_answer(interaction, info):
+    return interaction.ai_answer
 
 
 @lesson_interactions.field("createdAt")

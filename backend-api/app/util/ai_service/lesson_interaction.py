@@ -27,8 +27,8 @@ def ask_on_lesson(question: str, profile: StudentProfile, module: Modules, lesso
     if prev_lesson_interactions:
         interactions = []
         for interaction in prev_lesson_interactions:
-            interactions.append(f"Student: {interaction.question}")
-            interactions.append(f"Teacher: {interaction.answer}")
+            interactions.append(f"Student: {interaction.student_question}")
+            interactions.append(f"Teacher: {interaction.ai_answer}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
     llm = ChatOllama(model='gemma3:4b')

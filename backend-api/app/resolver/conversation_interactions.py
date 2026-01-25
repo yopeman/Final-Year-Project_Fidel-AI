@@ -130,8 +130,8 @@ def resolve_create_conversation_interaction(_, info, input):
     # Create interaction
     interaction = ConversationInteractions(
         conversation_id=input["conversationId"],
-        question=input["question"],
-        answer=answer
+        student_interaction=input["question"],
+        ai_response=answer
     )
 
     db.add(interaction)
@@ -191,14 +191,14 @@ def resolve_conversation_id(interaction, info):
     return interaction.conversation_id
 
 
-@conversation_interactions.field("question")
-def resolve_question(interaction, info):
-    return interaction.question
+@conversation_interactions.field("studentInteraction")
+def resolve_student_interaction(interaction, info):
+    return interaction.student_interaction
 
 
-@conversation_interactions.field("answer")
-def resolve_answer(interaction, info):
-    return interaction.answer
+@conversation_interactions.field("aiResponse")
+def resolve_ai_response(interaction, info):
+    return interaction.ai_response
 
 
 @conversation_interactions.field("createdAt")
