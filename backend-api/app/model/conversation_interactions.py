@@ -10,8 +10,8 @@ class ConversationInteractions(BaseModel):
     conversation_id = Column(
         String(36), ForeignKey("free_conversations.id"), nullable=False
     )
-    question = Column(Text, nullable=False)
-    answer = Column(Text, nullable=False)
+    student_interaction = Column(Text, nullable=False)
+    ai_response = Column(Text, nullable=False)
 
     # Relationships
     conversation = relationship("FreeConversation", back_populates="interactions")

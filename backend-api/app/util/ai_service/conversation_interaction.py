@@ -234,8 +234,8 @@ def ask_on_conversation(question: str, profile: StudentProfile, conversation: Fr
     if prev_conversation_interactions:
         interactions = []
         for interaction in prev_conversation_interactions:
-            interactions.append(f"Student: {interaction.question}")
-            interactions.append(f"AI: {interaction.answer}")
+            interactions.append(f"Student: {interaction.student_interaction}")
+            interactions.append(f"AI: {interaction.ai_response}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
     llm = ChatOllama(model='gemma3:4b')

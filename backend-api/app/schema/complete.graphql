@@ -317,8 +317,8 @@ type Batch {
 type ConversationInteractions {
   id: ID!
   conversationId: ID!
-  question: String!
-  answer: String!
+  studentInteraction: String!
+  aiResponse: String!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!
@@ -658,8 +658,8 @@ type VerificationCode {
 type LessonInteractions {
   id: ID!
   lessonId: ID!
-  question: String!
-  answer: String!
+  studentQuestion: String!
+  aiAnswer: String!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!
