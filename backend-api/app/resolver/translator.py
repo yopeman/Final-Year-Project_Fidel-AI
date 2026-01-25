@@ -1,6 +1,7 @@
 from ariadne import MutationType, QueryType
 from googletrans import Translator, LANGUAGES, LANGCODES
 from googletrans.models import Translated, Detected
+from ..util.ai_service.normalize_text_for_tts import normalize_text_for_tts
 
 query = QueryType()
 mutation = MutationType()
@@ -56,3 +57,8 @@ async def resolve_detect(_, info, input):
         }
     except Exception as e:
         raise Exception(f"Language detection failed: {str(e)}")
+
+@mutation.field("ttsTextNormalization")
+def resolve_tts_text_normalization(_, info, text):
+    """Normalize text for TTS (Text-to-Speech) systems"""
+    return normalize_text_for_tts(text)

@@ -29,4 +29,5 @@ extend type Query {
 extend type Mutation {
     translate(input: TranslateInput!): TranslateResponse!
     detect(input: DetectInput!): DetectResponse!
+    ttsTextNormalization (text: String!): String!
 }

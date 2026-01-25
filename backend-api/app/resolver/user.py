@@ -290,6 +290,67 @@ def resolve_refresh_token(_, info):
     db.refresh(current_user)
     return access_token
 
+@mutation.field("forgetPassword")
+def resolve_forget_password(_, info, input):
+    db: Session = info.context["db"]
+
+    # Check if user exists
+    user = db.query(User).filter(User.email == input["email"], User.is_deleted == False).first()
+    if not user:
+        # For security reasons, don't reveal whether email exists
+        # Just return success to prevent email enumeration
+        return True
+
+    # Check if user is verified
+    if not user.is_verified:
+        raise Exception("User email is not verified")
+
+    # Create new verification code for password reset
+    verification_code = create_verification_code(db, input["email"], user.id)
+
+    # Send verification email
+    email_sent = send_verification_email(input["email"], verification_code.code)
+    if not email_sent:
+        raise Exception("Failed to send verification email")
+
+    return True
+
+@mutation.field("passwordRecovery")
+def resolve_account_recovery(_, info, input):
+    db: Session = info.context["db"]
+    email = input["email"]
+    verification_code = input["verificationCode"]
+    new_password = input["newPassword"]
+
+    # Get the latest unused verification code for this email
+    verification_code_obj = db.query(VerificationCode).filter(
+        VerificationCode.email == email,
+        VerificationCode.code == verification_code,
+        VerificationCode.is_used == 0
+    ).order_by(VerificationCode.created_at.desc()).first()
+
+    if not verification_code_obj:
+        raise Exception('Invalid or expired verification code')
+
+    if verification_code_obj.expires_at < datetime.utcnow():
+        raise Exception('Verification code has expired. Please request a new one.')
+
+    # Get the user
+    user = db.query(User).filter(User.email == email, User.is_deleted == False).first()
+    if not user:
+        raise Exception('User not found')
+
+    # Update user password
+    user.password = get_password_hash(new_password)
+
+    # Mark verification code as used
+    verification_code_obj.is_used = 1
+
+    db.commit()
+    db.refresh(user)
+
+    return True
+
 
 @mutation.field("updateUser")
 def resolve_update_user(_, info, input):
