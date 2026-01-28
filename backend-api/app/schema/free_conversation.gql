@@ -24,6 +24,6 @@ extend type Query {
 
 extend type Mutation {
   createConversation(input: CreateConversationInput!): FreeConversation!
-  generateConversation(profileId: ID!): FreeConversation!
+  generateIdea(profileId: ID!): String!
   deleteConversation(id: ID!): Boolean!
 }

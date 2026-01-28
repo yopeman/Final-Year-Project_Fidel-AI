@@ -189,7 +189,7 @@ def ai_topic_summary(idea: str) -> str:
     return response.content
 
 
-def ai_generated_topic(profile: StudentProfile) -> Dict[str, str]:
+def ai_generated_topic(profile: StudentProfile) -> str:
     """
     Generate a conversation topic and summary based on the student's profile.
     """
@@ -209,12 +209,8 @@ def ai_generated_topic(profile: StudentProfile) -> Dict[str, str]:
         'constraints': profile.constraints,
         'learning_plan': profile.ai_learning_plan,
     })
-    generated_idea = response.content
+    return response.content
 
-    return {
-        'starting_topic': generated_idea,
-        'topic_summary_phrase': ai_topic_summary(generated_idea)
-    }
 
 def ask_on_conversation(question: str, profile: StudentProfile, conversation: FreeConversation, prev_conversation_interactions: List[ConversationInteractions]) -> str:
     """

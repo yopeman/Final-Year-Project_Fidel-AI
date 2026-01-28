@@ -1,9 +1,3 @@
-enum ReactionType {
-  LIKE
-  DISLIKE
-  LOVE
-}
-
 
 type Notification {
   id: ID!
@@ -19,49 +13,6 @@ type Notification {
   user: User!
 }
 
-
-input TranslateInput {
-    text: String!
-    dest: String!
-    src: String! = "auto"
-}
-
-type TranslateResponse {
-    src: String!
-    dest: String!
-    origin: String!
-    text: String!
-    pronunciation: String!
-}
-
-input DetectInput {
-    text: String!
-}
-
-type DetectResponse {
-    lang: String!
-    confidence: Float!
-}
-
-extend type Query {
-    languages: JSON!
-    langcodes: JSON!
-}
-
-extend type Mutation {
-    translate(input: TranslateInput!): TranslateResponse!
-    detect(input: DetectInput!): DetectResponse!
-    ttsTextNormalization (text: String!): String!
-}
-
-
-input UpdateVideoInput {
-  title: String
-  thumbnailUrl: String
-  description: String
-  videoUrl: String
-}
-
 type LessonYouTubeVideos {
   id: ID!
   lessonId: ID!
@@ -75,28 +26,6 @@ type LessonYouTubeVideos {
   deletedAt: DateTime
   # Relationships
   lesson: ModuleLessons!
-}
-
-extend type Query {
-  videos(lessonId: ID!): [LessonYouTubeVideos!]!
-  video(id: ID!): LessonYouTubeVideos!
-}
-
-extend type Mutation {
-  updateVideo(id: ID!, input: UpdateVideoInput!): LessonYouTubeVideos!
-  deleteVideo(id: ID!): Boolean!
-}
-
-
-enum UserType {
-  STUDENT
-  TUTOR
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
 }
 
 type Attendance {
@@ -115,7 +44,6 @@ type Attendance {
   user: User!
 }
 
-
 type CourseSchedule {
   id: ID!
   scheduleId: ID!
@@ -128,13 +56,6 @@ type CourseSchedule {
   schedule: Schedule!
   batchCourse: BatchCourse!
   attendances: [Attendance!]!
-}
-
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
 }
 
 type Payment {
@@ -155,7 +76,6 @@ type Payment {
   enrollment: BatchEnrollment!
 }
 
-
 type BatchCourse {
   id: ID!
   batchId: ID!
@@ -171,7 +91,6 @@ type BatchCourse {
   quizzes: [Quiz!]!
   instructors: [BatchInstructor!]!
 }
-
 
 type CommunityAttachmentFiles {
   id: ID!
@@ -202,14 +121,6 @@ type Feedback {
   user: User
 }
 
-
-enum EnrollmentStatus {
-  APPLIED
-  ENROLLED
-  COMPLETED
-  DROPPED
-}
-
 type BatchEnrollment {
   id: ID!
   profileId: ID!
@@ -230,7 +141,6 @@ type BatchEnrollment {
   certificates: [Certificate!]!
 }
 
-
 type SkillResult {
   id: ID!
   enrollmentId: ID!
@@ -245,13 +155,6 @@ type SkillResult {
   skillTest: SkillTests!
 }
 
-
-input UpdateVocabularyInput {
-  vocabulary: String
-  meaning: String
-  description: String
-}
-
 type LessonVocabularies {
   id: ID!
   lessonId: ID!
@@ -264,31 +167,6 @@ type LessonVocabularies {
   deletedAt: DateTime
   # Relationships
   lesson: ModuleLessons!
-}
-
-extend type Query {
-  vocabularies(lessonId: ID!): [LessonVocabularies!]!
-  vocabulary(id: ID!): LessonVocabularies!
-}
-
-extend type Mutation {
-  updateVocabulary(id: ID!, input: UpdateVocabularyInput!): LessonVocabularies!
-  deleteVocabulary(id: ID!): Boolean!
-}
-
-
-enum BatchLevel {
-  BEGINNER
-  BASIC
-  INTERMEDIATE
-  ADVANCED
-}
-
-enum BatchStatus {
-  UPCOMING
-  ACTIVE
-  COMPLETED
-  CANCELLED
 }
 
 type Batch {
@@ -313,7 +191,6 @@ type Batch {
   instructors: [BatchInstructor!]!
 }
 
-
 type ConversationInteractions {
   id: ID!
   conversationId: ID!
@@ -327,29 +204,6 @@ type ConversationInteractions {
   conversation: FreeConversation!
 }
 
-input CreateConversationInteractionInput {
-  conversationId: ID!
-  question: String!
-}
-
-extend type Query {
-  conversationInteractions(conversationId: ID!): [ConversationInteractions!]!
-  conversationInteraction(id: ID!): ConversationInteractions
-}
-
-extend type Mutation {
-  createConversationInteraction(input: CreateConversationInteractionInput!): ConversationInteractions!
-  deleteConversationInteraction(id: ID!): Boolean!
-}
-
-
-enum SkillTestType {
-  READING
-  WRITING
-  SPEAKING
-  LISTENING
-}
-
 type SkillTests {
   id: ID!
   evaluatorId: ID!
@@ -361,15 +215,6 @@ type SkillTests {
   # Relationships
   evaluator: User!
   results: [SkillResult!]!
-}
-
-
-input UpdateLessonInput {
-  title: String
-  content: String
-  displayOrder: Int
-  isCompleted: Boolean
-  isLocked: Boolean
 }
 
 type ModuleLessons {
@@ -392,28 +237,6 @@ type ModuleLessons {
   interactions: [LessonInteractions!]!
 }
 
-type StudentProgress {
-  totalModules: Int!
-  totalLessons: Int!
-  completedLessons: Int!
-  remainingLessons: Int!
-  progressPercentage: Int!
-}
-
-extend type Query {
-  lessons(moduleId: ID!): [ModuleLessons!]!
-  lesson(id: ID!): ModuleLessons!
-  studentProgress(studentId: ID!): StudentProgress!
-  myProgress: StudentProgress!
-}
-
-extend type Mutation {
-  completeLesson(id: ID!): ModuleLessons!
-  updateLesson(id: ID!, input: UpdateLessonInput!): ModuleLessons!
-  deleteLesson(id: ID!): Boolean!
-}
-
-
 type QuizResults {
   id: ID!
   enrollmentId: ID!
@@ -426,14 +249,6 @@ type QuizResults {
   # Relationships
   enrollment: BatchEnrollment!
   quiz: Quiz!
-}
-
-
-input UpdateModuleInput {
-  name: String
-  description: String
-  displayOrder: Int
-  isLocked: Boolean
 }
 
 type Modules {
@@ -452,17 +267,6 @@ type Modules {
   lessons: [ModuleLessons!]!
 }
 
-extend type Query {
-  modules(profileId: ID!): [Modules!]!
-  module(id: ID!): Modules!
-}
-
-extend type Mutation {
-  updateModule(id: ID!, input: UpdateModuleInput!): Modules!
-  deleteModule(id: ID!): Boolean!
-}
-
-
 type CommentReactions {
   id: ID!
   userId: ID!
@@ -475,53 +279,6 @@ type CommentReactions {
   # Relationships
   user: User!
   comment: CommunityComment!
-}
-
-
-enum AgeRange {
-  UNDER_18
-  _18_25
-  _26_35
-  _36_45
-  _45_PLUS
-}
-
-enum Proficiency {
-  BEGINNER
-  BASIC
-  INTERMEDIATE
-  ADVANCED
-}
-
-enum DurationUnit {
-  DAYS
-  WEEKS
-  MONTHS
-  YEARS
-}
-
-input CreateProfileInput {
-  ageRange: AgeRange!
-  proficiency: Proficiency!
-  nativeLanguage: String!
-  learningGoal: String!
-  targetDuration: Int!
-  durationUnit: DurationUnit!
-  constraints: String
-}
-
-input UpdateProfileInput {
-  ageRange: AgeRange
-  proficiency: Proficiency
-  nativeLanguage: String
-  learningGoal: String
-  targetDuration: Int
-  durationUnit: DurationUnit
-  constraints: String
-}
-
-input UpdateLearningPlanInput {
-  improvements: String!
 }
 
 type StudentProfile {
@@ -546,22 +303,6 @@ type StudentProfile {
   batchEnrollments: [BatchEnrollment!]!
 }
 
-extend type Query {
-  myProfile: StudentProfile
-  studentProfile(userId: ID!): StudentProfile!
-}
-
-extend type Mutation {
-  createProfile(input: CreateProfileInput!): StudentProfile!
-  updateProfile(input: UpdateProfileInput!): StudentProfile!
-  generateLearningPlan: StudentProfile!
-  updateLearningPlan(input: UpdateLearningPlanInput!): StudentProfile!
-  installLearningPlan: StudentProfile!
-  deletePlan: StudentProfile!
-  deleteProfile: Boolean!
-}
-
-
 type Course {
   id: ID!
   name: String!
@@ -573,24 +314,6 @@ type Course {
   # Relationships
   materials: [CourseMaterial!]!
   batchCourses: [BatchCourse!]!
-}
-
-
-scalar DateTime
-scalar Date
-scalar Time
-scalar JSON
-
-input PaginationInput {
-  page: Int
-  limit: Int
-}
-
-type Query {
-  _: String
-}
-type Mutation {
-  _: String
 }
 
 type CourseMaterial {
@@ -607,7 +330,6 @@ type CourseMaterial {
   files: [MaterialFiles!]!
 }
 
-
 type Certificate {
   id: ID!
   enrollmentId: ID!
@@ -620,7 +342,6 @@ type Certificate {
   # Relationships
   enrollment: BatchEnrollment!
 }
-
 
 type CommunityComment {
   id: ID!
@@ -638,7 +359,6 @@ type CommunityComment {
   reactions: [CommentReactions!]!
 }
 
-
 type VerificationCode {
   id: ID!
   email: String!
@@ -654,7 +374,6 @@ type VerificationCode {
   user: User
 }
 
-
 type LessonInteractions {
   id: ID!
   lessonId: ID!
@@ -667,22 +386,6 @@ type LessonInteractions {
   # Relationships
   lesson: ModuleLessons!
 }
-
-input CreateLessonInteractionInput {
-  lessonId: ID!
-  question: String!
-}
-
-extend type Query {
-  lessonInteractions(lessonId: ID!): [LessonInteractions!]!
-  lessonInteraction(id: ID!): LessonInteractions
-}
-
-extend type Mutation {
-  createLessonInteraction(input: CreateLessonInteractionInput!): LessonInteractions!
-  deleteLessonInteraction(id: ID!): Boolean!
-}
-
 
 type MaterialFiles {
   id: ID!
@@ -697,7 +400,6 @@ type MaterialFiles {
   # Relationships
   material: CourseMaterial!
 }
-
 
 type BatchCommunity {
   id: ID!
@@ -717,7 +419,6 @@ type BatchCommunity {
   attachments: [CommunityAttachmentFiles!]!
 }
 
-
 type CommunityReactions {
   id: ID!
   userId: ID!
@@ -730,73 +431,6 @@ type CommunityReactions {
   # Relationships
   user: User!
   community: BatchCommunity!
-}
-
-
-enum UserRole {
-  ADMIN
-  STUDENT
-  TUTOR
-  UNDETERMINED
-}
-
-enum RegisterUserRole {
-  STUDENT
-  UNDETERMINED
-}
-
-input RegisterInput {
-  firstName: String!
-  lastName: String!
-  email: String!
-  password: String!
-  role: RegisterUserRole
-}
-
-input LoginInput {
-  email: String!
-  password: String!
-}
-
-input UpdateUserInput {
-  firstName: String
-  lastName: String
-  email: String
-  password: String
-  role: UserRole
-  isVerified: Boolean
-}
-
-input UpdateMeInput {
-  firstName: String
-  lastName: String
-  email: String
-  password: String
-}
-
-input VerifyInput {
-  email: String!
-  verificationCode: String!
-}
-
-input PasswordRecoveryInput {
-  email: String!
-  verificationCode: String!
-  newPassword: String!
-}
-
-input ResendVerificationInput {
-  email: String!
-}
-
-input ForgetPasswordInput {
-  email: String!
-}
-
-type AuthResponse {
-  user: User!
-  accessToken: String!
-  refreshToken: String!
 }
 
 type User {
@@ -826,30 +460,6 @@ type User {
   verificationCodes: [VerificationCode!]!
 }
 
-extend type Query {
-  users(pagination: PaginationInput): [User!]!
-  user(id: ID!): User!
-  me: User!
-}
-
-extend type Mutation {
-  register(input: RegisterInput!): Boolean!
-  verify(input: VerifyInput!): Boolean!
-  resendVerification(input: ResendVerificationInput!): Boolean!
-  login(input: LoginInput!): AuthResponse!
-  logout: Boolean!
-  refreshToken: String!
-  forgetPassword(input: ForgetPasswordInput!): Boolean!
-  passwordRecovery(input: PasswordRecoveryInput!): Boolean!
-
-  updateUser(input: UpdateUserInput!): User!
-  updateMe(input: UpdateMeInput!): User!
-
-  deleteUser(id: ID!): Boolean!
-  deleteMe: Boolean!
-}
-
-
 type Schedule {
   id: ID!
   dayOfWeek: String!
@@ -861,13 +471,6 @@ type Schedule {
   deletedAt: DateTime
   # Relationships
   courseSchedules: [CourseSchedule!]!
-}
-
-
-enum QuizType {
-  MATCHING
-  TRUE_FALSE
-  FILLING_THE_GAP
 }
 
 type Quiz {
@@ -885,7 +488,6 @@ type Quiz {
   results: [QuizResults!]!
 }
 
-
 type FreeConversation {
   id: ID!
   profileId: ID!
@@ -898,28 +500,6 @@ type FreeConversation {
   # Relationships
   profile: StudentProfile!
   interactions: [ConversationInteractions!]!
-}
-
-input CreateConversationInput {
-  profileId: ID!
-  startingTopic: String!
-}
-
-extend type Query {
-  freeConversations(profileId: ID!): [FreeConversation!]!
-  freeConversation(id: ID!): FreeConversation
-}
-
-extend type Mutation {
-  createConversation(input: CreateConversationInput!): FreeConversation!
-  generateIdea(profileId: ID!): String!
-  deleteConversation(id: ID!): Boolean!
-}
-
-
-enum InstructorRole {
-  MAIN
-  ASSISTANT
 }
 
 type BatchInstructor {
@@ -936,14 +516,6 @@ type BatchInstructor {
   batchCourse: BatchCourse!
 }
 
-
-input UpdateArticleInput {
-  title: String
-  faviconUrl: String
-  description: String
-  pageUrl: String
-}
-
 type LessonOnlineArticles {
   id: ID!
   lessonId: ID!
@@ -957,14 +529,4 @@ type LessonOnlineArticles {
   deletedAt: DateTime
   # Relationships
   lesson: ModuleLessons!
-}
-
-extend type Query {
-  articles(lessonId: ID!): [LessonOnlineArticles!]!
-  article(id: ID!): LessonOnlineArticles!
-}
-
-extend type Mutation {
-  updateArticle(id: ID!, input: UpdateArticleInput!): LessonOnlineArticles!
-  deleteArticle(id: ID!): Boolean!
 }

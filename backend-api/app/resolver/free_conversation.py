@@ -111,7 +111,7 @@ def resolve_create_conversation(_, info, input):
     return conversation
 
 
-@mutation.field("generateConversation")
+@mutation.field("generateIdea")
 def resolve_generate_conversation(_, info, profileId: str):
     current_user: User = info.context.get("current_user")
     if not current_user:
@@ -132,21 +132,7 @@ def resolve_generate_conversation(_, info, profileId: str):
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
         raise Exception("Unauthorized")
 
-    # Generate topic and summary
-    generated_topic = ai_generated_topic(profile)
-
-    # Create conversation
-    conversation = FreeConversation(
-        profile_id=profileId,
-        starting_topic=generated_topic['starting_topic'],
-        topic_summary_phrase=generated_topic['topic_summary_phrase']
-    )
-
-    db.add(conversation)
-    db.commit()
-    db.refresh(conversation)
-
-    return conversation
+    return ai_generated_topic(profile)
 
 
 @mutation.field("deleteConversation")
