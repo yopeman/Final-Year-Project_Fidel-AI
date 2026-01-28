@@ -317,8 +317,10 @@ type Batch {
 type ConversationInteractions {
   id: ID!
   conversationId: ID!
-  studentInteraction: String!
-  aiResponse: String!
+  studentText: String!
+  studentAudioUrl: String!
+  aiText: String!
+  aiAudioUrl: String!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!
@@ -329,7 +331,8 @@ type ConversationInteractions {
 
 input CreateConversationInteractionInput {
   conversationId: ID!
-  question: String!
+  text: String
+  audioFile: Upload
 }
 
 extend type Query {
@@ -338,7 +341,7 @@ extend type Query {
 }
 
 extend type Mutation {
-  createConversationInteraction(input: CreateConversationInteractionInput!): ConversationInteractions!
+  talkToAi(input: CreateConversationInteractionInput!): ConversationInteractions!
   deleteConversationInteraction(id: ID!): Boolean!
 }
 
@@ -580,6 +583,7 @@ scalar DateTime
 scalar Date
 scalar Time
 scalar JSON
+scalar Upload
 
 input PaginationInput {
   page: Int
@@ -589,6 +593,7 @@ input PaginationInput {
 type Query {
   _: String
 }
+
 type Mutation {
   _: String
 }
@@ -900,19 +905,14 @@ type FreeConversation {
   interactions: [ConversationInteractions!]!
 }
 
-input CreateConversationInput {
-  profileId: ID!
-  startingTopic: String!
-}
-
 extend type Query {
   freeConversations(profileId: ID!): [FreeConversation!]!
   freeConversation(id: ID!): FreeConversation
 }
 
 extend type Mutation {
-  createConversation(input: CreateConversationInput!): FreeConversation!
-  generateIdea(profileId: ID!): String!
+  createConversation(startingTopic: String!): FreeConversation!
+  generateIdea: String!
   deleteConversation(id: ID!): Boolean!
 }
 

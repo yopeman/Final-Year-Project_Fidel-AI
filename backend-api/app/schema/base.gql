@@ -2,6 +2,7 @@ scalar DateTime
 scalar Date
 scalar Time
 scalar JSON
+scalar Upload
 
 input PaginationInput {
   page: Int
@@ -11,6 +12,7 @@ input PaginationInput {
 type Query {
   _: String
 }
+
 type Mutation {
   _: String
 }
