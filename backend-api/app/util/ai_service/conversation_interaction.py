@@ -3,7 +3,12 @@ from langchain_ollama import ChatOllama
 from ...model.student_profile import StudentProfile
 from ...model.free_conversation import FreeConversation
 from ...model.conversation_interactions import ConversationInteractions
+from .normalize_text_for_tts import normalize_text_for_tts
+from faster_whisper import WhisperModel
 from typing import Dict, List
+from gtts import gTTS
+from fastapi import UploadFile
+import uuid
 
 # Prompt templates as constants for better readability and maintainability
 TOPIC_SUMMARY_PROMPT = """
@@ -189,7 +194,7 @@ def ai_topic_summary(idea: str) -> str:
     return response.content
 
 
-def ai_generated_topic(profile: StudentProfile) -> Dict[str, str]:
+def ai_generated_topic(profile: StudentProfile) -> str:
     """
     Generate a conversation topic and summary based on the student's profile.
     """
@@ -209,14 +214,10 @@ def ai_generated_topic(profile: StudentProfile) -> Dict[str, str]:
         'constraints': profile.constraints,
         'learning_plan': profile.ai_learning_plan,
     })
-    generated_idea = response.content
+    return response.content
 
-    return {
-        'starting_topic': generated_idea,
-        'topic_summary_phrase': ai_topic_summary(generated_idea)
-    }
 
-def ask_on_conversation(question: str, profile: StudentProfile, conversation: FreeConversation, prev_conversation_interactions: List[ConversationInteractions]) -> str:
+def ask_on_conversation(question: str, profile: StudentProfile, conversation: FreeConversation, prev_conversation_interactions: List[ConversationInteractions]) -> Dict[str, str]:
     """
     Generate an AI response for language learning conversation interactions.
     """
@@ -234,8 +235,8 @@ def ask_on_conversation(question: str, profile: StudentProfile, conversation: Fr
     if prev_conversation_interactions:
         interactions = []
         for interaction in prev_conversation_interactions:
-            interactions.append(f"Student: {interaction.student_interaction}")
-            interactions.append(f"AI: {interaction.ai_response}")
+            interactions.append(f"Student: {interaction.student_text}")
+            interactions.append(f"AI: {interaction.ai_text}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
     llm = ChatOllama(model='gemma3:4b')
@@ -258,7 +259,29 @@ def ask_on_conversation(question: str, profile: StudentProfile, conversation: Fr
             'prev_lesson_interactions': prev_interactions_str,
             'question': question
         })
-        return response.content.strip()
+
+        ai_text = response.content.strip()
+        ai_audio_path = text_to_speech(
+            normalize_text_for_tts(ai_text)
+        )
+
+        return {
+            'ai_text': ai_text,
+            'ai_audio_path': ai_audio_path
+        }
+
     except Exception as e:
         # Fallback response in case of LLM failure
         return f"I'm sorry, I encountered an issue while processing your question. Please try again or contact support. Error: {str(e)}"
+
+
+def text_to_speech(text: str) -> str:
+    ai_audio_path = f'static/{uuid.uuid4()}.mp3'
+    tts = gTTS(text)
+    tts.save(ai_audio_path)
+    return ai_audio_path
+
+def speech_to_text(filepath: str) -> str:
+    model = WhisperModel("base", compute_type="int8")
+    segments, _ = model.transcribe(filepath)
+    return " ".join(segment.text for segment in segments)
