@@ -1,14 +1,16 @@
+import uuid
+from typing import Dict, List
+
+from fastapi import UploadFile
+from faster_whisper import WhisperModel
+from gtts import gTTS
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
-from ...model.student_profile import StudentProfile
-from ...model.free_conversation import FreeConversation
+
 from ...model.conversation_interactions import ConversationInteractions
+from ...model.free_conversation import FreeConversation
+from ...model.student_profile import StudentProfile
 from .normalize_text_for_tts import normalize_text_for_tts
-from faster_whisper import WhisperModel
-from typing import Dict, List
-from gtts import gTTS
-from fastapi import UploadFile
-import uuid
 
 # Prompt templates as constants for better readability and maintainability
 TOPIC_SUMMARY_PROMPT = """
@@ -133,7 +135,7 @@ You are a friendly, patient conversation partner helping an English learner prac
 - Incorporate relevant vocabulary from the conversation theme
 - Provide implicit correction through modeling when appropriate
 
-### 3. PROFIENCY-ADAPTED COMPLEXITY
+### 3. PROFICIENCY-ADAPTED COMPLEXITY
 - **Beginner ({proficiency})**: Short sentences, simple vocabulary, clear structure
 - **Intermediate ({proficiency})**: Longer sentences, varied structures, some idioms
 - **Advanced ({proficiency})**: Complex sentences, nuanced expressions, cultural references
@@ -180,17 +182,18 @@ You are a friendly, patient conversation partner helping an English learner prac
 Now, generate a natural, supportive conversation response:
 """
 
+
 def ai_topic_summary(idea: str) -> str:
     """
     Generate a concise topic summary phrase from the given idea.
     """
     if not idea or not idea.strip():
         raise ValueError("Idea cannot be empty")
-    
-    llm = ChatOllama(model='gemma3:4b')
+
+    llm = ChatOllama(model="gemma3:4b")
     prompts = PromptTemplate.from_template(TOPIC_SUMMARY_PROMPT)
     chain = prompts | llm
-    response = chain.invoke({'idea': idea})
+    response = chain.invoke({"idea": idea})
     return response.content
 
 
@@ -201,23 +204,30 @@ def ai_generated_topic(profile: StudentProfile) -> str:
     if not profile:
         raise ValueError("Student profile is required")
 
-    llm = ChatOllama(model='gemma3:4b')
+    llm = ChatOllama(model="gemma3:4b")
     prompts = PromptTemplate.from_template(TOPIC_GENERATION_PROMPT)
     chain = prompts | llm
-    response = chain.invoke({
-        'age_range': profile.age_range,
-        'proficiency': profile.proficiency,
-        'native_language': profile.native_language,
-        'learning_goal': profile.learning_goal,
-        'target_duration': profile.target_duration,
-        'duration_unit': profile.duration_unit,
-        'constraints': profile.constraints,
-        'learning_plan': profile.ai_learning_plan,
-    })
+    response = chain.invoke(
+        {
+            "age_range": profile.age_range,
+            "proficiency": profile.proficiency,
+            "native_language": profile.native_language,
+            "learning_goal": profile.learning_goal,
+            "target_duration": profile.target_duration,
+            "duration_unit": profile.duration_unit,
+            "constraints": profile.constraints,
+            "learning_plan": profile.ai_learning_plan,
+        }
+    )
     return response.content
 
 
-def ask_on_conversation(question: str, profile: StudentProfile, conversation: FreeConversation, prev_conversation_interactions: List[ConversationInteractions]) -> Dict[str, str]:
+def ask_on_conversation(
+    question: str,
+    profile: StudentProfile,
+    conversation: FreeConversation,
+    prev_conversation_interactions: List[ConversationInteractions],
+) -> Dict[str, str]:
     """
     Generate an AI response for language learning conversation interactions.
     """
@@ -239,36 +249,31 @@ def ask_on_conversation(question: str, profile: StudentProfile, conversation: Fr
             interactions.append(f"AI: {interaction.ai_text}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
-    llm = ChatOllama(model='gemma3:4b')
+    llm = ChatOllama(model="gemma3:4b")
     prompts = PromptTemplate.from_template(CONVERSATION_RESPONSE_PROMPT)
     try:
         chain = prompts | llm
-        response = chain.invoke({
-            'age_range': profile.age_range,
-            'proficiency': profile.proficiency,
-            'native_language': profile.native_language,
-            'learning_goal': profile.learning_goal,
-            'target_duration': profile.target_duration,
-            'duration_unit': profile.duration_unit,
-            'constraints': profile.constraints,
-            'learning_plan': profile.ai_learning_plan,
-
-            'starting_topic': conversation.starting_topic,
-            'topic_summary_phrase': conversation.topic_summary_phrase,
-
-            'prev_lesson_interactions': prev_interactions_str,
-            'question': question
-        })
-
-        ai_text = response.content.strip()
-        ai_audio_path = text_to_speech(
-            normalize_text_for_tts(ai_text)
+        response = chain.invoke(
+            {
+                "age_range": profile.age_range,
+                "proficiency": profile.proficiency,
+                "native_language": profile.native_language,
+                "learning_goal": profile.learning_goal,
+                "target_duration": profile.target_duration,
+                "duration_unit": profile.duration_unit,
+                "constraints": profile.constraints,
+                "learning_plan": profile.ai_learning_plan,
+                "starting_topic": conversation.starting_topic,
+                "topic_summary_phrase": conversation.topic_summary_phrase,
+                "prev_lesson_interactions": prev_interactions_str,
+                "question": question,
+            }
         )
 
-        return {
-            'ai_text': ai_text,
-            'ai_audio_path': ai_audio_path
-        }
+        ai_text = response.content.strip()
+        ai_audio_path = text_to_speech(normalize_text_for_tts(ai_text))
+
+        return {"ai_text": ai_text, "ai_audio_path": ai_audio_path}
 
     except Exception as e:
         # Fallback response in case of LLM failure
@@ -276,12 +281,63 @@ def ask_on_conversation(question: str, profile: StudentProfile, conversation: Fr
 
 
 def text_to_speech(text: str) -> str:
-    ai_audio_path = f'static/{uuid.uuid4()}.mp3'
+    ai_audio_path = f"static/{uuid.uuid4()}.mp3"
     tts = gTTS(text)
     tts.save(ai_audio_path)
     return ai_audio_path
+
 
 def speech_to_text(filepath: str) -> str:
     model = WhisperModel("base", compute_type="int8")
     segments, _ = model.transcribe(filepath)
     return " ".join(segment.text for segment in segments)
+
+
+def generate_possible_talk(
+    profile: StudentProfile,
+    conversation: FreeConversation,
+    prev_conversation_interactions: List[ConversationInteractions],
+) -> str:
+    """
+    Generate an AI response for language learning conversation interactions.
+    """
+    if not profile:
+        raise ValueError("Student profile is required")
+
+    if not conversation:
+        raise ValueError("Conversation is required")
+
+    # Format previous interactions
+    prev_interactions_str = ""
+    if prev_conversation_interactions:
+        interactions = []
+        for interaction in prev_conversation_interactions:
+            interactions.append(f"AI: {interaction.student_text}")
+            interactions.append(f"Student: {interaction.ai_text}")
+        prev_interactions_str = "\n".join(interactions) + "\n"
+
+    llm = ChatOllama(model="gemma3:4b")
+    prompts = PromptTemplate.from_template(CONVERSATION_RESPONSE_PROMPT)
+    try:
+        chain = prompts | llm
+        response = chain.invoke(
+            {
+                "age_range": profile.age_range,
+                "proficiency": profile.proficiency,
+                "native_language": profile.native_language,
+                "learning_goal": profile.learning_goal,
+                "target_duration": profile.target_duration,
+                "duration_unit": profile.duration_unit,
+                "constraints": profile.constraints,
+                "learning_plan": profile.ai_learning_plan,
+                "starting_topic": conversation.starting_topic,
+                "topic_summary_phrase": conversation.topic_summary_phrase,
+                "prev_lesson_interactions": prev_interactions_str,
+                "question": interaction.ai_text,
+            }
+        )
+        return response.content.strip()
+
+    except Exception as e:
+        # Fallback response in case of LLM failure
+        return f"I'm sorry, I encountered an issue while processing your question. Please try again or contact support. Error: {str(e)}"

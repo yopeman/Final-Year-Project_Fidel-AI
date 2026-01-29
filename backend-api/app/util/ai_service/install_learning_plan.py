@@ -1,18 +1,19 @@
+from typing import List
+
+from langchain_community.tools import DuckDuckGoSearchResults
+from langchain_core.messages import HumanMessage
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from pydantic import BaseModel
-from typing import List
-from langchain_core.messages import HumanMessage
-from langchain_community.tools import DuckDuckGoSearchResults
-from youtube_search import YoutubeSearch
 from sqlalchemy.orm import Session
+from youtube_search import YoutubeSearch
 
-from ...model.student_profile import StudentProfile
-from ...model.modules import Modules
-from ...model.module_lessons import ModuleLessons
-from ...model.lesson_vocabularies import LessonVocabularies
 from ...model.lesson_online_articles import LessonOnlineArticles
+from ...model.lesson_vocabularies import LessonVocabularies
 from ...model.lesson_youtube_videos import LessonYouTubeVideos
+from ...model.module_lessons import ModuleLessons
+from ...model.modules import Modules
+from ...model.student_profile import StudentProfile
 
 
 class VocabularyOutput(BaseModel):
@@ -20,31 +21,35 @@ class VocabularyOutput(BaseModel):
     meaning: str
     description: str
 
+
 class LessonOutput(BaseModel):
     name: str
     description: str
+
 
 class ModuleOutput(BaseModel):
     name: str
     description: str
     lessons: List[LessonOutput]
 
+
 class ModuleResponse(BaseModel):
     modules: List[ModuleOutput]
+
 
 class VocabularyResponse(BaseModel):
     vocabularies: List[VocabularyOutput]
 
 
-web_search = DuckDuckGoSearchResults(output_format='list')
+web_search = DuckDuckGoSearchResults(output_format="list")
+
+
 def youtube_search(search_terms: str, max_results=5, retries=3):
     """
     Search YouTube video for educational videos and return results.
     """
     videos = YoutubeSearch(
-        search_terms=search_terms, 
-        max_results=max_results, 
-        retries=retries
+        search_terms=search_terms, max_results=max_results, retries=retries
     ).to_dict(clear_cache=True)
 
     for video in videos:
@@ -53,7 +58,8 @@ def youtube_search(search_terms: str, max_results=5, retries=3):
 
 
 def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
-    prompts = PromptTemplate.from_template("""
+    prompts = PromptTemplate.from_template(
+        """
     # LANGUAGE LEARNING PLAN GENERATOR
     
     ## ROLE
@@ -107,24 +113,25 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
     - **Assessment**: Consider how progress will be measured
     
     Now, generate the structured learning modules:
-    """).format(**{
-        'age_range': profile.age_range,
-        'proficiency': profile.proficiency,
-        'native_language': profile.native_language,
-        'learning_goal': profile.learning_goal,
-        'target_duration': profile.target_duration,
-        'duration_unit': profile.duration_unit,
-        'constraints': profile.constraints,
-        'learning_plan': profile.ai_learning_plan
-    })
-
+    """
+    ).format(
+        **{
+            "age_range": profile.age_range,
+            "proficiency": profile.proficiency,
+            "native_language": profile.native_language,
+            "learning_goal": profile.learning_goal,
+            "target_duration": profile.target_duration,
+            "duration_unit": profile.duration_unit,
+            "constraints": profile.constraints,
+            "learning_plan": profile.ai_learning_plan,
+        }
+    )
 
     response: ModuleResponse = (
-        ChatOllama(model='llama3.1:8b')
+        ChatOllama(model="llama3.1:8b")
         .with_structured_output(ModuleResponse)
         .invoke([HumanMessage(content=prompts)])
     )
-
 
     for i, module in enumerate(response.modules, start=1):
         new_module = Modules(
@@ -132,7 +139,7 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
             name=module.name,
             description=module.description,
             display_order=i,
-            is_locked= not (i==1)
+            is_locked=not (i == 1),
         )
         db.add(new_module)
         db.flush()
@@ -144,18 +151,20 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
                 title=lesson.name,
                 content=content,
                 display_order=j,
-                is_locked= not (i==1 and j==1)
+                is_locked=not (i == 1 and j == 1),
             )
             db.add(new_lesson)
             db.flush()
 
-            vocabularies: VocabularyResponse = _generate_vocabularies(profile, module, lesson, content)
+            vocabularies: VocabularyResponse = _generate_vocabularies(
+                profile, module, lesson, content
+            )
             for vocabulary in vocabularies.vocabularies:
                 new_vocabulary = LessonVocabularies(
                     lesson_id=new_lesson.id,
                     vocabulary=vocabulary.vocabulary,
                     meaning=vocabulary.meaning,
-                    description=vocabulary.description
+                    description=vocabulary.description,
                 )
                 db.add(new_vocabulary)
                 db.flush()
@@ -164,10 +173,10 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
             for article in articles:
                 new_article = LessonOnlineArticles(
                     lesson_id=new_lesson.id,
-                    title=article.get('title', '')[:200],
-                    favicon_url=article.get('favicon_url', [None]),
-                    description=article.get('snippet', ''),
-                    page_url=article.get('link', '')
+                    title=article.get("title", "")[:200],
+                    favicon_url=article.get("favicon_url", [None]),
+                    description=article.get("snippet", ""),
+                    page_url=article.get("link", ""),
                 )
                 db.add(new_article)
                 db.flush()
@@ -176,10 +185,14 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
             for video in videos:
                 new_video = LessonYouTubeVideos(
                     lesson_id=new_lesson.id,
-                    title=video.get('title', '')[:200],
-                    thumbnail_url=video.get('thumbnails', [None])[0] if video.get('thumbnails') else None,
-                    description=video.get('long_desc', ''),
-                    video_url=video.get('full_url', '')
+                    title=video.get("title", "")[:200],
+                    thumbnail_url=(
+                        video.get("thumbnails", [None])[0]
+                        if video.get("thumbnails")
+                        else None
+                    ),
+                    description=video.get("long_desc", ""),
+                    video_url=video.get("full_url", ""),
                 )
                 db.add(new_video)
                 db.flush()
@@ -187,8 +200,12 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
     db.commit()
     return True
 
-def _generate_content(profile: StudentProfile, module: ModuleOutput, lesson: LessonOutput) -> str:
-    prompts = PromptTemplate.from_template("""
+
+def _generate_content(
+    profile: StudentProfile, module: ModuleOutput, lesson: LessonOutput
+) -> str:
+    prompts = PromptTemplate.from_template(
+        """
     # COMPREHENSIVE LANGUAGE LESSON DESIGN
     
     ## ROLE & INSTRUCTIONAL APPROACH
@@ -279,31 +296,36 @@ def _generate_content(profile: StudentProfile, module: ModuleOutput, lesson: Les
     - **Constraints**: {constraints}
     
     Now, create an engaging, pedagogically sound lesson for "{lesson_title}":
-    """).format(**{
-        'target_language': 'the target language',  # You might want to add this to profile
-        'age_range': profile.age_range,
-        'proficiency': profile.proficiency,
-        'native_language': profile.native_language,
-        'learning_goal': profile.learning_goal,
-        'constraints': profile.constraints,
-        'target_duration': profile.target_duration,
-        'learning_plan': profile.ai_learning_plan,
-        'module_title': module.name,
-        'module_description': module.description,
-        'lesson_title': lesson.name,
-        'lesson_description': lesson.description,
-    })
-    
+    """
+    ).format(
+        **{
+            "target_language": "the target language",  # You might want to add this to profile
+            "age_range": profile.age_range,
+            "proficiency": profile.proficiency,
+            "native_language": profile.native_language,
+            "learning_goal": profile.learning_goal,
+            "constraints": profile.constraints,
+            "target_duration": profile.target_duration,
+            "learning_plan": profile.ai_learning_plan,
+            "module_title": module.name,
+            "module_description": module.description,
+            "lesson_title": lesson.name,
+            "lesson_description": lesson.description,
+        }
+    )
+
     response: str = (
-        ChatOllama(model='gemma3:4b')
-        .invoke([HumanMessage(content=prompts)])
-        .content
+        ChatOllama(model="gemma3:4b").invoke([HumanMessage(content=prompts)]).content
     )
 
     return response
 
-def _generate_vocabularies(profile: StudentProfile, module: ModuleOutput, lesson: LessonOutput, content: str) -> str:
-    prompts = PromptTemplate.from_template("""
+
+def _generate_vocabularies(
+    profile: StudentProfile, module: ModuleOutput, lesson: LessonOutput, content: str
+) -> str:
+    prompts = PromptTemplate.from_template(
+        """
     # TARGETED VOCABULARY SELECTION FOR LANGUAGE LEARNING
     
     ## VOCABULARY SELECTION CRITERIA
@@ -354,21 +376,24 @@ def _generate_vocabularies(profile: StudentProfile, module: ModuleOutput, lesson
     - 10% Higher-level expressions for extension
     
     Now, select and describe the most valuable vocabulary for this lesson:
-    """).format(**{
-    'age_range': profile.age_range,
-    'proficiency': profile.proficiency,
-    'native_language': profile.native_language,
-    'learning_goal': profile.learning_goal,
-    'constraints': profile.constraints,
-    'module_title': module.name,
-    'module_description': module.description,
-    'lesson_title': lesson.name,
-    'lesson_description': lesson.description,
-    'lesson_content': content,
-})
-    
+    """
+    ).format(
+        **{
+            "age_range": profile.age_range,
+            "proficiency": profile.proficiency,
+            "native_language": profile.native_language,
+            "learning_goal": profile.learning_goal,
+            "constraints": profile.constraints,
+            "module_title": module.name,
+            "module_description": module.description,
+            "lesson_title": lesson.name,
+            "lesson_description": lesson.description,
+            "lesson_content": content,
+        }
+    )
+
     response: VocabularyResponse = (
-        ChatOllama(model='llama3.1:8b')
+        ChatOllama(model="llama3.1:8b")
         .with_structured_output(VocabularyResponse)
         .invoke([HumanMessage(content=prompts)])
     )

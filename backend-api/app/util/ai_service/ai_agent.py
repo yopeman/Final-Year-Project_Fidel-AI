@@ -12,19 +12,18 @@ This implementation:
 - Provides helpful logging and does not crash on unexpected shapes
 """
 
-import logging
 import json
+import logging
 import re
-from typing import Any, Dict, List, Optional, Type, Union, Coroutine
-
-from pydantic import BaseModel, ValidationError
+from typing import Any, Coroutine, Dict, List, Optional, Type, Union
 
 # LangChain-ish imports (keep as-is if using langchain-core)
 from langchain.agents import create_agent
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.tools import BaseTool
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.tools import BaseTool
 from langchain_ollama import ChatOllama
+from pydantic import BaseModel, ValidationError
 
 # One logging configuration at module import
 logger = logging.getLogger(__name__)
@@ -33,7 +32,8 @@ if not logger.handlers:
 
 
 ResultLike = Dict[str, Any]
-llm = ChatOllama(model='llama3.1:8b')
+llm = ChatOllama(model="llama3.1:8b")
+
 
 class AIAgent:
     """
@@ -117,7 +117,9 @@ class AIAgent:
         user_msg = f"Improve this prompt: {prompt}"
 
         try:
-            response = self._call_llm_sync([SystemMessage(content=system_msg), HumanMessage(content=user_msg)])
+            response = self._call_llm_sync(
+                [SystemMessage(content=system_msg), HumanMessage(content=user_msg)]
+            )
             return response.strip()
         except Exception:
             logger.exception("Improve prompt failed")
@@ -129,7 +131,9 @@ class AIAgent:
         user_msg = f"Improve this prompt: {prompt}"
 
         try:
-            response = await self._call_llm_async([SystemMessage(content=system_msg), HumanMessage(content=user_msg)])
+            response = await self._call_llm_async(
+                [SystemMessage(content=system_msg), HumanMessage(content=user_msg)]
+            )
             return response.strip()
         except Exception:
             logger.exception("Async improve prompt failed")
@@ -236,7 +240,9 @@ class AIAgent:
                         parsed = json.loads(match.group(1))
                         return self._coerce_to_model(parsed)
                     except Exception as e:
-                        logger.debug("JSON block found but failed to parse into model: %s", e)
+                        logger.debug(
+                            "JSON block found but failed to parse into model: %s", e
+                        )
                 # If parsing failed, return original text
                 return s
 

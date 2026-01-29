@@ -1,5 +1,5 @@
-from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_ollama import ChatOllama
 
 
 def normalize_text_for_tts(text: str) -> str:
@@ -10,10 +10,11 @@ def normalize_text_for_tts(text: str) -> str:
 
     llm = ChatOllama(model="gemma3:4b")
 
-    prompt = ChatPromptTemplate.from_messages([
-        (
-            "system",
-            """
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """
 You are a professional text normalization engine for Text-to-Speech synthesis.
 
 # CRITICAL RULES:
@@ -77,13 +78,11 @@ You are a professional text normalization engine for Text-to-Speech synthesis.
 - No markdown
 - No instructions or commentary
 - Only the normalized spoken version
-"""
-        ),
-        (
-            "user",
-            "Convert this text to natural spoken English for TTS:\n\n{text}"
-        )
-    ])
+""",
+            ),
+            ("user", "Convert this text to natural spoken English for TTS:\n\n{text}"),
+        ]
+    )
 
     chain = prompt | llm
 

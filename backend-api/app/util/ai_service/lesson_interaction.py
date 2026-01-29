@@ -1,12 +1,21 @@
+from typing import List
+
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
-from typing import List
-from ...model.student_profile import StudentProfile
-from ...model.modules import Modules
-from ...model.module_lessons import ModuleLessons
-from ...model.lesson_interactions import LessonInteractions
 
-def ask_on_lesson(question: str, profile: StudentProfile, module: Modules, lesson: ModuleLessons, prev_lesson_interactions: List[LessonInteractions]) -> str:
+from ...model.lesson_interactions import LessonInteractions
+from ...model.module_lessons import ModuleLessons
+from ...model.modules import Modules
+from ...model.student_profile import StudentProfile
+
+
+def ask_on_lesson(
+    question: str,
+    profile: StudentProfile,
+    module: Modules,
+    lesson: ModuleLessons,
+    prev_lesson_interactions: List[LessonInteractions],
+) -> str:
     """
     Generate Q&A by AI for language learning interactions
     """
@@ -31,8 +40,9 @@ def ask_on_lesson(question: str, profile: StudentProfile, module: Modules, lesso
             interactions.append(f"Teacher: {interaction.ai_answer}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
-    llm = ChatOllama(model='gemma3:4b')
-    prompts = PromptTemplate.from_template("""
+    llm = ChatOllama(model="gemma3:4b")
+    prompts = PromptTemplate.from_template(
+        """
     # PERSONALIZED LESSON-INTEGRATED Q&A SUPPORT
     
     ## ROLE & TEACHING PHILOSOPHY
@@ -132,31 +142,30 @@ def ask_on_lesson(question: str, profile: StudentProfile, module: Modules, lesso
     3. **Cultural References**: Use examples familiar to {native_language} speakers
     
     Now, provide a supportive, pedagogically sound response:
-    """)
+    """
+    )
 
     try:
         chain = prompts | llm
-        response = chain.invoke({
-            'age_range': profile.age_range,
-            'proficiency': profile.proficiency,
-            'native_language': profile.native_language,
-            'learning_goal': profile.learning_goal,
-            'target_duration': profile.target_duration,
-            'duration_unit': profile.duration_unit,
-            'constraints': profile.constraints,
-            'learning_plan': profile.ai_learning_plan,
-
-            'module_name': module.name,
-            'module_description': module.description,
-
-            'lesson_title': lesson.title,
-            'lesson_content': lesson.content,
-
-            'prev_lesson_interactions': prev_interactions_str,
-            'question': question
-        })
+        response = chain.invoke(
+            {
+                "age_range": profile.age_range,
+                "proficiency": profile.proficiency,
+                "native_language": profile.native_language,
+                "learning_goal": profile.learning_goal,
+                "target_duration": profile.target_duration,
+                "duration_unit": profile.duration_unit,
+                "constraints": profile.constraints,
+                "learning_plan": profile.ai_learning_plan,
+                "module_name": module.name,
+                "module_description": module.description,
+                "lesson_title": lesson.title,
+                "lesson_content": lesson.content,
+                "prev_lesson_interactions": prev_interactions_str,
+                "question": question,
+            }
+        )
         return response.content.strip()
     except Exception as e:
         # Fallback response in case of LLM failure
         return f"I'm sorry, I encountered an issue while processing your question. Please try again or contact support. Error: {str(e)}"
-    

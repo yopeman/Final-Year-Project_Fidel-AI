@@ -46,5 +46,5 @@ class Batch(BaseModel):
         secondary="batch_courses",
         primaryjoin="Batch.id == BatchCourse.batch_id",
         secondaryjoin="BatchCourse.id == BatchInstructor.batch_course_id",
-        viewonly=True
+        viewonly=True,
     )

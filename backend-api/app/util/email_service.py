@@ -1,6 +1,6 @@
 import smtplib
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from ..config.settings import settings
 
@@ -10,9 +10,9 @@ def send_verification_email(email: str, verification_code: str):
     try:
         # Create message
         msg = MIMEMultipart()
-        msg['From'] = settings.email_from
-        msg['To'] = email
-        msg['Subject'] = "Email Verification Code"
+        msg["From"] = settings.email_from
+        msg["To"] = email
+        msg["Subject"] = "Email Verification Code"
 
         # Email body
         body = f"""
@@ -28,7 +28,7 @@ def send_verification_email(email: str, verification_code: str):
         Fidel AI Team
         """
 
-        msg.attach(MIMEText(body, 'plain'))
+        msg.attach(MIMEText(body, "plain"))
 
         # Connect to SMTP server
         server = smtplib.SMTP(settings.smtp_server, settings.smtp_port)

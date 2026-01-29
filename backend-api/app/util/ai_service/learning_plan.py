@@ -1,9 +1,12 @@
-from langchain_core.prompts import PromptTemplate
-from langchain_ollama import ChatOllama
-from ...model.student_profile import StudentProfile
 import logging
 
+from langchain_core.prompts import PromptTemplate
+from langchain_ollama import ChatOllama
+
+from ...model.student_profile import StudentProfile
+
 logger = logging.getLogger(__name__)
+
 
 def generate_learning_plan(profile: StudentProfile) -> str:
     """
@@ -16,8 +19,9 @@ def generate_learning_plan(profile: StudentProfile) -> str:
         str: The generated learning plan structured in modules and lessons.
     """
 
-    llm = ChatOllama(model='gemma3:4b')
-    prompts = PromptTemplate.from_template("""
+    llm = ChatOllama(model="gemma3:4b")
+    prompts = PromptTemplate.from_template(
+        """
     # PERSONALIZED ENGLISH LANGUAGE LEARNING PLAN DESIGN
     
     ## ROLE & EXPERTISE
@@ -126,19 +130,22 @@ def generate_learning_plan(profile: StudentProfile) -> str:
     5. **Assessment**: Plan for periodic review and practice
     
     Now, create a comprehensive, personalized English learning plan:
-    """)
+    """
+    )
 
     chain = prompts | llm
     try:
-        response = chain.invoke({
-            'age_range': profile.age_range,
-            'proficiency': profile.proficiency,
-            'native_language': profile.native_language,
-            'learning_goal': profile.learning_goal,
-            'target_duration': profile.target_duration,
-            'duration_unit': profile.duration_unit,
-            'constraints': profile.constraints,
-        })
+        response = chain.invoke(
+            {
+                "age_range": profile.age_range,
+                "proficiency": profile.proficiency,
+                "native_language": profile.native_language,
+                "learning_goal": profile.learning_goal,
+                "target_duration": profile.target_duration,
+                "duration_unit": profile.duration_unit,
+                "constraints": profile.constraints,
+            }
+        )
         return response.content
     except Exception as err:
         raise err
@@ -156,8 +163,9 @@ def update_learning_plan(profile: StudentProfile, improvements: str) -> str:
         str: The updated learning plan structured in modules and lessons.
     """
 
-    llm = ChatOllama(model='gemma3:4b')
-    prompts = PromptTemplate.from_template("""
+    llm = ChatOllama(model="gemma3:4b")
+    prompts = PromptTemplate.from_template(
+        """
     # LEARNING PLAN ENHANCEMENT & OPTIMIZATION
     
     ## ROLE & OBJECTIVE
@@ -259,21 +267,24 @@ def update_learning_plan(profile: StudentProfile, improvements: str) -> str:
     - If extending duration, provide justification
     
     Now, create an enhanced version of the learning plan that addresses all improvement requests while maintaining educational quality:
-    """)
+    """
+    )
 
     chain = prompts | llm
     try:
-        response = chain.invoke({
-            'age_range': profile.age_range,
-            'proficiency': profile.proficiency,
-            'native_language': profile.native_language,
-            'learning_goal': profile.learning_goal,
-            'target_duration': profile.target_duration,
-            'duration_unit': profile.duration_unit,
-            'constraints': profile.constraints,
-            'current_plan': profile.ai_learning_plan,
-            'improvements': improvements,
-        })
+        response = chain.invoke(
+            {
+                "age_range": profile.age_range,
+                "proficiency": profile.proficiency,
+                "native_language": profile.native_language,
+                "learning_goal": profile.learning_goal,
+                "target_duration": profile.target_duration,
+                "duration_unit": profile.duration_unit,
+                "constraints": profile.constraints,
+                "current_plan": profile.ai_learning_plan,
+                "improvements": improvements,
+            }
+        )
         return response.content
     except Exception as err:
         raise err
