@@ -8,7 +8,7 @@ from ..model.conversation_interactions import ConversationInteractions
 from ..model.free_conversation import FreeConversation
 from ..model.student_profile import StudentProfile
 from ..model.user import User, UserRole
-from ..util.ai_service.conversation_interaction import ask_on_conversation, text_to_speech, speech_to_text
+from ..util.ai_service.conversation_interaction import ask_on_conversation, text_to_speech, speech_to_text, generate_possible_talk
 import uuid
 
 query = QueryType()
@@ -90,8 +90,8 @@ def resolve_conversation_interaction(_, info, id: str):
     return interaction
 
 
-@mutation.field("talkToAi")
-async def resolve_talk_to_ai(_, info, input):
+@mutation.field("talkWithAi")
+async def resolve_talk_with_ai(_, info, input):
     current_user: User = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -164,8 +164,52 @@ async def resolve_talk_to_ai(_, info, input):
     db.add(interaction)
     db.commit()
     db.refresh(interaction)
-
     return interaction
+
+
+@mutation.field("possibleTalk")
+def resolve_possible_talk(_, info, conversationId: str):
+    current_user: User = info.context.get("current_user")
+    if not current_user:
+        raise Exception("Not authenticated")
+
+    db: Session = info.context["db"]
+
+    # Check if the conversation exists and user has access
+    conversation = (
+        db.query(FreeConversation)
+        .filter(FreeConversation.id == conversationId, FreeConversation.is_deleted == False)
+        .first()
+    )
+
+    if not conversation:
+        raise Exception("Conversation not found")
+
+    # Check ownership through profile
+    profile = (
+        db.query(StudentProfile)
+        .filter(StudentProfile.id == conversation.profile_id)
+        .first()
+    )
+
+    if current_user.role != UserRole.admin and profile.user_id != current_user.id:
+        raise Exception("Unauthorized")
+
+    # Get previous interactions for context
+    prev_interactions = (
+        db.query(ConversationInteractions)
+        .filter(ConversationInteractions.conversation_id == conversationId)
+        .order_by(ConversationInteractions.created_at)
+        .all()
+    )
+
+    # Generate possible talk idea
+    ai_response = generate_possible_talk(
+        profile,
+        conversation,
+        prev_interactions
+    )
+    return ai_response
 
 
 @mutation.field("deleteConversationInteraction")

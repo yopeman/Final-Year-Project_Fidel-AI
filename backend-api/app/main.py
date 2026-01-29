@@ -2,6 +2,7 @@ from ariadne import make_executable_schema, ScalarType
 from ariadne.asgi import GraphQL
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 from .config.database import create_table, get_db
@@ -18,13 +19,23 @@ from .resolver.translator import mutation as t_mutation, query as t_query
 from .resolver.free_conversation import mutation as fc_mutation, query as fc_query, free_conversation as fc_type
 from .resolver.conversation_interactions import mutation as ci_mutation, query as ci_query, conversation_interactions as ci_type
 from .schema import type_defs
-from .util.auth import get_current_user
+from .util.auth import get_current_user, create_default_admin
 
 app = FastAPI(
     title="Fidel AI Backend API", description="GraphQL API for Fidel AI platform"
 )
 
+# Add CORS middleware to allow all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 create_table()
+create_default_admin()
 
 # DateTime scalar
 datetime_scalar = ScalarType("DateTime")

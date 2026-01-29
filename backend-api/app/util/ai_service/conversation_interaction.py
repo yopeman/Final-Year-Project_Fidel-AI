@@ -133,7 +133,7 @@ You are a friendly, patient conversation partner helping an English learner prac
 - Incorporate relevant vocabulary from the conversation theme
 - Provide implicit correction through modeling when appropriate
 
-### 3. PROFIENCY-ADAPTED COMPLEXITY
+### 3. PROFICIENCY-ADAPTED COMPLEXITY
 - **Beginner ({proficiency})**: Short sentences, simple vocabulary, clear structure
 - **Intermediate ({proficiency})**: Longer sentences, varied structures, some idioms
 - **Advanced ({proficiency})**: Complex sentences, nuanced expressions, cultural references
@@ -285,3 +285,49 @@ def speech_to_text(filepath: str) -> str:
     model = WhisperModel("base", compute_type="int8")
     segments, _ = model.transcribe(filepath)
     return " ".join(segment.text for segment in segments)
+
+
+def generate_possible_talk(profile: StudentProfile, conversation: FreeConversation, prev_conversation_interactions: List[ConversationInteractions]) -> str:
+    """
+    Generate an AI response for language learning conversation interactions.
+    """
+    if not profile:
+        raise ValueError("Student profile is required")
+
+    if not conversation:
+        raise ValueError("Conversation is required")
+
+    # Format previous interactions
+    prev_interactions_str = ""
+    if prev_conversation_interactions:
+        interactions = []
+        for interaction in prev_conversation_interactions:
+            interactions.append(f"AI: {interaction.student_text}")
+            interactions.append(f"Student: {interaction.ai_text}")
+        prev_interactions_str = "\n".join(interactions) + "\n"
+
+    llm = ChatOllama(model='gemma3:4b')
+    prompts = PromptTemplate.from_template(CONVERSATION_RESPONSE_PROMPT)
+    try:
+        chain = prompts | llm
+        response = chain.invoke({
+            'age_range': profile.age_range,
+            'proficiency': profile.proficiency,
+            'native_language': profile.native_language,
+            'learning_goal': profile.learning_goal,
+            'target_duration': profile.target_duration,
+            'duration_unit': profile.duration_unit,
+            'constraints': profile.constraints,
+            'learning_plan': profile.ai_learning_plan,
+
+            'starting_topic': conversation.starting_topic,
+            'topic_summary_phrase': conversation.topic_summary_phrase,
+
+            'prev_lesson_interactions': prev_interactions_str,
+            'question': interaction.ai_text
+        })
+        return response.content.strip()
+
+    except Exception as e:
+        # Fallback response in case of LLM failure
+        return f"I'm sorry, I encountered an issue while processing your question. Please try again or contact support. Error: {str(e)}"
