@@ -1,8 +1,9 @@
 import uuid
 
-from app.config.database import Base
 from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy.sql import func
+
+from app.config.database import Base
 
 
 class BaseModel(Base):

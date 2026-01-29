@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from ..model.free_conversation import FreeConversation
 from ..model.student_profile import StudentProfile
 from ..model.user import User, UserRole
-from ..util.ai_service.conversation_interaction import ai_topic_summary, ai_generated_topic
+from ..util.ai_service.conversation_interaction import (ai_generated_topic,
+                                                        ai_topic_summary)
 
 query = QueryType()
 mutation = MutationType()
@@ -24,7 +25,10 @@ def resolve_free_conversations(_, info):
     # Check if the profile exists and user has access
     profile = (
         db.query(StudentProfile)
-        .filter(StudentProfile.user_id == current_user.id, StudentProfile.is_deleted == False)
+        .filter(
+            StudentProfile.user_id == current_user.id,
+            StudentProfile.is_deleted == False,
+        )
         .first()
     )
 
@@ -37,7 +41,10 @@ def resolve_free_conversations(_, info):
 
     conversations = (
         db.query(FreeConversation)
-        .filter(FreeConversation.profile_id == profile.id, FreeConversation.is_deleted == False)
+        .filter(
+            FreeConversation.profile_id == profile.id,
+            FreeConversation.is_deleted == False,
+        )
         .order_by(FreeConversation.created_at.desc())
         .all()
     )
@@ -86,7 +93,10 @@ def resolve_create_conversation(_, info, startingTopic: str):
     # Check if the profile exists and user has access
     profile = (
         db.query(StudentProfile)
-        .filter(StudentProfile.user_id == current_user.id, StudentProfile.is_deleted == False)
+        .filter(
+            StudentProfile.user_id == current_user.id,
+            StudentProfile.is_deleted == False,
+        )
         .first()
     )
 
@@ -101,7 +111,7 @@ def resolve_create_conversation(_, info, startingTopic: str):
     conversation = FreeConversation(
         profile_id=profile.id,
         starting_topic=startingTopic,
-        topic_summary_phrase=topic_summary_phrase
+        topic_summary_phrase=topic_summary_phrase,
     )
 
     db.add(conversation)
@@ -122,7 +132,10 @@ def resolve_generate_idea(_, info):
     # Check if the profile exists and user has access
     profile = (
         db.query(StudentProfile)
-        .filter(StudentProfile.user_id == current_user.id, StudentProfile.is_deleted == False)
+        .filter(
+            StudentProfile.user_id == current_user.id,
+            StudentProfile.is_deleted == False,
+        )
         .first()
     )
 
@@ -225,6 +238,7 @@ def resolve_profile(conversation, info):
 def resolve_interactions(conversation, info):
     db: Session = info.context["db"]
     from ..model.conversation_interactions import ConversationInteractions
+
     interactions = (
         db.query(ConversationInteractions)
         .filter(ConversationInteractions.conversation_id == conversation.id)

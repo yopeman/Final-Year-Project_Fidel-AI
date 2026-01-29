@@ -4,8 +4,8 @@ from ariadne import MutationType, ObjectType, QueryType
 from sqlalchemy.orm import Session
 
 from ..model.lesson_interactions import LessonInteractions
-from ..model.modules import Modules
 from ..model.module_lessons import ModuleLessons
+from ..model.modules import Modules
 from ..model.student_profile import StudentProfile
 from ..model.user import User, UserRole
 from ..util.ai_service.lesson_interaction import ask_on_lesson
@@ -103,7 +103,9 @@ def resolve_create_lesson_interaction(_, info, input):
     # Check if the lesson exists and user has access
     lesson = (
         db.query(ModuleLessons)
-        .filter(ModuleLessons.id == input["lessonId"], ModuleLessons.is_deleted == False)
+        .filter(
+            ModuleLessons.id == input["lessonId"], ModuleLessons.is_deleted == False
+        )
         .first()
     )
 
@@ -128,20 +130,25 @@ def resolve_create_lesson_interaction(_, info, input):
 
     prev_lesson_interactions = (
         db.query(LessonInteractions)
-        .filter(LessonInteractions.lesson_id == lesson.id, LessonInteractions.is_deleted == False)
+        .filter(
+            LessonInteractions.lesson_id == lesson.id,
+            LessonInteractions.is_deleted == False,
+        )
         .all()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
         raise Exception("Unauthorized")
 
-    answer = ask_on_lesson(input["question"], profile, module, lesson, prev_lesson_interactions)
+    answer = ask_on_lesson(
+        input["question"], profile, module, lesson, prev_lesson_interactions
+    )
 
     # Create interaction
     interaction = LessonInteractions(
         lesson_id=input["lessonId"],
         student_question=input["question"],
-        ai_answer=answer
+        ai_answer=answer,
     )
 
     db.add(interaction)

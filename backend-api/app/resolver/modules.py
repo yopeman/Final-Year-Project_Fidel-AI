@@ -53,9 +53,7 @@ def resolve_module(_, info, id: str):
     db: Session = info.context["db"]
 
     module = (
-        db.query(Modules)
-        .filter(Modules.id == id, Modules.is_deleted == False)
-        .first()
+        db.query(Modules).filter(Modules.id == id, Modules.is_deleted == False).first()
     )
 
     if not module:
@@ -63,9 +61,7 @@ def resolve_module(_, info, id: str):
 
     # Check if user owns the module through profile
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -83,9 +79,7 @@ def resolve_update_module(_, info, id: str, input):
     db: Session = info.context["db"]
 
     module = (
-        db.query(Modules)
-        .filter(Modules.id == id, Modules.is_deleted == False)
-        .first()
+        db.query(Modules).filter(Modules.id == id, Modules.is_deleted == False).first()
     )
 
     if not module:
@@ -93,9 +87,7 @@ def resolve_update_module(_, info, id: str, input):
 
     # Check ownership
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -126,9 +118,7 @@ def resolve_delete_module(_, info, id: str):
     db: Session = info.context["db"]
 
     module = (
-        db.query(Modules)
-        .filter(Modules.id == id, Modules.is_deleted == False)
-        .first()
+        db.query(Modules).filter(Modules.id == id, Modules.is_deleted == False).first()
     )
 
     if not module:
@@ -136,9 +126,7 @@ def resolve_delete_module(_, info, id: str):
 
     # Check ownership
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -205,9 +193,7 @@ def resolve_deleted_at(module, info):
 def resolve_profile(module, info):
     db: Session = info.context["db"]
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
     return profile
 
@@ -216,6 +202,7 @@ def resolve_profile(module, info):
 def resolve_lessons(module, info):
     db: Session = info.context["db"]
     from ..model.module_lessons import ModuleLessons
+
     lessons = (
         db.query(ModuleLessons)
         .filter(ModuleLessons.module_id == module.id, ModuleLessons.is_deleted == False)

@@ -32,17 +32,12 @@ def resolve_videos(_, info, lessonId: str):
         raise Exception("Lesson not found")
 
     # Check ownership through module and profile
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -50,7 +45,10 @@ def resolve_videos(_, info, lessonId: str):
 
     videos = (
         db.query(LessonYouTubeVideos)
-        .filter(LessonYouTubeVideos.lesson_id == lessonId, LessonYouTubeVideos.is_deleted == False)
+        .filter(
+            LessonYouTubeVideos.lesson_id == lessonId,
+            LessonYouTubeVideos.is_deleted == False,
+        )
         .all()
     )
 
@@ -75,23 +73,14 @@ def resolve_video(_, info, id: str):
         raise Exception("Video not found")
 
     # Check ownership through lesson, module and profile
-    lesson = (
-        db.query(ModuleLessons)
-        .filter(ModuleLessons.id == video.lesson_id)
-        .first()
-    )
+    lesson = db.query(ModuleLessons).filter(ModuleLessons.id == video.lesson_id).first()
 
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -118,23 +107,14 @@ def resolve_update_video(_, info, id: str, input):
         raise Exception("Video not found")
 
     # Check ownership
-    lesson = (
-        db.query(ModuleLessons)
-        .filter(ModuleLessons.id == video.lesson_id)
-        .first()
-    )
+    lesson = db.query(ModuleLessons).filter(ModuleLessons.id == video.lesson_id).first()
 
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -174,23 +154,14 @@ def resolve_delete_video(_, info, id: str):
         raise Exception("Video not found")
 
     # Check ownership
-    lesson = (
-        db.query(ModuleLessons)
-        .filter(ModuleLessons.id == video.lesson_id)
-        .first()
-    )
+    lesson = db.query(ModuleLessons).filter(ModuleLessons.id == video.lesson_id).first()
 
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -256,9 +227,5 @@ def resolve_deleted_at(video, info):
 @lesson_youtube_videos.field("lesson")
 def resolve_lesson(video, info):
     db: Session = info.context["db"]
-    lesson = (
-        db.query(ModuleLessons)
-        .filter(ModuleLessons.id == video.lesson_id)
-        .first()
-    )
+    lesson = db.query(ModuleLessons).filter(ModuleLessons.id == video.lesson_id).first()
     return lesson

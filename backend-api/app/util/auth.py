@@ -5,9 +5,9 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
+from ..config.database import get_db
 from ..config.settings import settings
 from ..model.user import User, UserRole
-from ..config.database import get_db
 
 # Auth utilities
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -58,21 +58,19 @@ def get_current_user(token: str, db: Session):
         return None
     return user
 
+
 def create_default_admin():
     db: Session = next(get_db())
     if not (
         db.query(User)
-        .filter(
-            User.role == UserRole.admin,
-            User.is_deleted == False
-        )
+        .filter(User.role == UserRole.admin, User.is_deleted == False)
         .first()
     ):
         new_admin = User(
-            first_name='Admin',
-            last_name='Admin',
-            email='admin@fidel.ai',
-            password=get_password_hash('12345678'),
+            first_name="Admin",
+            last_name="Admin",
+            email="admin@fidel.ai",
+            password=get_password_hash("12345678"),
             role=UserRole.admin,
             is_verified=True,
         )

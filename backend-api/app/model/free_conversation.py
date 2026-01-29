@@ -13,4 +13,6 @@ class FreeConversation(BaseModel):
 
     # Relationships
     profile = relationship("StudentProfile", back_populates="free_conversations")
-    interactions = relationship("ConversationInteractions", back_populates="conversation")
+    interactions = relationship(
+        "ConversationInteractions", back_populates="conversation"
+    )

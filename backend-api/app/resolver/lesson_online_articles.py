@@ -32,17 +32,12 @@ def resolve_articles(_, info, lessonId: str):
         raise Exception("Lesson not found")
 
     # Check ownership through module and profile
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -50,7 +45,10 @@ def resolve_articles(_, info, lessonId: str):
 
     articles = (
         db.query(LessonOnlineArticles)
-        .filter(LessonOnlineArticles.lesson_id == lessonId, LessonOnlineArticles.is_deleted == False)
+        .filter(
+            LessonOnlineArticles.lesson_id == lessonId,
+            LessonOnlineArticles.is_deleted == False,
+        )
         .all()
     )
 
@@ -76,22 +74,15 @@ def resolve_article(_, info, id: str):
 
     # Check ownership through lesson, module and profile
     lesson = (
-        db.query(ModuleLessons)
-        .filter(ModuleLessons.id == article.lesson_id)
-        .first()
+        db.query(ModuleLessons).filter(ModuleLessons.id == article.lesson_id).first()
     )
 
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -119,22 +110,15 @@ def resolve_update_article(_, info, id: str, input):
 
     # Check ownership
     lesson = (
-        db.query(ModuleLessons)
-        .filter(ModuleLessons.id == article.lesson_id)
-        .first()
+        db.query(ModuleLessons).filter(ModuleLessons.id == article.lesson_id).first()
     )
 
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -175,22 +159,15 @@ def resolve_delete_article(_, info, id: str):
 
     # Check ownership
     lesson = (
-        db.query(ModuleLessons)
-        .filter(ModuleLessons.id == article.lesson_id)
-        .first()
+        db.query(ModuleLessons).filter(ModuleLessons.id == article.lesson_id).first()
     )
 
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -257,8 +234,6 @@ def resolve_deleted_at(article, info):
 def resolve_lesson(article, info):
     db: Session = info.context["db"]
     lesson = (
-        db.query(ModuleLessons)
-        .filter(ModuleLessons.id == article.lesson_id)
-        .first()
+        db.query(ModuleLessons).filter(ModuleLessons.id == article.lesson_id).first()
     )
     return lesson

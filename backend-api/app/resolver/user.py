@@ -1,27 +1,28 @@
-from datetime import datetime, timedelta
-from typing import Optional
-from collections import defaultdict
-import time
 import random
 import string
+import time
+from collections import defaultdict
+from datetime import datetime, timedelta
+from typing import Optional
 
 from ariadne import MutationType, ObjectType, QueryType
 from sqlalchemy.orm import Session
 
-from ..model.user import User, UserRole
-from ..util.auth import verify_password, get_password_hash, create_access_token, create_refresh_token
-from ..model.verification_code import VerificationCode
-from ..model.student_profile import StudentProfile
-from ..model.batch_instructor import BatchInstructor
+from ..config.settings import settings
+from ..model.attendance import Attendance
 from ..model.batch_community import BatchCommunity
-from ..model.community_reactions import CommunityReactions
-from ..model.community_comment import CommunityComment
+from ..model.batch_instructor import BatchInstructor
 from ..model.comment_reactions import CommentReactions
+from ..model.community_comment import CommunityComment
+from ..model.community_reactions import CommunityReactions
 from ..model.feedback import Feedback
 from ..model.notification import Notification
-from ..model.attendance import Attendance
+from ..model.student_profile import StudentProfile
+from ..model.user import User, UserRole
+from ..model.verification_code import VerificationCode
+from ..util.auth import (create_access_token, create_refresh_token,
+                         get_password_hash, verify_password)
 from ..util.email_service import send_verification_email
-from ..config.settings import settings
 
 query = QueryType()
 mutation = MutationType()
@@ -33,6 +34,7 @@ MAX_VERIFICATION_ATTEMPTS = 5
 VERIFICATION_WINDOW_SECONDS = 300  # 5 minutes
 
 ACCESS_TOKEN_EXPIRE_DAYS = settings.jwt_access_token_expire_days
+
 
 @query.field("users")
 def resolve_users(_, info, pagination=None):
@@ -82,17 +84,17 @@ def map_role(role_str: str) -> UserRole:
     }
     return role_map.get(role_str.upper(), UserRole.undetermined)
 
+
 def generate_verification_code():
     """Generate a 6-digit verification code"""
-    return ''.join(random.choices(string.digits, k=6))
+    return "".join(random.choices(string.digits, k=6))
 
 
 def create_verification_code(db: Session, email: str, user_id: Optional[int] = None):
     """Create and store a new verification code in database"""
     # Invalidate any existing unused codes for this email
     db.query(VerificationCode).filter(
-        VerificationCode.email == email,
-        VerificationCode.is_used == 0
+        VerificationCode.email == email, VerificationCode.is_used == 0
     ).update({"is_used": 1})
 
     # Generate new code
@@ -100,10 +102,7 @@ def create_verification_code(db: Session, email: str, user_id: Optional[int] = N
     expires_at = datetime.utcnow() + timedelta(minutes=10)
 
     verification_code = VerificationCode(
-        email=email,
-        code=code,
-        expires_at=expires_at,
-        user_id=user_id
+        email=email, code=code, expires_at=expires_at, user_id=user_id
     )
 
     db.add(verification_code)
@@ -111,6 +110,7 @@ def create_verification_code(db: Session, email: str, user_id: Optional[int] = N
     db.refresh(verification_code)
 
     return verification_code
+
 
 @mutation.field("register")
 def resolve_register(_, info, input):
@@ -160,12 +160,17 @@ def resolve_register(_, info, input):
 
     return True
 
-@mutation.field('resendVerification')
+
+@mutation.field("resendVerification")
 def resolve_resend_verification(_, info, input):
     db: Session = info.context["db"]
 
     # Check if user exists
-    user = db.query(User).filter(User.email == input["email"], User.is_deleted == False).first()
+    user = (
+        db.query(User)
+        .filter(User.email == input["email"], User.is_deleted == False)
+        .first()
+    )
     if not user:
         raise Exception("User not found")
 
@@ -183,6 +188,7 @@ def resolve_resend_verification(_, info, input):
 
     return True
 
+
 @mutation.field("verify")
 def resolve_verify(_, info, input):
     email = input["email"]
@@ -191,10 +197,14 @@ def resolve_verify(_, info, input):
     # Rate limiting check
     attempts = verification_attempts[email]
     # Remove old attempts outside the window
-    attempts[:] = [t for t in attempts if current_time - t < VERIFICATION_WINDOW_SECONDS]
+    attempts[:] = [
+        t for t in attempts if current_time - t < VERIFICATION_WINDOW_SECONDS
+    ]
 
     if len(attempts) >= MAX_VERIFICATION_ATTEMPTS:
-        raise Exception(f"Too many verification attempts. Please try again in {VERIFICATION_WINDOW_SECONDS // 60} minutes.")
+        raise Exception(
+            f"Too many verification attempts. Please try again in {VERIFICATION_WINDOW_SECONDS // 60} minutes."
+        )
 
     # Record this attempt
     attempts.append(current_time)
@@ -202,19 +212,21 @@ def resolve_verify(_, info, input):
     db: Session = info.context["db"]
 
     # Get the latest unused verification code for this email
-    verification_code = db.query(VerificationCode).filter(
-        VerificationCode.email == email,
-        VerificationCode.is_used == 0
-    ).order_by(VerificationCode.created_at.desc()).first()
+    verification_code = (
+        db.query(VerificationCode)
+        .filter(VerificationCode.email == email, VerificationCode.is_used == 0)
+        .order_by(VerificationCode.created_at.desc())
+        .first()
+    )
 
     if not verification_code:
-        raise Exception('No verification code found. Please request a new one.')
+        raise Exception("No verification code found. Please request a new one.")
 
-    if verification_code.code != input['verificationCode']:
+    if verification_code.code != input["verificationCode"]:
         raise Exception("Invalid verification code")
 
     if verification_code.expires_at < datetime.utcnow():
-        raise Exception('Verification code has expired. Please request a new one.')
+        raise Exception("Verification code has expired. Please request a new one.")
 
     # Clear rate limiting on successful verification
     verification_attempts[email].clear()
@@ -225,7 +237,7 @@ def resolve_verify(_, info, input):
     # Verify the user
     user = db.query(User).filter(User.email == email, User.is_deleted == False).first()
     if not user:
-        raise Exception('User not found')
+        raise Exception("User not found")
 
     user.is_verified = True
     db.commit()
@@ -237,23 +249,27 @@ def resolve_verify(_, info, input):
 @mutation.field("login")
 def resolve_login(_, info, input):
     db: Session = info.context["db"]
-    user = db.query(User).filter(User.email == input["email"], User.is_deleted == False).first()
+    user = (
+        db.query(User)
+        .filter(User.email == input["email"], User.is_deleted == False)
+        .first()
+    )
     if not user or not verify_password(input["password"], user.password):
         raise Exception("Invalid credentials")
-    
+
     if user.is_verified == False:
-        raise Exception('Your email is not verified')
+        raise Exception("Your email is not verified")
 
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     )
     refresh_token = create_refresh_token(data={"sub": user.email})
-    
+
     user.access_token = access_token
     user.refresh_token = refresh_token
     db.commit()
     db.refresh(user)
-    
+
     return {
         "user": user,
         "accessToken": access_token,
@@ -266,7 +282,7 @@ def resolve_logout(_, info):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
-    
+
     db: Session = info.context["db"]
     current_user.access_token = None
     current_user.refresh_token = None
@@ -283,19 +299,25 @@ def resolve_refresh_token(_, info):
 
     db: Session = info.context["db"]
     access_token = create_access_token(
-        data={"sub": current_user.email}, expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+        data={"sub": current_user.email},
+        expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS),
     )
     current_user.access_token = access_token
     db.commit()
     db.refresh(current_user)
     return access_token
 
+
 @mutation.field("forgetPassword")
 def resolve_forget_password(_, info, input):
     db: Session = info.context["db"]
 
     # Check if user exists
-    user = db.query(User).filter(User.email == input["email"], User.is_deleted == False).first()
+    user = (
+        db.query(User)
+        .filter(User.email == input["email"], User.is_deleted == False)
+        .first()
+    )
     if not user:
         # For security reasons, don't reveal whether email exists
         # Just return success to prevent email enumeration
@@ -315,6 +337,7 @@ def resolve_forget_password(_, info, input):
 
     return True
 
+
 @mutation.field("passwordRecovery")
 def resolve_account_recovery(_, info, input):
     db: Session = info.context["db"]
@@ -323,22 +346,27 @@ def resolve_account_recovery(_, info, input):
     new_password = input["newPassword"]
 
     # Get the latest unused verification code for this email
-    verification_code_obj = db.query(VerificationCode).filter(
-        VerificationCode.email == email,
-        VerificationCode.code == verification_code,
-        VerificationCode.is_used == 0
-    ).order_by(VerificationCode.created_at.desc()).first()
+    verification_code_obj = (
+        db.query(VerificationCode)
+        .filter(
+            VerificationCode.email == email,
+            VerificationCode.code == verification_code,
+            VerificationCode.is_used == 0,
+        )
+        .order_by(VerificationCode.created_at.desc())
+        .first()
+    )
 
     if not verification_code_obj:
-        raise Exception('Invalid or expired verification code')
+        raise Exception("Invalid or expired verification code")
 
     if verification_code_obj.expires_at < datetime.utcnow():
-        raise Exception('Verification code has expired. Please request a new one.')
+        raise Exception("Verification code has expired. Please request a new one.")
 
     # Get the user
     user = db.query(User).filter(User.email == email, User.is_deleted == False).first()
     if not user:
-        raise Exception('User not found')
+        raise Exception("User not found")
 
     # Update user password
     user.password = get_password_hash(new_password)
@@ -360,10 +388,12 @@ def resolve_update_user(_, info, input):
 
     # Assuming admin check, but for now allow
     db: Session = info.context["db"]
-    user = db.query(User).filter(User.id == input["id"], User.is_deleted == False).first()
+    user = (
+        db.query(User).filter(User.id == input["id"], User.is_deleted == False).first()
+    )
     if not user:
         raise Exception("User not found")
-    
+
     if "firstName" in input:
         user.first_name = input["firstName"]
     if "lastName" in input:
@@ -376,7 +406,7 @@ def resolve_update_user(_, info, input):
         user.role = map_role(input["role"])
     if "isVerified" in input:
         user.is_verified = input["isVerified"]
-    
+
     db.commit()
     db.refresh(user)
     return user
@@ -387,7 +417,7 @@ def resolve_update_me(_, info, input):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
-    
+
     db: Session = info.context["db"]
     if "firstName" in input:
         current_user.first_name = input["firstName"]
@@ -397,7 +427,7 @@ def resolve_update_me(_, info, input):
         current_user.email = input["email"]
     if "password" in input:
         current_user.password = get_password_hash(input["password"])
-    
+
     db.commit()
     db.refresh(current_user)
     return current_user
@@ -414,7 +444,7 @@ def resolve_delete_user(_, info, id):
     user = db.query(User).filter(User.id == id, User.is_deleted == False).first()
     if not user:
         raise Exception("User not found")
-    
+
     user.is_deleted = True
     user.deleted_at = datetime.utcnow()
     db.commit()
@@ -427,7 +457,7 @@ def resolve_delete_me(_, info):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
-    
+
     db: Session = info.context["db"]
     current_user.is_deleted = True
     current_user.deleted_at = datetime.utcnow()
@@ -439,42 +469,56 @@ def resolve_delete_me(_, info):
 @user.field("profile")
 def resolve_profile(user_obj, info):
     db: Session = info.context["db"]
-    student_profile = db.query(StudentProfile).filter(StudentProfile.user_id == user_obj.id).first()
+    student_profile = (
+        db.query(StudentProfile).filter(StudentProfile.user_id == user_obj.id).first()
+    )
     return student_profile
 
 
 @user.field("batchInstructors")
 def resolve_batch_instructors(user_obj, info):
     db: Session = info.context["db"]
-    batch_instructors = db.query(BatchInstructor).filter(BatchInstructor.user_id == user_obj.id).all()
+    batch_instructors = (
+        db.query(BatchInstructor).filter(BatchInstructor.user_id == user_obj.id).all()
+    )
     return batch_instructors
 
 
 @user.field("batchCommunities")
 def resolve_batch_communities(user_obj, info):
     db: Session = info.context["db"]
-    batch_communities = db.query(BatchCommunity).filter(BatchCommunity.user_id == user_obj.id).all()
+    batch_communities = (
+        db.query(BatchCommunity).filter(BatchCommunity.user_id == user_obj.id).all()
+    )
     return batch_communities
 
 
 @user.field("communityReactions")
 def resolve_community_reactions(user_obj, info):
     db: Session = info.context["db"]
-    community_reactions = db.query(CommunityReactions).filter(CommunityReactions.user_id == user_obj.id).all()
+    community_reactions = (
+        db.query(CommunityReactions)
+        .filter(CommunityReactions.user_id == user_obj.id)
+        .all()
+    )
     return community_reactions
 
 
 @user.field("communityComments")
 def resolve_community_comments(user_obj, info):
     db: Session = info.context["db"]
-    community_comments = db.query(CommunityComment).filter(CommunityComment.user_id == user_obj.id).all()
+    community_comments = (
+        db.query(CommunityComment).filter(CommunityComment.user_id == user_obj.id).all()
+    )
     return community_comments
 
 
 @user.field("commentReactions")
 def resolve_comment_reactions(user_obj, info):
     db: Session = info.context["db"]
-    comment_reactions = db.query(CommentReactions).filter(CommentReactions.user_id == user_obj.id).all()
+    comment_reactions = (
+        db.query(CommentReactions).filter(CommentReactions.user_id == user_obj.id).all()
+    )
     return comment_reactions
 
 
@@ -488,7 +532,9 @@ def resolve_feedbacks(user_obj, info):
 @user.field("notifications")
 def resolve_notifications(user_obj, info):
     db: Session = info.context["db"]
-    notifications = db.query(Notification).filter(Notification.user_id == user_obj.id).all()
+    notifications = (
+        db.query(Notification).filter(Notification.user_id == user_obj.id).all()
+    )
     return notifications
 
 
@@ -502,7 +548,9 @@ def resolve_attendances(user_obj, info):
 @user.field("verificationCodes")
 def resolve_user_verification_codes(user_obj, info):
     db: Session = info.context["db"]
-    verification_codes = db.query(VerificationCode).filter(VerificationCode.user_id == user_obj.id).all()
+    verification_codes = (
+        db.query(VerificationCode).filter(VerificationCode.user_id == user_obj.id).all()
+    )
     return verification_codes
 
 

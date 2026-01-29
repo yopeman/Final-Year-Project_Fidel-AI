@@ -1,15 +1,18 @@
+import uuid
 from datetime import datetime
-from fastapi import UploadFile
 
 from ariadne import MutationType, ObjectType, QueryType
+from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
 from ..model.conversation_interactions import ConversationInteractions
 from ..model.free_conversation import FreeConversation
 from ..model.student_profile import StudentProfile
 from ..model.user import User, UserRole
-from ..util.ai_service.conversation_interaction import ask_on_conversation, text_to_speech, speech_to_text, generate_possible_talk
-import uuid
+from ..util.ai_service.conversation_interaction import (ask_on_conversation,
+                                                        generate_possible_talk,
+                                                        speech_to_text,
+                                                        text_to_speech)
 
 query = QueryType()
 mutation = MutationType()
@@ -27,7 +30,9 @@ def resolve_conversation_interactions(_, info, conversationId: str):
     # Check if the conversation exists and user has access
     conversation = (
         db.query(FreeConversation)
-        .filter(FreeConversation.id == conversationId, FreeConversation.is_deleted == False)
+        .filter(
+            FreeConversation.id == conversationId, FreeConversation.is_deleted == False
+        )
         .first()
     )
 
@@ -46,7 +51,10 @@ def resolve_conversation_interactions(_, info, conversationId: str):
 
     interactions = (
         db.query(ConversationInteractions)
-        .filter(ConversationInteractions.conversation_id == conversationId, ConversationInteractions.is_deleted == False)
+        .filter(
+            ConversationInteractions.conversation_id == conversationId,
+            ConversationInteractions.is_deleted == False,
+        )
         .order_by(ConversationInteractions.created_at)
         .all()
     )
@@ -64,7 +72,10 @@ def resolve_conversation_interaction(_, info, id: str):
 
     interaction = (
         db.query(ConversationInteractions)
-        .filter(ConversationInteractions.id == id, ConversationInteractions.is_deleted == False)
+        .filter(
+            ConversationInteractions.id == id,
+            ConversationInteractions.is_deleted == False,
+        )
         .first()
     )
 
@@ -101,7 +112,10 @@ async def resolve_talk_with_ai(_, info, input):
     # Check if the conversation exists and user has access
     conversation = (
         db.query(FreeConversation)
-        .filter(FreeConversation.id == input["conversationId"], FreeConversation.is_deleted == False)
+        .filter(
+            FreeConversation.id == input["conversationId"],
+            FreeConversation.is_deleted == False,
+        )
         .first()
     )
 
@@ -126,15 +140,14 @@ async def resolve_talk_with_ai(_, info, input):
         .all()
     )
 
-
     # Generate AI response
-    if 'text' in input:
-        student_text = input['text']
-        student_audio_url = text_to_speech(input['text'])
-        
-    elif 'audioFile' in input:
-        audio_file: UploadFile = input['audioFile']
-        audio_filepath = f'static/{uuid.uuid4()}{audio_file.filename}'
+    if "text" in input:
+        student_text = input["text"]
+        student_audio_url = text_to_speech(input["text"])
+
+    elif "audioFile" in input:
+        audio_file: UploadFile = input["audioFile"]
+        audio_filepath = f"static/{uuid.uuid4()}{audio_file.filename}"
 
         with open(audio_filepath) as f:
             f.write(await audio_file.read())
@@ -143,22 +156,19 @@ async def resolve_talk_with_ai(_, info, input):
         student_text = speech_to_text(audio_filepath)
 
     else:
-        raise Exception('Require text or audio')
+        raise Exception("Require text or audio")
 
     ai_response = ask_on_conversation(
-        student_text,
-        profile,
-        conversation,
-        prev_interactions
+        student_text, profile, conversation, prev_interactions
     )
 
     # Create new interaction
     interaction = ConversationInteractions(
         conversation_id=input["conversationId"],
         student_text=student_text,
-        student_audio_url= f'{info.context["base_url"]}{student_audio_url}',
+        student_audio_url=f'{info.context["base_url"]}{student_audio_url}',
         ai_text=ai_response["ai_text"],
-        ai_audio_url= f'{info.context["base_url"]}{ai_response["ai_audio_path"]}'
+        ai_audio_url=f'{info.context["base_url"]}{ai_response["ai_audio_path"]}',
     )
 
     db.add(interaction)
@@ -178,7 +188,9 @@ def resolve_possible_talk(_, info, conversationId: str):
     # Check if the conversation exists and user has access
     conversation = (
         db.query(FreeConversation)
-        .filter(FreeConversation.id == conversationId, FreeConversation.is_deleted == False)
+        .filter(
+            FreeConversation.id == conversationId, FreeConversation.is_deleted == False
+        )
         .first()
     )
 
@@ -204,11 +216,7 @@ def resolve_possible_talk(_, info, conversationId: str):
     )
 
     # Generate possible talk idea
-    ai_response = generate_possible_talk(
-        profile,
-        conversation,
-        prev_interactions
-    )
+    ai_response = generate_possible_talk(profile, conversation, prev_interactions)
     return ai_response
 
 
@@ -222,7 +230,10 @@ def resolve_delete_conversation_interaction(_, info, id: str):
 
     interaction = (
         db.query(ConversationInteractions)
-        .filter(ConversationInteractions.id == id, ConversationInteractions.is_deleted == False)
+        .filter(
+            ConversationInteractions.id == id,
+            ConversationInteractions.is_deleted == False,
+        )
         .first()
     )
 
