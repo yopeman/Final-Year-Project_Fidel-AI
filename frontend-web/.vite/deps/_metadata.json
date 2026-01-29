@@ -1,8 +1,88 @@
 {
-  "hash": "0d7483cf",
+  "hash": "0b32624d",
   "configHash": "75effa2b",
-  "lockfileHash": "17f6940e",
-  "browserHash": "bc4c58f9",
-  "optimized": {},
-  "chunks": {}
+  "lockfileHash": "940c498a",
+  "browserHash": "2e1a439e",
+  "optimized": {
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "f90e196d",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "671cfd43",
+      "needsInterop": true
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/react-router-dom/dist/index.mjs",
+      "file": "react-router-dom.js",
+      "fileHash": "17abacc0",
+      "needsInterop": false
+    },
+    "@apollo/client": {
+      "src": "../../node_modules/@apollo/client/core/index.js",
+      "file": "@apollo_client.js",
+      "fileHash": "de00cdd1",
+      "needsInterop": false
+    },
+    "@apollo/client/link/context": {
+      "src": "../../node_modules/@apollo/client/link/context/index.js",
+      "file": "@apollo_client_link_context.js",
+      "fileHash": "b1a62179",
+      "needsInterop": false
+    },
+    "react-hook-form": {
+      "src": "../../node_modules/react-hook-form/dist/index.esm.mjs",
+      "file": "react-hook-form.js",
+      "fileHash": "b1ad6f4b",
+      "needsInterop": false
+    },
+    "@hookform/resolvers/zod": {
+      "src": "../../node_modules/@hookform/resolvers/zod/dist/zod.mjs",
+      "file": "@hookform_resolvers_zod.js",
+      "fileHash": "02b9cd20",
+      "needsInterop": false
+    },
+    "framer-motion": {
+      "src": "../../node_modules/framer-motion/dist/es/index.mjs",
+      "file": "framer-motion.js",
+      "fileHash": "311bef4d",
+      "needsInterop": false
+    },
+    "zod": {
+      "src": "../../node_modules/zod/index.js",
+      "file": "zod.js",
+      "fileHash": "158e1650",
+      "needsInterop": false
+    },
+    "lucide-react": {
+      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.js",
+      "file": "lucide-react.js",
+      "fileHash": "73b1012f",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-MCHF3E6K": {
+      "file": "chunk-MCHF3E6K.js"
+    },
+    "chunk-AU2MKR2E": {
+      "file": "chunk-AU2MKR2E.js"
+    },
+    "chunk-VX2H6PUQ": {
+      "file": "chunk-VX2H6PUQ.js"
+    },
+    "chunk-2PUJWEOP": {
+      "file": "chunk-2PUJWEOP.js"
+    },
+    "chunk-LLFPEZXE": {
+      "file": "chunk-LLFPEZXE.js"
+    },
+    "chunk-G3PMV62Z": {
+      "file": "chunk-G3PMV62Z.js"
+    }
+  }
 }
