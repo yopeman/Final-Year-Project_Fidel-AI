@@ -147,5 +147,5 @@ uvicorn.pid
 *.swo
 *~
 
-# Uploads
+# Static
 static/

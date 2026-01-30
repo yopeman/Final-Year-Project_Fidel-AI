@@ -20,9 +20,9 @@ from .resolver.conversation_interactions import \
     conversation_interactions as ci_type
 from .resolver.conversation_interactions import mutation as ci_mutation
 from .resolver.conversation_interactions import query as ci_query
-# from .resolver.course import course, mutation as c_mutation, query as c_query
-# from .resolver.course_material import course_material, mutation as cm_mutation, query as cm_query
-# from .resolver.material_files import material_files, mutation as mf_mutation, query as mf_query
+from .resolver.course import course, mutation as c_mutation, query as c_query
+from .resolver.course_material import course_material, mutation as cm_mutation, query as cm_query
+from .resolver.material_files import material_files, mutation as mf_mutation, query as mf_query
 from .resolver.free_conversation import free_conversation as fc_type
 from .resolver.free_conversation import mutation as fc_mutation
 from .resolver.free_conversation import query as fc_query
@@ -111,15 +111,15 @@ bindables = [
     # cs_query,
     # cs_mutation,
     # course_schedule,
-    # c_query,
-    # c_mutation,
-    # course,
-    # cm_query,
-    # cm_mutation,
-    # course_material,
-    # mf_query,
-    # mf_mutation,
-    # material_files,
+    c_query,
+    c_mutation,
+    course,
+    cm_query,
+    cm_mutation,
+    course_material,
+    mf_query,
+    mf_mutation,
+    material_files,
     vc_type,
     sp_query,
     sp_mutation,

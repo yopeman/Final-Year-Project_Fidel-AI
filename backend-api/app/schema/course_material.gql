@@ -11,3 +11,25 @@ type CourseMaterial {
   course: Course!
   files: [MaterialFiles!]!
 }
+
+extend type Query {
+  materials(courseId: ID): [CourseMaterial!]!
+  material(id: ID!): CourseMaterial
+}
+
+extend type Mutation {
+  addMaterial(input: AddMaterialInput!): CourseMaterial!
+  changeMaterial(id: ID!, input: UpdateMaterialInput!): CourseMaterial!
+  deleteMaterial(id: ID!): Boolean!
+}
+
+input AddMaterialInput {
+  courseId: ID!
+  name: String!
+  description: String
+}
+
+input UpdateMaterialInput {
+  name: String
+  description: String
+}
