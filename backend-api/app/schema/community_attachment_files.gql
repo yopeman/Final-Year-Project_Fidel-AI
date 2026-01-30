@@ -4,6 +4,7 @@ type CommunityAttachmentFiles {
   fileName: String!
   filePath: String!
   fileExtension: String!
+  fileSize: Int!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!
