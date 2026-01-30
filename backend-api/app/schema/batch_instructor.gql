@@ -16,3 +16,27 @@ type BatchInstructor {
   user: User!
   batchCourse: BatchCourse!
 }
+
+
+input CreateBatchInstructorInput {
+  userId: ID!
+  batchCourseId: ID!
+  role: InstructorRole!
+}
+
+input UpdateBatchInstructorInput {
+  userId: ID
+  batchCourseId: ID
+  role: InstructorRole
+}
+
+extend type Query {
+  instructors(batchId: ID): [BatchInstructor!]!
+  instructor(id: ID!): BatchInstructor
+}
+
+extend type Mutation {
+  createInstructor(input: CreateBatchInstructorInput!): BatchInstructor!
+  updateInstructor(id: ID!, input: UpdateBatchInstructorInput!): BatchInstructor!
+  deleteInstructor(id: ID!): Boolean!
+}
