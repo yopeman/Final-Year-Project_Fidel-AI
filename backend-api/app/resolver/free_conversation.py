@@ -15,7 +15,7 @@ free_conversation = ObjectType("FreeConversation")
 
 
 @query.field("freeConversations")
-def resolve_free_conversations(_, info):
+def resolve_free_conversations(_, info, profileId: str):
     current_user: User = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -26,7 +26,7 @@ def resolve_free_conversations(_, info):
     profile = (
         db.query(StudentProfile)
         .filter(
-            StudentProfile.user_id == current_user.id,
+            StudentProfile.id == profileId,
             StudentProfile.is_deleted == False,
         )
         .first()

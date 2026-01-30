@@ -8,10 +8,21 @@ from fastapi.staticfiles import StaticFiles
 
 from . import model  # Import all models to register them with SQLAlchemy
 from .config.database import create_table, get_db
+# from .resolver.attendance import attendance, mutation as a_mutation, query as a_query
+from .resolver.batch import batch, mutation as b_mutation, query as b_query
+# from .resolver.batch_course import batch_course, mutation as bc_mutation, query as bc_query
+# from .resolver.batch_enrollment import batch_enrollment, mutation as be_mutation, query as be_query
+# from .resolver.feedback import feedback, mutation as f_mutation, query as f_query
+# from .resolver.notification import notification, mutation as n_mutation, query as n_query
+# from .resolver.schedule import schedule, mutation as s_mutation, query as s_query
+# from .resolver.course_schedule import course_schedule, mutation as cs_mutation, query as cs_query
 from .resolver.conversation_interactions import \
     conversation_interactions as ci_type
 from .resolver.conversation_interactions import mutation as ci_mutation
 from .resolver.conversation_interactions import query as ci_query
+# from .resolver.course import course, mutation as c_mutation, query as c_query
+# from .resolver.course_material import course_material, mutation as cm_mutation, query as cm_query
+# from .resolver.material_files import material_files, mutation as mf_mutation, query as mf_query
 from .resolver.free_conversation import free_conversation as fc_type
 from .resolver.free_conversation import mutation as fc_mutation
 from .resolver.free_conversation import query as fc_query
@@ -56,12 +67,17 @@ app.add_middleware(
 create_table()
 create_default_admin()
 
-# DateTime scalar
+# Date & DateTime scalar
 datetime_scalar = ScalarType("DateTime")
-
-
 @datetime_scalar.serializer
 def serialize_datetime(value):
+    if value is None:
+        return None
+    return value.isoformat()
+
+date_scalar = ScalarType("Date")
+@date_scalar.serializer
+def serialize_date(value):
     if value is None:
         return None
     return value.isoformat()
@@ -71,6 +87,39 @@ bindables = [
     query,
     mutation,
     user,
+    # a_query,
+    # a_mutation,
+    # attendance,
+    b_query,
+    b_mutation,
+    batch,
+    # bc_query,
+    # bc_mutation,
+    # batch_course,
+    # be_query,
+    # be_mutation,
+    # batch_enrollment,
+    # f_query,
+    # f_mutation,
+    # feedback,
+    # n_query,
+    # n_mutation,
+    # notification,
+    # s_query,
+    # s_mutation,
+    # schedule,
+    # cs_query,
+    # cs_mutation,
+    # course_schedule,
+    # c_query,
+    # c_mutation,
+    # course,
+    # cm_query,
+    # cm_mutation,
+    # course_material,
+    # mf_query,
+    # mf_mutation,
+    # material_files,
     vc_type,
     sp_query,
     sp_mutation,
@@ -99,6 +148,7 @@ bindables = [
     ci_mutation,
     ci_type,
     datetime_scalar,
+    date_scalar,
 ]
 
 schema = make_executable_schema(type_defs, *bindables)
