@@ -13,8 +13,8 @@ from .resolver.batch import batch, mutation as b_mutation, query as b_query
 from .resolver.batch_course import batch_course, mutation as bc_mutation, query as bc_query
 from .resolver.batch_enrollment import batch_enrollment, mutation as be_mutation, query as be_query
 from .resolver.batch_instructor import batch_instructor, mutation as bi_mutation, query as bi_query
-# from .resolver.feedback import feedback, mutation as f_mutation, query as f_query
-# from .resolver.notification import notification, mutation as n_mutation, query as n_query
+from .resolver.feedback import feedback, mutation as f_mutation, query as f_query
+from .resolver.notification import notification, mutation as n_mutation, query as n_query
 from .resolver.schedule import schedule, mutation as s_mutation, query as s_query
 from .resolver.course_schedule import course_schedule, mutation as cs_mutation, query as cs_query
 from .resolver.conversation_interactions import \
@@ -103,12 +103,12 @@ bindables = [
     bi_query,
     bi_mutation,
     batch_instructor,
-    # f_query,
-    # f_mutation,
-    # feedback,
-    # n_query,
-    # n_mutation,
-    # notification,
+    f_query,
+    f_mutation,
+    feedback,
+    n_query,
+    n_mutation,
+    notification,
     s_query,
     s_mutation,
     schedule,
