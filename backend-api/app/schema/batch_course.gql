@@ -13,3 +13,24 @@ type BatchCourse {
   quizzes: [Quiz!]!
   instructors: [BatchInstructor!]!
 }
+
+extend type Query {
+  batchCourses(batchId: ID!): [BatchCourse!]!
+  batchCourse(id: ID!): BatchCourse
+}
+
+extend type Mutation {
+  createBatchCourse(input: CreateBatchCourseInput!): BatchCourse!
+  updateBatchCourse(id: ID!, input: UpdateBatchCourseInput!): BatchCourse!
+  deleteBatchCourse(id: ID!): Boolean!
+}
+
+input CreateBatchCourseInput {
+  batchId: ID!
+  courseId: ID!
+}
+
+input UpdateBatchCourseInput {
+  batchId: ID
+  courseId: ID
+}
