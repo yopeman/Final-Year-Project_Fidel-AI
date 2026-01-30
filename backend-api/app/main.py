@@ -15,8 +15,8 @@ from .resolver.batch_enrollment import batch_enrollment, mutation as be_mutation
 from .resolver.batch_instructor import batch_instructor, mutation as bi_mutation, query as bi_query
 # from .resolver.feedback import feedback, mutation as f_mutation, query as f_query
 # from .resolver.notification import notification, mutation as n_mutation, query as n_query
-# from .resolver.schedule import schedule, mutation as s_mutation, query as s_query
-# from .resolver.course_schedule import course_schedule, mutation as cs_mutation, query as cs_query
+from .resolver.schedule import schedule, mutation as s_mutation, query as s_query
+from .resolver.course_schedule import course_schedule, mutation as cs_mutation, query as cs_query
 from .resolver.conversation_interactions import \
     conversation_interactions as ci_type
 from .resolver.conversation_interactions import mutation as ci_mutation
@@ -109,12 +109,12 @@ bindables = [
     # n_query,
     # n_mutation,
     # notification,
-    # s_query,
-    # s_mutation,
-    # schedule,
-    # cs_query,
-    # cs_mutation,
-    # course_schedule,
+    s_query,
+    s_mutation,
+    schedule,
+    cs_query,
+    cs_mutation,
+    course_schedule,
     c_query,
     c_mutation,
     course,
