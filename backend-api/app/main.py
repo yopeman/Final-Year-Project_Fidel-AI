@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import model  # Import all models to register them with SQLAlchemy
 from .config.database import create_table, get_db
-# from .resolver.attendance import attendance, mutation as a_mutation, query as a_query
+from .resolver.attendance import attendance, mutation as a_mutation, query as a_query
 from .resolver.batch import batch, mutation as b_mutation, query as b_query
 from .resolver.batch_course import batch_course, mutation as bc_mutation, query as bc_query
 from .resolver.batch_enrollment import batch_enrollment, mutation as be_mutation, query as be_query
@@ -88,9 +88,9 @@ bindables = [
     query,
     mutation,
     user,
-    # a_query,
-    # a_mutation,
-    # attendance,
+    a_query,
+    a_mutation,
+    attendance,
     b_query,
     b_mutation,
     batch,

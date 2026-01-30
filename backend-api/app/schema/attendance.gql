@@ -24,3 +24,18 @@ type Attendance {
   courseSchedule: CourseSchedule!
   user: User!
 }
+
+type MeetingLinkResponse {
+  attendance: Attendance!
+  meetingLink: String
+}
+
+extend type Query {
+  attendances(courseId: ID!): [Attendance!]!
+  attendance(id: ID!): Attendance!
+}
+
+extend type Mutation {
+  getMeetingLink(courseScheduleId: ID!): MeetingLinkResponse!
+  deleteAttendance(id: ID!): Boolean!
+}
