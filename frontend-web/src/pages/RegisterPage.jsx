@@ -4,14 +4,25 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@apollo/client';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { GraduationCap, User, Mail, Lock, ArrowLeft, Loader2 } from 'lucide-react';
+import { 
+  GraduationCap, 
+  User, 
+  Mail, 
+  Lock, 
+  ArrowLeft, 
+  Loader2, 
+  AlertCircle,
+  CheckCircle,
+  Sparkles
+} from 'lucide-react';
 import { registerSchema } from '../lib/validation';
 import { REGISTER_MUTATION } from '../graphql/auth';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const [registerMutation, { loading, error }] = useMutation(REGISTER_MUTATION);
+  const [registerMutation, { loading }] = useMutation(REGISTER_MUTATION);
   const [serverError, setServerError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const {
     register,
@@ -20,51 +31,86 @@ const RegisterPage = () => {
   } = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      role: 'STUDENT',
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      terms: false,
     },
   });
 
   const onSubmit = async (data) => {
     try {
       setServerError('');
+      setSuccessMessage('');
+      console.log('Registration data:', data);
+      
+      // Format the input - NO ROLE FIELD in frontend
+      const input = {
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        email: data.email.toLowerCase().trim(),
+        password: data.password,
+        // Role is NOT sent from frontend - backend will assign it
+      };
+
+      console.log('Sending registration input (no role field):', input);
+
       const response = await registerMutation({
         variables: {
-          input: {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            email: data.email,
-            password: data.password,
-            role: data.role,
-          },
+          input: input,
         },
       });
 
-      if (response.data?.register) {
-        navigate('/login', { 
-          state: { 
-            message: 'Registration successful! Please login to continue.' 
-          } 
-        });
+      console.log('Registration response:', response);
+
+      // Handle successful registration
+      if (response.data?.register || response.data?.register?.success) {
+        setSuccessMessage('Account created successfully! You will be registered as a Student.');
+        
+        // Navigate to login after a delay
+        setTimeout(() => {
+          navigate('/login', { 
+            state: { 
+              message: 'Registration successful! Please login to continue.' 
+            } 
+          });
+        }, 2000);
+      } else {
+        throw new Error('Registration failed. Please try again.');
       }
     } catch (err) {
-      console.error('Registration error:', err);
-      setServerError(err.message || 'Registration failed. Please try again.');
+      console.error('Registration error details:', err);
+      
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (err.graphQLErrors && err.graphQLErrors.length > 0) {
+        const graphQLError = err.graphQLErrors[0];
+        console.log('GraphQL Error:', graphQLError);
+        
+        if (graphQLError.message.includes('unique') || graphQLError.message.includes('duplicate')) {
+          errorMessage = 'Email already exists. Please use a different email.';
+        } else if (graphQLError.message.includes('validation') || graphQLError.message.includes('invalid')) {
+          errorMessage = 'Invalid input data. Please check your information.';
+        } else {
+          errorMessage = graphQLError.message;
+        }
+      } else if (err.networkError) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setServerError(errorMessage);
     }
   };
-
-  const roleOptions = [
-    { value: 'STUDENT', label: 'Student', description: 'I want to learn English' },
-    { value: 'TUTOR', label: 'Tutor', description: 'I want to teach English' },
-    { value: 'ADMIN', label: 'Administrator', description: 'I manage the platform' },
-    { value: 'UNDETERMINED', label: 'Not Sure', description: 'I\'ll decide later' },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
         <Link 
           to="/" 
-          className="inline-flex items-center text-gray-600 hover:text-indigo-600 mb-8"
+          className="inline-flex items-center text-gray-600 hover:text-indigo-600 mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Home
@@ -76,57 +122,106 @@ const RegisterPage = () => {
           className="bg-white rounded-2xl shadow-2xl overflow-hidden"
         >
           <div className="md:flex">
+            {/* Left Panel */}
             <div className="md:w-2/5 bg-gradient-to-br from-indigo-600 to-purple-600 p-12 text-white">
               <div className="h-full flex flex-col justify-center">
                 <div className="flex items-center mb-8">
-                  <GraduationCap className="w-10 h-10 mr-3" />
+                  <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-3">
+                    <GraduationCap className="w-7 h-7" />
+                  </div>
                   <span className="text-3xl font-bold">Fidel<span className="text-indigo-200">AI</span></span>
                 </div>
                 
-                <h1 className="text-4xl font-bold mb-6">Join Our Learning Community</h1>
+                <h1 className="text-4xl font-bold mb-6">Start Your English Journey</h1>
                 <p className="text-indigo-100 text-lg mb-8">
-                  Start your English learning journey with AI-powered lessons, live tutors, and personalized curriculum.
+                  Join thousands of learners using AI-powered English education.
                 </p>
                 
                 <div className="space-y-4">
                   {[
                     "AI-Personalized Learning Path",
                     "Live Tutor Sessions",
-                    "Local Payment Integration",
-                    "Progress Tracking"
+                    "Progress Tracking & Certificates",
+                    "Community Interaction",
+                    "Local Payment Integration"
                   ].map((feature, index) => (
                     <div key={index} className="flex items-center">
                       <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                        <div className="w-2 h-2 bg-white rounded-full" />
+                        <Sparkles className="w-3 h-3 text-white" />
                       </div>
-                      <span>{feature}</span>
+                      <span className="text-indigo-100">{feature}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
+            {/* Right Panel - Registration Form */}
             <div className="md:w-3/5 p-12">
               <div className="max-w-md mx-auto">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
-                <p className="text-gray-600 mb-8">
-                  Already have an account?{' '}
-                  <Link to="/login" className="text-indigo-600 hover:text-indigo-700 font-medium">
-                    Sign in here
-                  </Link>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Your Account</h2>
+                <p className="text-gray-600 mb-6">
+                  Start learning English with AI-powered lessons
                 </p>
 
-                {(serverError || error) && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm">{serverError || error.message}</p>
+                {/* Auto Role Assignment Notice */}
+                <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                      <GraduationCap className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="text-indigo-800 font-medium">Automatic Role Assignment</p>
+                      <p className="text-indigo-700 text-sm mt-1">
+                        You will be automatically registered as a <strong>Student</strong>.
+                        Role assignment is handled by the system.
+                      </p>
+                    </div>
                   </div>
+                </div>
+
+                {/* Success Message */}
+                {successMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg"
+                  >
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-green-800 font-medium">Success!</p>
+                        <p className="text-green-700 text-sm mt-1">{successMessage}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Error Message */}
+                {serverError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg"
+                  >
+                    <div className="flex items-start">
+                      <AlertCircle className="w-5 h-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-red-800 font-medium">Registration Error</p>
+                        <p className="text-red-700 text-sm mt-1">{serverError}</p>
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Name Fields */}
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        First Name
+                        First Name *
                       </label>
                       <div className="relative">
                         <div className="absolute left-3 top-3 text-gray-400">
@@ -135,18 +230,22 @@ const RegisterPage = () => {
                         <input
                           type="text"
                           {...register('firstName')}
-                          className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                           placeholder="John"
+                          disabled={loading}
                         />
                       </div>
                       {errors.firstName && (
-                        <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          {errors.firstName.message}
+                        </p>
                       )}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Last Name
+                        Last Name *
                       </label>
                       <div className="relative">
                         <div className="absolute left-3 top-3 text-gray-400">
@@ -155,19 +254,24 @@ const RegisterPage = () => {
                         <input
                           type="text"
                           {...register('lastName')}
-                          className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                           placeholder="Doe"
+                          disabled={loading}
                         />
                       </div>
                       {errors.lastName && (
-                        <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          {errors.lastName.message}
+                        </p>
                       )}
                     </div>
                   </div>
 
+                  {/* Email Field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address
+                      Email Address *
                     </label>
                     <div className="relative">
                       <div className="absolute left-3 top-3 text-gray-400">
@@ -176,18 +280,23 @@ const RegisterPage = () => {
                       <input
                         type="email"
                         {...register('email')}
-                        className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                         placeholder="you@example.com"
+                        disabled={loading}
                       />
                     </div>
                     {errors.email && (
-                      <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                      <p className="mt-1 text-sm text-red-600 flex items-center">
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        {errors.email.message}
+                      </p>
                     )}
                   </div>
 
+                  {/* Password Field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Password
+                      Password *
                     </label>
                     <div className="relative">
                       <div className="absolute left-3 top-3 text-gray-400">
@@ -196,126 +305,106 @@ const RegisterPage = () => {
                       <input
                         type="password"
                         {...register('password')}
-                        className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                         placeholder="••••••••"
+                        disabled={loading}
                       />
                     </div>
                     {errors.password && (
-                      <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                      <p className="mt-1 text-sm text-red-600 flex items-center">
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        {errors.password.message}
+                      </p>
                     )}
                     <p className="mt-2 text-sm text-gray-500">
-                      Must be at least 6 characters long
+                      Must be at least 6 characters with uppercase, lowercase, and number
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      I want to join as:
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {roleOptions.map((option) => (
-                        <label
-                          key={option.value}
-                          className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
-                            errors.role ? 'border-red-300' : 'border-gray-200'
-                          } hover:border-indigo-300`}
-                        >
-                          <input
-                            type="radio"
-                            {...register('role')}
-                            value={option.value}
-                            className="sr-only peer"
-                          />
-                          <div className="flex items-start">
-                            <div className="flex-shrink-0">
-                              <div className="w-5 h-5 border-2 border-gray-300 rounded-full peer-checked:border-indigo-600 peer-checked:bg-indigo-600 flex items-center justify-center">
-                                <div className="w-2 h-2 bg-white rounded-full peer-checked:block hidden" />
-                              </div>
-                            </div>
-                            <div className="ml-3">
-                              <div className="font-medium text-gray-900">{option.label}</div>
-                              <div className="text-sm text-gray-500 mt-1">{option.description}</div>
-                            </div>
-                          </div>
-                        </label>
-                      ))}
+                  {/* Terms and Conditions */}
+                  <div className="flex items-start">
+                    <div className="flex items-center h-5">
+                      <input
+                        id="terms"
+                        type="checkbox"
+                        {...register('terms')}
+                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                        disabled={loading}
+                      />
                     </div>
-                    {errors.role && (
-                      <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
-                    )}
+                    <div className="ml-3">
+                      <label htmlFor="terms" className="text-sm text-gray-600">
+                        I agree to the{' '}
+                        <Link to="/terms" className="text-indigo-600 hover:text-indigo-700">
+                          Terms of Service
+                        </Link>{' '}
+                        and{' '}
+                        <Link to="/privacy" className="text-indigo-600 hover:text-indigo-700">
+                          Privacy Policy
+                        </Link>
+                      </label>
+                      {errors.terms && (
+                        <p className="mt-1 text-sm text-red-600 flex items-center">
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          {errors.terms.message}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center">
-                    <input
-                      id="terms"
-                      type="checkbox"
-                      required
-                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                    />
-                    <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
-                      I agree to the{' '}
-                      <a href="#" className="text-indigo-600 hover:text-indigo-700">
-                        Terms of Service
-                      </a>{' '}
-                      and{' '}
-                      <a href="#" className="text-indigo-600 hover:text-indigo-700">
-                        Privacy Policy
-                      </a>
-                    </label>
-                  </div>
-
+                  {/* Submit Button */}
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 transition focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-md hover:shadow-lg"
                   >
                     {loading ? (
                       <>
                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Creating Account...
+                        Creating Student Account...
                       </>
                     ) : (
-                      'Create Account'
+                      <>
+                        <GraduationCap className="w-5 h-5 mr-2" />
+                        Create Student Account
+                      </>
                     )}
                   </button>
 
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-white text-gray-500">Or continue with</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center justify-center"
-                    >
-                      <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                      </svg>
-                      Google
-                    </button>
-                    <button
-                      type="button"
-                      className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center justify-center"
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="#000000" viewBox="0 0 24 24">
-                        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-                      </svg>
-                      GitHub
-                    </button>
+                  {/* Login Link */}
+                  <div className="text-center pt-4">
+                    <p className="text-sm text-gray-600">
+                      Already have an account?{' '}
+                      <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                        Sign in
+                      </Link>
+                    </p>
                   </div>
                 </form>
+
+                {/* Registration Info */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 mb-1">
+                      <GraduationCap className="w-3 h-3 inline mr-1" />
+                      All new registrations are automatically assigned as <strong>Students</strong>
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Role assignment is managed by the backend system
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </motion.div>
+
+        {/* Footer */}
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500">
+            © 2024 FidelAI. Bahir Dar University Final Year Project.
+          </p>
+        </div>
       </div>
     </div>
   );
