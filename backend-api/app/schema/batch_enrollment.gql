@@ -24,3 +24,20 @@ type BatchEnrollment {
   payments: [Payment!]!
   certificates: [Certificate!]!
 }
+
+input UpdateEnrollmentInput {
+  batchId: ID
+  profileId: ID
+  status: EnrollmentStatus
+}
+
+extend type Query {
+  enrollments(batchId: ID!): [BatchEnrollment!]!
+  enrollment(id: ID!): BatchEnrollment!
+}
+
+extend type Mutation {
+  createEnrollment(batchId: ID!): BatchEnrollment!
+  updateEnrollment(id: ID!, input: UpdateEnrollmentInput!): BatchEnrollment!
+  deleteEnrollment(id: ID!): Boolean!
+}

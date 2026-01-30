@@ -11,7 +11,7 @@ from .config.database import create_table, get_db
 # from .resolver.attendance import attendance, mutation as a_mutation, query as a_query
 from .resolver.batch import batch, mutation as b_mutation, query as b_query
 # from .resolver.batch_course import batch_course, mutation as bc_mutation, query as bc_query
-# from .resolver.batch_enrollment import batch_enrollment, mutation as be_mutation, query as be_query
+from .resolver.batch_enrollment import batch_enrollment, mutation as be_mutation, query as be_query
 # from .resolver.feedback import feedback, mutation as f_mutation, query as f_query
 # from .resolver.notification import notification, mutation as n_mutation, query as n_query
 # from .resolver.schedule import schedule, mutation as s_mutation, query as s_query
@@ -96,9 +96,9 @@ bindables = [
     # bc_query,
     # bc_mutation,
     # batch_course,
-    # be_query,
-    # be_mutation,
-    # batch_enrollment,
+    be_query,
+    be_mutation,
+    batch_enrollment,
     # f_query,
     # f_mutation,
     # feedback,
