@@ -27,4 +27,5 @@ dependencies = [
     "response>=0.5.0",
     "requests>=2.32.5",
     "broadcaster==0.3.1",
+    "websockets>=15.0.1",
 ]

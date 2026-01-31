@@ -7,13 +7,44 @@ from sqlalchemy.orm import Session
 from ..model.batch_community import BatchCommunity
 from ..model.community_reactions import CommunityReactions, ReactionType
 from ..model.user import User
-from ..util.auth import get_current_user
 
 query = QueryType()
 mutation = MutationType()
 community_reactions = ObjectType("CommunityReactions")
 
 # Reaction fields
+@community_reactions.field("id")
+def resolve_id(reaction_obj, info):
+    return reaction_obj.id
+
+@community_reactions.field("userId")
+def resolve_user_id(reaction_obj, info):
+    return reaction_obj.user_id
+
+@community_reactions.field("communityId")
+def resolve_community_id(reaction_obj, info):
+    return reaction_obj.community_id
+
+@community_reactions.field("reactionType")
+def resolve_reaction_type(reaction_obj, info):
+    return reaction_obj.reaction_type.value.upper()
+
+@community_reactions.field("createdAt")
+def resolve_created_at(reaction_obj, info):
+    return reaction_obj.created_at
+
+@community_reactions.field("updatedAt")
+def resolve_updated_at(reaction_obj, info):
+    return reaction_obj.updated_at
+
+@community_reactions.field("isDeleted")
+def resolve_is_deleted(reaction_obj, info):
+    return reaction_obj.is_deleted
+
+@community_reactions.field("deletedAt")
+def resolve_deleted_at(reaction_obj, info):
+    return reaction_obj.deleted_at
+
 @community_reactions.field("user")
 def resolve_user(reaction_obj, info):
     db: Session = info.context["db"]

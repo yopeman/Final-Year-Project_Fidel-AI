@@ -236,6 +236,7 @@ dependencies = [
     { name = "response" },
     { name = "sqlalchemy" },
     { name = "uvicorn", extra = ["standard"] },
+    { name = "websockets" },
     { name = "youtube-search" },
 ]
 
@@ -262,6 +263,7 @@ requires-dist = [
     { name = "response", specifier = ">=0.5.0" },
     { name = "sqlalchemy", specifier = ">=2.0.45" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.40.0" },
+    { name = "websockets", specifier = ">=15.0.1" },
     { name = "youtube-search", specifier = ">=2.2.0" },
 ]
 

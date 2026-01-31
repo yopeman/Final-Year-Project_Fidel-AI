@@ -19,14 +19,6 @@ extend type Query {
 }
 
 extend type Mutation {
-  addAttachments(communityId: ID!, files: [AttachmentInput!]!): [CommunityAttachmentFiles!]!
-  addAttachment(communityId: ID!, fileName: String!, filePath: String!, fileExtension: String!, fileSize: Int!): CommunityAttachmentFiles!
+  uploadAttachments(communityId: ID!, files: [Upload!]!): [CommunityAttachmentFiles!]!
   deleteAttachment(id: ID!): Boolean!
-}
-
-input AttachmentInput {
-  fileName: String!
-  filePath: String!
-  fileExtension: String!
-  fileSize: Int!
 }

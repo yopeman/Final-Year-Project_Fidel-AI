@@ -7,13 +7,44 @@ from sqlalchemy.orm import Session
 from ..model.community_comment import CommunityComment
 from ..model.comment_reactions import CommentReactions, ReactionType
 from ..model.user import User
-from ..util.auth import get_current_user
 
 query = QueryType()
 mutation = MutationType()
 comment_reactions = ObjectType("CommentReactions")
 
 # Reaction fields
+@comment_reactions.field("id")
+def resolve_id(reaction_obj, info):
+    return reaction_obj.id
+
+@comment_reactions.field("userId")
+def resolve_user_id(reaction_obj, info):
+    return reaction_obj.user_id
+
+@comment_reactions.field("commentId")
+def resolve_comment_id(reaction_obj, info):
+    return reaction_obj.comment_id
+
+@comment_reactions.field("reactionType")
+def resolve_reaction_type(reaction_obj, info):
+    return reaction_obj.reaction_type.value.upper()
+
+@comment_reactions.field("createdAt")
+def resolve_created_at(reaction_obj, info):
+    return reaction_obj.created_at
+
+@comment_reactions.field("updatedAt")
+def resolve_updated_at(reaction_obj, info):
+    return reaction_obj.updated_at
+
+@comment_reactions.field("isDeleted")
+def resolve_is_deleted(reaction_obj, info):
+    return reaction_obj.is_deleted
+
+@comment_reactions.field("deletedAt")
+def resolve_deleted_at(reaction_obj, info):
+    return reaction_obj.deleted_at
+
 @comment_reactions.field("user")
 def resolve_user(reaction_obj, info):
     db: Session = info.context["db"]

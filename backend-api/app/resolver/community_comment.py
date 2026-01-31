@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from ..model.batch_community import BatchCommunity
 from ..model.community_comment import CommunityComment
 from ..model.user import User
-from ..util.auth import get_current_user
 
 query = QueryType()
 mutation = MutationType()
@@ -30,8 +29,39 @@ def resolve_user(comment_obj, info):
 def resolve_reactions(comment_obj, info):
     db: Session = info.context["db"]
     from ..model.comment_reactions import CommentReactions
-    reactions = db.query(CommentReactions).filter(CommentReactions.comment_id == comment_obj.id, CommentReactions.is_deleted == False).all()
+    reactions = db.query(CommentReactions).filter(
+        CommentReactions.comment_id == comment_obj.id, 
+        CommentReactions.is_deleted == False
+    ).all()
     return reactions
+
+@community_comment.field("communityId")
+def resolve_community_id(comment_obj, info):
+    return comment_obj.community_id
+
+@community_comment.field("userId")
+def resolve_user_id(comment_obj, info):
+    return comment_obj.user_id
+
+@community_comment.field("isEdited")
+def resolve_is_edited(comment_obj, info):
+    return comment_obj.is_edited
+
+@community_comment.field("createdAt")
+def resolve_created_at(comment_obj, info):
+    return comment_obj.created_at
+
+@community_comment.field("updatedAt")
+def resolve_updated_at(comment_obj, info):
+    return comment_obj.updated_at
+
+@community_comment.field("isDeleted")
+def resolve_is_deleted(comment_obj, info):
+    return comment_obj.is_deleted
+
+@community_comment.field("deletedAt")
+def resolve_deleted_at(comment_obj, info):
+    return comment_obj.deleted_at
 
 # Query resolvers
 @query.field("comments")
