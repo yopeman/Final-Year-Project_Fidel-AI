@@ -23,6 +23,35 @@ def resolve_batch(community_obj, info):
     batch = db.query(BatchCommunity).filter(BatchCommunity.id == community_obj.batch_id).first()
     return batch.batch if batch else None
 
+@batch_community.field("batchId")
+def resolve_batch_id(community_obj, info):
+    return community_obj.batch_id
+
+@batch_community.field("userId")
+def resolve_user_id(community_obj, info):
+    return community_obj.user_id
+
+@batch_community.field("isEdited")
+def resolve_is_edited(community_obj, info):
+    return community_obj.is_edited
+
+@batch_community.field("createdAt")
+def resolve_created_at(community_obj, info):
+    return community_obj.created_at
+
+@batch_community.field("updatedAt")
+def resolve_updated_at(community_obj, info):
+    return community_obj.updated_at
+
+@batch_community.field("isDeleted")
+def resolve_is_deleted(community_obj, info):
+    return community_obj.is_deleted
+
+@batch_community.field("deletedAt")
+def resolve_deleted_at(community_obj, info):
+    return community_obj.deleted_at
+
+
 @batch_community.field("user")
 def resolve_user(community_obj, info):
     db: Session = info.context["db"]
@@ -155,7 +184,10 @@ def resolve_delete_community(_, info, id: str):
 async def community_updated_generator(obj, info, batchId: str):
     # This will be called when the subscription is established
     # The actual publishing happens in the mutation resolvers
-    yield f"batch_{batchId}"
+    pubsub = info.context["pubsub"]
+    async with pubsub.subscribe(channel=f"batch_{batchId}") as subscriber:
+        async for event in subscriber:
+            yield event
 
 @subscription.field("communityUpdated")
 def resolve_community_updated(payload, info):

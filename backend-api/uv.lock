@@ -217,6 +217,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "ariadne" },
     { name = "bcrypt" },
+    { name = "broadcaster" },
     { name = "duckduckgo-search" },
     { name = "fastapi" },
     { name = "faster-whisper" },
@@ -242,6 +243,7 @@ dependencies = [
 requires-dist = [
     { name = "ariadne", specifier = ">=0.26.2" },
     { name = "bcrypt", specifier = "==4.1.3" },
+    { name = "broadcaster", specifier = "==0.3.1" },
     { name = "duckduckgo-search", specifier = ">=8.1.1" },
     { name = "fastapi", specifier = ">=0.128.0" },
     { name = "faster-whisper", specifier = ">=1.2.1" },
@@ -291,6 +293,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/9c/64/a016d23b6f513282d8b7f9dd91342929a2e970b2e2c2576d9b76f8f2ee5a/bcrypt-4.1.3-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:6717543d2c110a155e6821ce5670c1f512f602eabb77dba95717ca76af79867d", size = 335334, upload-time = "2024-05-04T04:12:40.442Z" },
     { url = "https://files.pythonhosted.org/packages/75/35/036d69e46c60394f2ffb474c9a4b3783e84395bf4ad55176771f603069ca/bcrypt-4.1.3-cp39-abi3-win32.whl", hash = "sha256:6004f5229b50f8493c49232b8e75726b568535fd300e5039e255d919fc3a07f2", size = 167071, upload-time = "2024-05-04T04:12:42.256Z" },
     { url = "https://files.pythonhosted.org/packages/b1/46/fada28872f3f3e121868f4cd2d61dcdc7085a07821debf1320cafeabc0db/bcrypt-4.1.3-cp39-abi3-win_amd64.whl", hash = "sha256:2505b54afb074627111b5a8dc9b6ae69d0f01fea65c2fcaea403448c503d3991", size = 158124, upload-time = "2024-05-04T04:12:44.085Z" },
+]
+
+[[package]]
+name = "broadcaster"
+version = "0.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0f/9a/937530b4b1339f96423ef314b832aa585250c99de465a6ec1a12da03bbda/broadcaster-0.3.1.tar.gz", hash = "sha256:35d1e174a98346d184cc6558979548340e877ae841c65c7e354153a84fe675d6", size = 6945, upload-time = "2024-08-01T21:15:38.867Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/17/db/6789b924f1349739ea3a4eff0ad6877d1c4a2f844e8a15db49fd6335a532/broadcaster-0.3.1-py3-none-any.whl", hash = "sha256:433023ab6b6b4a8da9cbba95910eff52b1e767141419659be287cfd49f2a3ecb", size = 9545, upload-time = "2024-08-01T21:15:36.491Z" },
 ]
 
 [[package]]

@@ -2,7 +2,9 @@ import os
 
 from ariadne import ScalarType, make_executable_schema
 from ariadne.asgi import GraphQL
-from fastapi import FastAPI, Request, Depends
+from ariadne.asgi.handlers import GraphQLTransportWSHandler
+from broadcaster import Broadcast
+from fastapi import FastAPI, Request, Depends, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -184,9 +186,12 @@ schema = make_executable_schema(type_defs, *bindables)
 os.makedirs("static", exist_ok=True)
 
 
+# Initialize the broadcaster
+broadcast = Broadcast("memory://")
+
 def get_context_value(request: Request):
     db = next(get_db())
-    context = {"db": db}
+    context = {"db": db, "pubsub": broadcast}
     context["base_url"] = request.base_url
     auth_header = request.headers.get("authorization")
     if auth_header and auth_header.startswith("Bearer "):
@@ -197,7 +202,12 @@ def get_context_value(request: Request):
     return context
 
 
-graphql_app = GraphQL(schema, debug=True, context_value=get_context_value)
+graphql_app = GraphQL(
+    schema, 
+    debug=True, 
+    context_value=get_context_value, 
+    websocket_handler=GraphQLTransportWSHandler()
+)
 app.mount("/graphql", graphql_app)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
