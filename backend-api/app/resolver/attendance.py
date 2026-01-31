@@ -10,7 +10,8 @@ from ..model.course_schedule import CourseSchedule
 from ..model.schedule import Schedule
 from ..model.batch_course import BatchCourse
 from ..model.batch import Batch
-from ..model.user import User
+from ..model.user import User, UserRole
+from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
 
 query = QueryType()
 mutation = MutationType()
@@ -65,7 +66,7 @@ def resolve_attendance(_, info, id: str):
 @mutation.field("getMeetingLink")
 def resolve_get_meeting_link(_, info, courseScheduleId: str):
     db: Session = info.context["db"]
-    current_user = info.context.get("current_user")
+    current_user: User = info.context.get("current_user")
     
     if not current_user:
         raise Exception("Authentication required")
@@ -105,6 +106,15 @@ def resolve_get_meeting_link(_, info, courseScheduleId: str):
     
     if not batch:
         raise Exception("Batch not found")
+    
+
+    enrollment = db.query(BatchEnrollment).filter(
+        BatchEnrollment.batch_id == batch.id,
+        BatchEnrollment.is_deleted == False
+    ).first()
+    if enrollment.status != EnrollmentStatus.enrolled:
+        raise Exception('Enrollment not paid')
+
     
     # Get current time and calculate time difference from start time
     now = datetime.now()

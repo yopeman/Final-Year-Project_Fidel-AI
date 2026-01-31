@@ -19,6 +19,24 @@ type Notification {
   user: User!
 }
 
+extend type Query {
+  notifications(userId: ID!): [Notification!]!
+  notification(id: ID!): Notification
+}
+
+extend type Mutation {
+  sendNotification(input: SendNotificationInput!): Notification!
+  markAsReadNotification(id: ID!): Notification!
+  markAsReadAllNotifications: Boolean!
+  deleteNotification(id: ID!): Boolean!
+}
+
+input SendNotificationInput {
+  userId: ID!
+  title: String!
+  content: String!
+}
+
 
 input TranslateInput {
     text: String!
@@ -115,6 +133,21 @@ type Attendance {
   user: User!
 }
 
+type MeetingLinkResponse {
+  attendance: Attendance!
+  meetingLink: String
+}
+
+extend type Query {
+  attendances(courseId: ID!): [Attendance!]!
+  attendance(id: ID!): Attendance!
+}
+
+extend type Mutation {
+  getMeetingLink(courseScheduleId: ID!): MeetingLinkResponse!
+  deleteAttendance(id: ID!): Boolean!
+}
+
 
 type CourseSchedule {
   id: ID!
@@ -131,6 +164,29 @@ type CourseSchedule {
 }
 
 
+extend type Query {
+  courseSchedules(batchCourseId: ID): [CourseSchedule!]!
+  courseSchedule(id: ID!): CourseSchedule
+}
+
+extend type Mutation {
+  createCourseSchedule(input: CreateCourseScheduleInput!): CourseSchedule!
+  updateCourseSchedule(id: ID!, input: UpdateCourseScheduleInput!): CourseSchedule!
+  deleteCourseSchedule(id: ID!): Boolean!
+}
+
+
+input CreateCourseScheduleInput {
+  scheduleId: ID!
+  batchCourseId: ID!
+}
+
+input UpdateCourseScheduleInput {
+  scheduleId: ID
+  batchCourseId: ID
+}
+
+
 enum PaymentStatus {
   PENDING
   COMPLETED
@@ -142,10 +198,11 @@ type Payment {
   enrollmentId: ID!
   amount: Float!
   currency: String!
-  method: String!
+  method: String
   status: PaymentStatus!
   paidAt: DateTime
   transactionId: String
+  checkoutUrl: String
   receiptUrl: String
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -153,6 +210,17 @@ type Payment {
   deletedAt: DateTime
   # Relationships
   enrollment: BatchEnrollment!
+}
+
+extend type Query {
+  payments(enrollmentId: ID, status: PaymentStatus): [Payment!]!
+  payment(id: ID!): Payment!
+}
+
+extend type Mutation {
+  makePayment(enrollmentId: ID!): Payment!
+  cancelPayment(id: ID!): Payment!
+  deletePayment(id: ID!): Boolean!
 }
 
 
@@ -172,6 +240,27 @@ type BatchCourse {
   instructors: [BatchInstructor!]!
 }
 
+extend type Query {
+  batchCourses(batchId: ID!): [BatchCourse!]!
+  batchCourse(id: ID!): BatchCourse
+}
+
+extend type Mutation {
+  createBatchCourse(input: CreateBatchCourseInput!): BatchCourse!
+  updateBatchCourse(id: ID!, input: UpdateBatchCourseInput!): BatchCourse!
+  deleteBatchCourse(id: ID!): Boolean!
+}
+
+input CreateBatchCourseInput {
+  batchId: ID!
+  courseId: ID!
+}
+
+input UpdateBatchCourseInput {
+  batchId: ID
+  courseId: ID
+}
+
 
 type CommunityAttachmentFiles {
   id: ID!
@@ -179,6 +268,7 @@ type CommunityAttachmentFiles {
   fileName: String!
   filePath: String!
   fileExtension: String!
+  fileSize: Int!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!
@@ -194,12 +284,32 @@ type Feedback {
   context: String
   content: String!
   rate: Int!
+  isRead: Boolean!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!
   deletedAt: DateTime
   # Relationships
   user: User
+}
+
+extend type Query {
+  feedbacks(pagination: PaginationInput): [Feedback!]!
+  feedback(id: ID!): Feedback
+}
+
+extend type Mutation {
+  submitFeedback(input: SubmitFeedbackInput!): Feedback!
+  submitFeedbackAnonymously(input: SubmitFeedbackInput!): Feedback!
+  markAsReadFeedback(id: ID!): Feedback!
+  markAsReadAllFeedbacks: Boolean!
+  deleteFeedback(id: ID!): Boolean!
+}
+
+input SubmitFeedbackInput {
+  content: String!
+  context: String
+  rate: Int!
 }
 
 
@@ -228,6 +338,23 @@ type BatchEnrollment {
   skillResults: [SkillResult!]!
   payments: [Payment!]!
   certificates: [Certificate!]!
+}
+
+input UpdateEnrollmentInput {
+  batchId: ID
+  profileId: ID
+  status: EnrollmentStatus
+}
+
+extend type Query {
+  enrollments(batchId: ID!): [BatchEnrollment!]!
+  enrollment(id: ID!): BatchEnrollment!
+}
+
+extend type Mutation {
+  createEnrollment(batchId: ID!): BatchEnrollment!
+  updateEnrollment(id: ID!, input: UpdateEnrollmentInput!): BatchEnrollment!
+  deleteEnrollment(id: ID!): Boolean!
 }
 
 
@@ -311,6 +438,42 @@ type Batch {
   enrollments: [BatchEnrollment!]!
   communities: [BatchCommunity!]!
   instructors: [BatchInstructor!]!
+}
+
+
+extend type Query {
+  batches: [Batch!]!
+  batch(id: ID!): Batch
+}
+
+extend type Mutation {
+  createBatch(input: CreateBatchInput!): Batch!
+  updateBatch(id: ID!, input: UpdateBatchInput!): Batch!
+  deleteBatch(id: ID!): Boolean!
+}
+
+
+input CreateBatchInput {
+  name: String!
+  description: String
+  level: BatchLevel!
+  language: String! = "English"
+  startDate: Date!
+  endDate: Date
+  maxStudents: Int!
+  feeAmount: Float!
+}
+
+input UpdateBatchInput {
+  name: String
+  description: String
+  level: BatchLevel
+  language: String
+  startDate: Date
+  endDate: Date
+  maxStudents: Int
+  feeAmount: Float
+  status: BatchStatus
 }
 
 
@@ -579,6 +742,27 @@ type Course {
   batchCourses: [BatchCourse!]!
 }
 
+extend type Query {
+  courses: [Course!]!
+  course(id: ID!): Course
+}
+
+extend type Mutation {
+  createCourse(input: CreateCourseInput!): Course!
+  updateCourse(id: ID!, input: UpdateCourseInput!): Course!
+  deleteCourse(id: ID!): Boolean!
+}
+
+input CreateCourseInput {
+  name: String!
+  description: String
+}
+
+input UpdateCourseInput {
+  name: String
+  description: String
+}
+
 
 scalar DateTime
 scalar Date
@@ -611,6 +795,28 @@ type CourseMaterial {
   # Relationships
   course: Course!
   files: [MaterialFiles!]!
+}
+
+extend type Query {
+  materials(courseId: ID): [CourseMaterial!]!
+  material(id: ID!): CourseMaterial
+}
+
+extend type Mutation {
+  addMaterial(input: AddMaterialInput!): CourseMaterial!
+  changeMaterial(id: ID!, input: UpdateMaterialInput!): CourseMaterial!
+  deleteMaterial(id: ID!): Boolean!
+}
+
+input AddMaterialInput {
+  courseId: ID!
+  name: String!
+  description: String
+}
+
+input UpdateMaterialInput {
+  name: String
+  description: String
 }
 
 
@@ -696,12 +902,23 @@ type MaterialFiles {
   fileName: String!
   filePath: String!
   fileExtension: String!
+  fileSize: Int!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!
   deletedAt: DateTime
   # Relationships
   material: CourseMaterial!
+}
+
+extend type Query {
+  materialFiles(materialId: ID!): [MaterialFiles!]!
+  materialFile(id: ID!): MaterialFiles
+}
+
+extend type Mutation {
+  uploadMaterialFile(materialId: ID!, file: Upload!): MaterialFiles!
+  deleteMaterialFile(id: ID!): Boolean!
 }
 
 
@@ -856,9 +1073,19 @@ extend type Mutation {
 }
 
 
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 type Schedule {
   id: ID!
-  dayOfWeek: String!
+  dayOfWeek: DayOfWeek!
   startTime: Time!
   endTime: Time!
   createdAt: DateTime!
@@ -867,6 +1094,30 @@ type Schedule {
   deletedAt: DateTime
   # Relationships
   courseSchedules: [CourseSchedule!]!
+}
+
+extend type Query {
+  schedules: [Schedule!]!
+  schedule(id: ID!): Schedule
+}
+
+extend type Mutation {
+  createSchedule(input: CreateScheduleInput!): Schedule!
+  updateSchedule(id: ID!, input: UpdateScheduleInput!): Schedule!
+  deleteSchedule(id: ID!): Boolean!
+}
+
+
+input CreateScheduleInput {
+  dayOfWeek: DayOfWeek!
+  startTime: Time!
+  endTime: Time!
+}
+
+input UpdateScheduleInput {
+  dayOfWeek: DayOfWeek
+  startTime: Time
+  endTime: Time
 }
 
 
@@ -935,6 +1186,30 @@ type BatchInstructor {
   # Relationships
   user: User!
   batchCourse: BatchCourse!
+}
+
+
+input CreateBatchInstructorInput {
+  userId: ID!
+  batchCourseId: ID!
+  role: InstructorRole!
+}
+
+input UpdateBatchInstructorInput {
+  userId: ID
+  batchCourseId: ID
+  role: InstructorRole
+}
+
+extend type Query {
+  instructors(batchId: ID): [BatchInstructor!]!
+  instructor(id: ID!): BatchInstructor
+}
+
+extend type Mutation {
+  createInstructor(input: CreateBatchInstructorInput!): BatchInstructor!
+  updateInstructor(id: ID!, input: UpdateBatchInstructorInput!): BatchInstructor!
+  deleteInstructor(id: ID!): Boolean!
 }
 
 

@@ -105,7 +105,7 @@ def resolve_create_enrollment(_, info, batchId: str):
     # Check if batch has available capacity
     current_enrollments = db.query(BatchEnrollment).filter(
         BatchEnrollment.batch_id == batchId,
-        BatchEnrollment.status.in_([EnrollmentStatus.applied, EnrollmentStatus.enrolled]),
+        BatchEnrollment.status == EnrollmentStatus.applied,
         BatchEnrollment.is_deleted == False
     ).count()
     

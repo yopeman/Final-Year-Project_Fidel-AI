@@ -2,7 +2,7 @@ import os
 
 from ariadne import ScalarType, make_executable_schema
 from ariadne.asgi import GraphQL
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -17,6 +17,7 @@ from .resolver.feedback import feedback, mutation as f_mutation, query as f_quer
 from .resolver.notification import notification, mutation as n_mutation, query as n_query
 from .resolver.schedule import schedule, mutation as s_mutation, query as s_query
 from .resolver.course_schedule import course_schedule, mutation as cs_mutation, query as cs_query
+from .resolver.payment import payment, mutation as p_mutation, query as p_query, payment_webhook as p_webhook
 from .resolver.conversation_interactions import \
     conversation_interactions as ci_type
 from .resolver.conversation_interactions import mutation as ci_mutation
@@ -115,6 +116,9 @@ bindables = [
     cs_query,
     cs_mutation,
     course_schedule,
+    p_query,
+    p_mutation,
+    payment,
     c_query,
     c_mutation,
     course,
@@ -182,10 +186,16 @@ def read_root():
     return {
         "message": "Welcome to Fidel AI Backend API",
         "graphql_endpoint": "/graphql",
-        "static_file": "/static",
+        "health": "/health",
     }
 
 
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+
+@app.get('/webhook')
+def payment_webhook(status: str = None, trx_ref: str = None, db = Depends(get_db)):
+    print('Payment Webhook:', status, trx_ref)
+    p_webhook(status=status, trx_ref=trx_ref, db=db)
