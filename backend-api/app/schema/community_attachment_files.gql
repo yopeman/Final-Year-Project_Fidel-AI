@@ -12,3 +12,21 @@ type CommunityAttachmentFiles {
   # Relationships
   community: BatchCommunity!
 }
+
+extend type Query {
+  communityAttachments(communityId: ID): [CommunityAttachmentFiles!]!
+  communityAttachment(id: ID!): CommunityAttachmentFiles!
+}
+
+extend type Mutation {
+  addAttachments(communityId: ID!, files: [AttachmentInput!]!): [CommunityAttachmentFiles!]!
+  addAttachment(communityId: ID!, fileName: String!, filePath: String!, fileExtension: String!, fileSize: Int!): CommunityAttachmentFiles!
+  deleteAttachment(id: ID!): Boolean!
+}
+
+input AttachmentInput {
+  fileName: String!
+  filePath: String!
+  fileExtension: String!
+  fileSize: Int!
+}

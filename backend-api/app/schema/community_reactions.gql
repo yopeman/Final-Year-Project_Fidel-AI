@@ -11,3 +11,14 @@ type CommunityReactions {
   user: User!
   community: BatchCommunity!
 }
+
+extend type Query {
+  communityReactions(communityId: ID, userId: ID): [CommunityReactions!]!
+  communityReaction(id: ID!): CommunityReactions!
+}
+
+extend type Mutation {
+  postCommunityReaction(communityId: ID!, reactionType: ReactionType!): CommunityReactions!
+  updateCommunityReaction(id: ID!, reactionType: ReactionType!): CommunityReactions!
+  deleteCommunityReaction(id: ID!): Boolean!
+}

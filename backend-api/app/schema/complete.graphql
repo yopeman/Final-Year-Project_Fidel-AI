@@ -277,6 +277,24 @@ type CommunityAttachmentFiles {
   community: BatchCommunity!
 }
 
+extend type Query {
+  communityAttachments(communityId: ID): [CommunityAttachmentFiles!]!
+  communityAttachment(id: ID!): CommunityAttachmentFiles!
+}
+
+extend type Mutation {
+  addAttachments(communityId: ID!, files: [AttachmentInput!]!): [CommunityAttachmentFiles!]!
+  addAttachment(communityId: ID!, fileName: String!, filePath: String!, fileExtension: String!, fileSize: Int!): CommunityAttachmentFiles!
+  deleteAttachment(id: ID!): Boolean!
+}
+
+input AttachmentInput {
+  fileName: String!
+  filePath: String!
+  fileExtension: String!
+  fileSize: Int!
+}
+
 
 type Feedback {
   id: ID!
@@ -644,6 +662,17 @@ type CommentReactions {
   comment: CommunityComment!
 }
 
+extend type Query {
+  commentReactions(commentId: ID, userId: ID): [CommentReactions!]!
+  commentReaction(id: ID!): CommentReactions!
+}
+
+extend type Mutation {
+  postCommentReaction(commentId: ID!, reactionType: ReactionType!): CommentReactions!
+  updateCommentReaction(id: ID!, reactionType: ReactionType!): CommentReactions!
+  deleteCommentReaction(id: ID!): Boolean!
+}
+
 
 enum AgeRange {
   UNDER_18
@@ -783,6 +812,10 @@ type Mutation {
   _: String
 }
 
+type Subscription {
+  _: String
+}
+
 type CourseMaterial {
   id: ID!
   courseId: ID!
@@ -848,6 +881,17 @@ type CommunityComment {
   community: BatchCommunity!
   user: User!
   reactions: [CommentReactions!]!
+}
+
+extend type Query {
+  comments(communityId: ID): [CommunityComment!]!
+  comment(id: ID!): CommunityComment!
+}
+
+extend type Mutation {
+  postComment(communityId: ID!, content: String!): CommunityComment!
+  updateComment(id: ID!, content: String!): CommunityComment!
+  deleteComment(id: ID!): Boolean!
 }
 
 
@@ -940,6 +984,21 @@ type BatchCommunity {
   attachments: [CommunityAttachmentFiles!]!
 }
 
+extend type Query {
+  communities(batchId: ID): [BatchCommunity!]!
+  community(id: ID!): BatchCommunity!
+}
+
+extend type Mutation {
+  postCommunity(batchId: ID!, content: String!): BatchCommunity!
+  updateCommunity(id: ID!, content: String!): BatchCommunity!
+  deleteCommunity(id: ID!): Boolean!
+}
+
+extend type Subscription {
+  communityUpdated(batchId: ID!): BatchCommunity!
+}
+
 
 type CommunityReactions {
   id: ID!
@@ -953,6 +1012,17 @@ type CommunityReactions {
   # Relationships
   user: User!
   community: BatchCommunity!
+}
+
+extend type Query {
+  communityReactions(communityId: ID, userId: ID): [CommunityReactions!]!
+  communityReaction(id: ID!): CommunityReactions!
+}
+
+extend type Mutation {
+  postCommunityReaction(communityId: ID!, reactionType: ReactionType!): CommunityReactions!
+  updateCommunityReaction(id: ID!, reactionType: ReactionType!): CommunityReactions!
+  deleteCommunityReaction(id: ID!): Boolean!
 }
 
 

@@ -13,6 +13,11 @@ from .resolver.batch import batch, mutation as b_mutation, query as b_query
 from .resolver.batch_course import batch_course, mutation as bc_mutation, query as bc_query
 from .resolver.batch_enrollment import batch_enrollment, mutation as be_mutation, query as be_query
 from .resolver.batch_instructor import batch_instructor, mutation as bi_mutation, query as bi_query
+from .resolver.batch_community import batch_community, mutation as bcom_mutation, query as bcom_query, subscription as bcom_subscription
+from .resolver.community_attachment_files import community_attachment_files, mutation as caf_mutation, query as caf_query
+from .resolver.community_reactions import community_reactions, mutation as cr_mutation, query as cr_query
+from .resolver.community_comment import community_comment, mutation as cc_mutation, query as cc_query
+from .resolver.comment_reactions import comment_reactions, mutation as ccr_mutation, query as ccr_query
 from .resolver.feedback import feedback, mutation as f_mutation, query as f_query
 from .resolver.notification import notification, mutation as n_mutation, query as n_query
 from .resolver.schedule import schedule, mutation as s_mutation, query as s_query
@@ -104,6 +109,22 @@ bindables = [
     bi_query,
     bi_mutation,
     batch_instructor,
+    bcom_query,
+    bcom_mutation,
+    bcom_subscription,
+    batch_community,
+    caf_query,
+    caf_mutation,
+    community_attachment_files,
+    cr_query,
+    cr_mutation,
+    community_reactions,
+    cc_query,
+    cc_mutation,
+    community_comment,
+    ccr_query,
+    ccr_mutation,
+    comment_reactions,
     f_query,
     f_mutation,
     feedback,

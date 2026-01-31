@@ -11,3 +11,14 @@ type CommentReactions {
   user: User!
   comment: CommunityComment!
 }
+
+extend type Query {
+  commentReactions(commentId: ID, userId: ID): [CommentReactions!]!
+  commentReaction(id: ID!): CommentReactions!
+}
+
+extend type Mutation {
+  postCommentReaction(commentId: ID!, reactionType: ReactionType!): CommentReactions!
+  updateCommentReaction(id: ID!, reactionType: ReactionType!): CommentReactions!
+  deleteCommentReaction(id: ID!): Boolean!
+}
