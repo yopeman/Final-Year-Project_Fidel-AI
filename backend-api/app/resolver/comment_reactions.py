@@ -85,7 +85,7 @@ def resolve_comment_reaction(_, info, id: str):
 
 # Mutation resolvers
 @mutation.field("postCommentReaction")
-def resolve_post_comment_reaction(_, info, commentId: str, reactionType: str):
+async def resolve_post_comment_reaction(_, info, commentId: str, reactionType: str):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -118,7 +118,7 @@ def resolve_post_comment_reaction(_, info, commentId: str, reactionType: str):
         # Trigger subscription update
         community = db.query(CommunityComment).filter(CommunityComment.id == comment.community_id).first()
         if community:
-            info.context["pubsub"].publish(f"batch_{community.batch_id}", {
+            await info.context["pubsub"].publish(f"batch_{community.batch_id}", {
                 "communityUpdated": community
             })
         
@@ -138,14 +138,14 @@ def resolve_post_comment_reaction(_, info, commentId: str, reactionType: str):
     # Trigger subscription update
     community = db.query(CommunityComment).filter(CommunityComment.id == comment.community_id).first()
     if community:
-        info.context["pubsub"].publish(f"batch_{community.batch_id}", {
+        await info.context["pubsub"].publish(f"batch_{community.batch_id}", {
             "communityUpdated": community
         })
     
     return reaction
 
 @mutation.field("updateCommentReaction")
-def resolve_update_comment_reaction(_, info, id: str, reactionType: str):
+async def resolve_update_comment_reaction(_, info, id: str, reactionType: str):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -173,14 +173,14 @@ def resolve_update_comment_reaction(_, info, id: str, reactionType: str):
     if comment:
         community = db.query(CommunityComment).filter(CommunityComment.id == comment.community_id).first()
         if community:
-            info.context["pubsub"].publish(f"batch_{community.batch_id}", {
+            await info.context["pubsub"].publish(f"batch_{community.batch_id}", {
                 "communityUpdated": community
             })
     
     return reaction
 
 @mutation.field("deleteCommentReaction")
-def resolve_delete_comment_reaction(_, info, id: str):
+async def resolve_delete_comment_reaction(_, info, id: str):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -208,7 +208,7 @@ def resolve_delete_comment_reaction(_, info, id: str):
     if comment:
         community = db.query(CommunityComment).filter(CommunityComment.id == comment.community_id).first()
         if community:
-            info.context["pubsub"].publish(f"batch_{community.batch_id}", {
+            await info.context["pubsub"].publish(f"batch_{community.batch_id}", {
                 "communityUpdated": community
             })
     

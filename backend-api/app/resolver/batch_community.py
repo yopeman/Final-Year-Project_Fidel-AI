@@ -97,7 +97,7 @@ def resolve_community(_, info, id: str):
 
 # Mutation resolvers
 @mutation.field("postCommunity")
-def resolve_post_community(_, info, batchId: str, content: str):
+async def resolve_post_community(_, info, batchId: str, content: str):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -116,14 +116,14 @@ def resolve_post_community(_, info, batchId: str, content: str):
     db.refresh(new_community)
     
     # Trigger subscription update
-    info.context["pubsub"].publish(f"batch_{batchId}", {
+    await info.context["pubsub"].publish(f"batch_{batchId}", {
         "communityUpdated": new_community
     })
     
     return new_community
 
 @mutation.field("updateCommunity")
-def resolve_update_community(_, info, id: str, content: str):
+async def resolve_update_community(_, info, id: str, content: str):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -145,14 +145,14 @@ def resolve_update_community(_, info, id: str, content: str):
     db.refresh(community)
     
     # Trigger subscription update
-    info.context["pubsub"].publish(f"batch_{community.batch_id}", {
+    await info.context["pubsub"].publish(f"batch_{community.batch_id}", {
         "communityUpdated": community
     })
     
     return community
 
 @mutation.field("deleteCommunity")
-def resolve_delete_community(_, info, id: str):
+async def resolve_delete_community(_, info, id: str):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -173,7 +173,7 @@ def resolve_delete_community(_, info, id: str):
     db.refresh(community)
     
     # Trigger subscription update
-    info.context["pubsub"].publish(f"batch_{community.batch_id}", {
+    await info.context["pubsub"].publish(f"batch_{community.batch_id}", {
         "communityUpdated": community
     })
     
@@ -190,6 +190,6 @@ async def community_updated_generator(obj, info, batchId: str):
             yield event
 
 @subscription.field("communityUpdated")
-def resolve_community_updated(payload, info):
+def resolve_community_updated(payload, info, batchId:str=None):
     # This resolves the actual payload when an update is published
-    return payload["communityUpdated"]
+    return payload.message["communityUpdated"]

@@ -87,7 +87,7 @@ def resolve_comment(_, info, id: str):
 
 # Mutation resolvers
 @mutation.field("postComment")
-def resolve_post_comment(_, info, communityId: str, content: str):
+async def resolve_post_comment(_, info, communityId: str, content: str):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -115,14 +115,14 @@ def resolve_post_comment(_, info, communityId: str, content: str):
     db.refresh(comment)
     
     # Trigger subscription update
-    info.context["pubsub"].publish(f"batch_{community.batch_id}", {
+    await info.context["pubsub"].publish(f"batch_{community.batch_id}", {
         "communityUpdated": community
     })
     
     return comment
 
 @mutation.field("updateComment")
-def resolve_update_comment(_, info, id: str, content: str):
+async def resolve_update_comment(_, info, id: str, content: str):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -149,14 +149,14 @@ def resolve_update_comment(_, info, id: str, content: str):
     # Trigger subscription update
     community = db.query(BatchCommunity).filter(BatchCommunity.id == comment.community_id).first()
     if community:
-        info.context["pubsub"].publish(f"batch_{community.batch_id}", {
+        await info.context["pubsub"].publish(f"batch_{community.batch_id}", {
             "communityUpdated": community
         })
     
     return comment
 
 @mutation.field("deleteComment")
-def resolve_delete_comment(_, info, id: str):
+async def resolve_delete_comment(_, info, id: str):
     current_user = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -182,7 +182,7 @@ def resolve_delete_comment(_, info, id: str):
     # Trigger subscription update
     community = db.query(BatchCommunity).filter(BatchCommunity.id == comment.community_id).first()
     if community:
-        info.context["pubsub"].publish(f"batch_{community.batch_id}", {
+        await info.context["pubsub"].publish(f"batch_{community.batch_id}", {
             "communityUpdated": community
         })
     

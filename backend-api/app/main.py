@@ -2,7 +2,7 @@ import os
 
 from ariadne import ScalarType, make_executable_schema
 from ariadne.asgi import GraphQL
-from ariadne.asgi.handlers import GraphQLTransportWSHandler
+from ariadne.asgi.handlers import GraphQLTransportWSHandler, GraphQLWSHandler
 from broadcaster import Broadcast
 from fastapi import FastAPI, Request, Depends, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,8 +60,15 @@ from .resolver.verification_code import verification_code as vc_type
 from .schema import type_defs
 from .util.auth import create_default_admin, get_current_user
 
+
+# Initialize the broadcaster
+broadcast = Broadcast("memory://")
 app = FastAPI(
-    title="Fidel AI Backend API", description="GraphQL API for Fidel AI platform"
+    title="Fidel AI Backend API", 
+    description="GraphQL API for Fidel AI platform",
+    on_startup=[broadcast.connect],
+    on_shutdown=[broadcast.disconnect],
+    debug=True
 )
 
 # Add CORS middleware to allow all origins
@@ -186,9 +193,6 @@ schema = make_executable_schema(type_defs, *bindables)
 os.makedirs("static", exist_ok=True)
 
 
-# Initialize the broadcaster
-broadcast = Broadcast("memory://")
-
 def get_context_value(request: Request):
     db = next(get_db())
     context = {"db": db, "pubsub": broadcast}
@@ -208,9 +212,14 @@ graphql_app = GraphQL(
     context_value=get_context_value, 
     websocket_handler=GraphQLTransportWSHandler()
 )
+
+@app.websocket("/graphql")
+async def websocket_endpoint(websocket: WebSocket):
+    await graphql_app.handle_websocket(websocket)
+
+
 app.mount("/graphql", graphql_app)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
 
 @app.get("/")
 def read_root():
@@ -220,11 +229,9 @@ def read_root():
         "health": "/health",
     }
 
-
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
-
 
 @app.get('/webhook')
 def payment_webhook(status: str = None, trx_ref: str = None, db = Depends(get_db)):
