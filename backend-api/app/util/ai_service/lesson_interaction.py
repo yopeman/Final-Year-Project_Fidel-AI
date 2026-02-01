@@ -167,5 +167,5 @@ def ask_on_lesson(
         )
         return response.content.strip()
     except Exception as e:
-        # Fallback response in case of LLM failure
+        print(e)
         return f"I'm sorry, I encountered an issue while processing your question. Please try again or contact support. Error: {str(e)}"
