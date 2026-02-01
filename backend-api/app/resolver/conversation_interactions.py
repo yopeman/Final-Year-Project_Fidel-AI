@@ -1,8 +1,9 @@
 import uuid
+import base64
+import os
 from datetime import datetime
 
 from ariadne import MutationType, ObjectType, QueryType
-from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
 from ..model.conversation_interactions import ConversationInteractions
@@ -141,17 +142,51 @@ async def resolve_talk_with_ai(_, info, input):
     )
 
     # Generate AI response
-    if "text" in input:
+    if "text" in input and str(input["text"]).strip() != '':
         student_text = input["text"]
         student_audio_url = text_to_speech(input["text"])
 
-    elif "audioFile" in input:
-        audio_file: UploadFile = input["audioFile"]
-        audio_filepath = f"static/{uuid.uuid4()}{audio_file.filename}"
-
-        with open(audio_filepath) as f:
-            f.write(await audio_file.read())
-
+    elif "audioFile" in input and str(input["audioFile"]).strip() != '':
+        # Handle base64 encoded audio data
+        base64_audio = input["audioFile"]
+        
+        # Remove data URL prefix if present (e.g., "data:audio/wav;base64,")
+        if base64_audio.startswith("data:"):
+            data_url_parts = base64_audio.split(",")
+            base64_audio = data_url_parts[1]
+            
+            # Extract MIME type from data URL to determine file extension
+            mime_type = data_url_parts[0].replace("data:", "")
+            if "audio/wav" in mime_type or "audio/x-wav" in mime_type:
+                file_extension = ".wav"
+            elif "audio/mp3" in mime_type or "audio/mpeg" in mime_type:
+                file_extension = ".mp3"
+            elif "audio/aac" in mime_type:
+                file_extension = ".aac"
+            elif "audio/ogg" in mime_type or "audio/oga" in mime_type:
+                file_extension = ".ogg"
+            elif "audio/flac" in mime_type:
+                file_extension = ".flac"
+            elif "audio/webm" in mime_type:
+                file_extension = ".webm"
+            else:
+                # Default to wav if MIME type not recognized
+                file_extension = ".wav"
+        else:
+            # If no data URL prefix, default to wav
+            file_extension = ".wav"
+        
+        # Decode base64 audio data
+        audio_data = base64.b64decode(base64_audio)
+        
+        # Generate unique filename with detected extension
+        audio_filename = f"{uuid.uuid4()}{file_extension}"
+        audio_filepath = f"static/{audio_filename}"
+        
+        # Save the audio file
+        with open(audio_filepath, "wb") as f:
+            f.write(audio_data)
+        
         student_audio_url = audio_filepath
         student_text = speech_to_text(audio_filepath)
 
