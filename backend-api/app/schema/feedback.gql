@@ -4,10 +4,30 @@ type Feedback {
   context: String
   content: String!
   rate: Int!
+  isRead: Boolean!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!
   deletedAt: DateTime
   # Relationships
   user: User
+}
+
+extend type Query {
+  feedbacks(pagination: PaginationInput): [Feedback!]!
+  feedback(id: ID!): Feedback
+}
+
+extend type Mutation {
+  submitFeedback(input: SubmitFeedbackInput!): Feedback!
+  submitFeedbackAnonymously(input: SubmitFeedbackInput!): Feedback!
+  markAsReadFeedback(id: ID!): Feedback!
+  markAsReadAllFeedbacks: Boolean!
+  deleteFeedback(id: ID!): Boolean!
+}
+
+input SubmitFeedbackInput {
+  content: String!
+  context: String
+  rate: Int!
 }

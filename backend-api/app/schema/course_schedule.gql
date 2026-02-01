@@ -11,3 +11,26 @@ type CourseSchedule {
   batchCourse: BatchCourse!
   attendances: [Attendance!]!
 }
+
+
+extend type Query {
+  courseSchedules(batchCourseId: ID): [CourseSchedule!]!
+  courseSchedule(id: ID!): CourseSchedule
+}
+
+extend type Mutation {
+  createCourseSchedule(input: CreateCourseScheduleInput!): CourseSchedule!
+  updateCourseSchedule(id: ID!, input: UpdateCourseScheduleInput!): CourseSchedule!
+  deleteCourseSchedule(id: ID!): Boolean!
+}
+
+
+input CreateCourseScheduleInput {
+  scheduleId: ID!
+  batchCourseId: ID!
+}
+
+input UpdateCourseScheduleInput {
+  scheduleId: ID
+  batchCourseId: ID
+}

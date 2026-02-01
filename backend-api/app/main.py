@@ -2,16 +2,36 @@ import os
 
 from ariadne import ScalarType, make_executable_schema
 from ariadne.asgi import GraphQL
-from fastapi import FastAPI, Request
+from ariadne.asgi.handlers import GraphQLTransportWSHandler, GraphQLWSHandler
+from broadcaster import Broadcast
+from fastapi import FastAPI, Request, Depends, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from . import model  # Import all models to register them with SQLAlchemy
 from .config.database import create_table, get_db
+from .resolver.attendance import attendance, mutation as a_mutation, query as a_query
+from .resolver.batch import batch, mutation as b_mutation, query as b_query
+from .resolver.batch_course import batch_course, mutation as bc_mutation, query as bc_query
+from .resolver.batch_enrollment import batch_enrollment, mutation as be_mutation, query as be_query
+from .resolver.batch_instructor import batch_instructor, mutation as bi_mutation, query as bi_query
+from .resolver.batch_community import batch_community, mutation as bcom_mutation, query as bcom_query, subscription as bcom_subscription
+from .resolver.community_attachment_files import community_attachment_files, mutation as caf_mutation, query as caf_query
+from .resolver.community_reactions import community_reactions, mutation as cr_mutation, query as cr_query
+from .resolver.community_comment import community_comment, mutation as cc_mutation, query as cc_query
+from .resolver.comment_reactions import comment_reactions, mutation as ccr_mutation, query as ccr_query
+from .resolver.feedback import feedback, mutation as f_mutation, query as f_query
+from .resolver.notification import notification, mutation as n_mutation, query as n_query
+from .resolver.schedule import schedule, mutation as s_mutation, query as s_query
+from .resolver.course_schedule import course_schedule, mutation as cs_mutation, query as cs_query
+from .resolver.payment import payment, mutation as p_mutation, query as p_query, payment_webhook as p_webhook
 from .resolver.conversation_interactions import \
     conversation_interactions as ci_type
 from .resolver.conversation_interactions import mutation as ci_mutation
 from .resolver.conversation_interactions import query as ci_query
+from .resolver.course import course, mutation as c_mutation, query as c_query
+from .resolver.course_material import course_material, mutation as cm_mutation, query as cm_query
+from .resolver.material_files import material_files, mutation as mf_mutation, query as mf_query
 from .resolver.free_conversation import free_conversation as fc_type
 from .resolver.free_conversation import mutation as fc_mutation
 from .resolver.free_conversation import query as fc_query
@@ -40,8 +60,15 @@ from .resolver.verification_code import verification_code as vc_type
 from .schema import type_defs
 from .util.auth import create_default_admin, get_current_user
 
+
+# Initialize the broadcaster
+broadcast = Broadcast("memory://")
 app = FastAPI(
-    title="Fidel AI Backend API", description="GraphQL API for Fidel AI platform"
+    title="Fidel AI Backend API", 
+    description="GraphQL API for Fidel AI platform",
+    on_startup=[broadcast.connect],
+    on_shutdown=[broadcast.disconnect],
+    debug=True
 )
 
 # Add CORS middleware to allow all origins
@@ -56,12 +83,17 @@ app.add_middleware(
 create_table()
 create_default_admin()
 
-# DateTime scalar
+# Date & DateTime scalar
 datetime_scalar = ScalarType("DateTime")
-
-
 @datetime_scalar.serializer
 def serialize_datetime(value):
+    if value is None:
+        return None
+    return value.isoformat()
+
+date_scalar = ScalarType("Date")
+@date_scalar.serializer
+def serialize_date(value):
     if value is None:
         return None
     return value.isoformat()
@@ -71,6 +103,61 @@ bindables = [
     query,
     mutation,
     user,
+    a_query,
+    a_mutation,
+    attendance,
+    b_query,
+    b_mutation,
+    batch,
+    bc_query,
+    bc_mutation,
+    batch_course,
+    be_query,
+    be_mutation,
+    batch_enrollment,
+    bi_query,
+    bi_mutation,
+    batch_instructor,
+    bcom_query,
+    bcom_mutation,
+    bcom_subscription,
+    batch_community,
+    caf_query,
+    caf_mutation,
+    community_attachment_files,
+    cr_query,
+    cr_mutation,
+    community_reactions,
+    cc_query,
+    cc_mutation,
+    community_comment,
+    ccr_query,
+    ccr_mutation,
+    comment_reactions,
+    f_query,
+    f_mutation,
+    feedback,
+    n_query,
+    n_mutation,
+    notification,
+    s_query,
+    s_mutation,
+    schedule,
+    cs_query,
+    cs_mutation,
+    course_schedule,
+    p_query,
+    p_mutation,
+    payment,
+    c_query,
+    c_mutation,
+    course,
+    cm_query,
+    cm_mutation,
+    course_material,
+    mf_query,
+    mf_mutation,
+    material_files,
     vc_type,
     sp_query,
     sp_mutation,
@@ -99,6 +186,7 @@ bindables = [
     ci_mutation,
     ci_type,
     datetime_scalar,
+    date_scalar,
 ]
 
 schema = make_executable_schema(type_defs, *bindables)
@@ -107,7 +195,7 @@ os.makedirs("static", exist_ok=True)
 
 def get_context_value(request: Request):
     db = next(get_db())
-    context = {"db": db}
+    context = {"db": db, "pubsub": broadcast}
     context["base_url"] = request.base_url
     auth_header = request.headers.get("authorization")
     if auth_header and auth_header.startswith("Bearer "):
@@ -118,20 +206,34 @@ def get_context_value(request: Request):
     return context
 
 
-graphql_app = GraphQL(schema, debug=True, context_value=get_context_value)
+graphql_app = GraphQL(
+    schema, 
+    debug=True, 
+    context_value=get_context_value, 
+    websocket_handler=GraphQLTransportWSHandler()
+)
+
+@app.websocket("/graphql")
+async def websocket_endpoint(websocket: WebSocket):
+    await graphql_app.handle_websocket(websocket)
+
+
 app.mount("/graphql", graphql_app)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
 
 @app.get("/")
 def read_root():
     return {
         "message": "Welcome to Fidel AI Backend API",
         "graphql_endpoint": "/graphql",
-        "static_file": "/static",
+        "health": "/health",
     }
-
 
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get('/webhook')
+def payment_webhook(status: str = None, trx_ref: str = None, db = Depends(get_db)):
+    print('Payment Webhook:', status, trx_ref)
+    p_webhook(status=status, trx_ref=trx_ref, db=db)

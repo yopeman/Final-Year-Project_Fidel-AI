@@ -15,3 +15,18 @@ type BatchCommunity {
   comments: [CommunityComment!]!
   attachments: [CommunityAttachmentFiles!]!
 }
+
+extend type Query {
+  communities(batchId: ID): [BatchCommunity!]!
+  community(id: ID!): BatchCommunity!
+}
+
+extend type Mutation {
+  postCommunity(batchId: ID!, content: String!): BatchCommunity!
+  updateCommunity(id: ID!, content: String!): BatchCommunity!
+  deleteCommunity(id: ID!): Boolean!
+}
+
+extend type Subscription {
+  communityUpdated(batchId: ID!): BatchCommunity!
+}

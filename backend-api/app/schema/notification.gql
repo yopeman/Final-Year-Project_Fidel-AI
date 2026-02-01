@@ -11,3 +11,21 @@ type Notification {
   # Relationships
   user: User!
 }
+
+extend type Query {
+  notifications(userId: ID!): [Notification!]!
+  notification(id: ID!): Notification
+}
+
+extend type Mutation {
+  sendNotification(input: SendNotificationInput!): Notification!
+  markAsReadNotification(id: ID!): Notification!
+  markAsReadAllNotifications: Boolean!
+  deleteNotification(id: ID!): Boolean!
+}
+
+input SendNotificationInput {
+  userId: ID!
+  title: String!
+  content: String!
+}

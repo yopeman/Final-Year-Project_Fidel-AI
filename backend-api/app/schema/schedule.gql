@@ -1,6 +1,16 @@
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 type Schedule {
   id: ID!
-  dayOfWeek: String!
+  dayOfWeek: DayOfWeek!
   startTime: Time!
   endTime: Time!
   createdAt: DateTime!
@@ -9,4 +19,28 @@ type Schedule {
   deletedAt: DateTime
   # Relationships
   courseSchedules: [CourseSchedule!]!
+}
+
+extend type Query {
+  schedules: [Schedule!]!
+  schedule(id: ID!): Schedule
+}
+
+extend type Mutation {
+  createSchedule(input: CreateScheduleInput!): Schedule!
+  updateSchedule(id: ID!, input: UpdateScheduleInput!): Schedule!
+  deleteSchedule(id: ID!): Boolean!
+}
+
+
+input CreateScheduleInput {
+  dayOfWeek: DayOfWeek!
+  startTime: Time!
+  endTime: Time!
+}
+
+input UpdateScheduleInput {
+  dayOfWeek: DayOfWeek
+  startTime: Time
+  endTime: Time
 }
