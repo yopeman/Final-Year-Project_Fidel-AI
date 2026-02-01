@@ -276,7 +276,7 @@ def ask_on_conversation(
         return {"ai_text": ai_text, "ai_audio_path": ai_audio_path}
 
     except Exception as e:
-        # Fallback response in case of LLM failure
+        print(e)
         return f"I'm sorry, I encountered an issue while processing your question. Please try again or contact support. Error: {str(e)}"
 
 
@@ -309,6 +309,7 @@ def generate_possible_talk(
 
     # Format previous interactions
     prev_interactions_str = ""
+    interaction = None
     if prev_conversation_interactions:
         interactions = []
         for interaction in prev_conversation_interactions:
@@ -333,11 +334,11 @@ def generate_possible_talk(
                 "starting_topic": conversation.starting_topic,
                 "topic_summary_phrase": conversation.topic_summary_phrase,
                 "prev_lesson_interactions": prev_interactions_str,
-                "question": interaction.ai_text,
+                "question": '' if interaction is None else interaction.ai_text,
             }
         )
         return response.content.strip()
 
     except Exception as e:
-        # Fallback response in case of LLM failure
+        print(e)
         return f"I'm sorry, I encountered an issue while processing your question. Please try again or contact support. Error: {str(e)}"
