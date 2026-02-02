@@ -1,210 +1,292 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { 
-  GraduationCap, 
-  Users, 
-  BookOpen, 
-  Video, 
-  Calendar,
-  BarChart,
-  Bell,
-  Settings,
-  LogOut,
-  User
+  Clock, 
+  AlertTriangle, 
+  Mail, 
+  Shield, 
+  CheckCircle,
+  RefreshCw,
+  Home,
+  LogIn,
+  User,
+  UserCog,
+  Trash2,
+  AlertCircle,
+  X
 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_CURRENT_USER, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
+import UpdateProfilePopup from '../components/UpdateProfilePopup';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const [timeRemaining, setTimeRemaining] = useState('');
+  const [showUpdatePopup, setShowUpdatePopup] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  
+  const [deleteMe] = useMutation(DELETE_ME_MUTATION);
+  
+  const { data, loading, error } = useQuery(GET_CURRENT_USER);
+
+  const user = data?.me;
+
+  const handleDeleteProfile = async () => {
+    try {
+      setDeleting(true);
+      await deleteMe();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    } catch (err) {
+      console.error('Error deleting profile:', err);
+      setDeleting(false);
+    }
+  };
+
+  useEffect(() => {
+    // Check if user is authenticated but not verified
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+      window.location.href = '/login';
+      return;
+    }
+
+    try {
+      const userData = JSON.parse(user);
+      // If user is verified, redirect to appropriate dashboard
+      if (userData.isVerified) {
+        switch (userData.role) {
+          case 'ADMIN':
+            window.location.href = '/admin/dashboard';
+            break;
+          case 'TUTOR':
+            window.location.href = '/tutor/dashboard';
+            break;
+          default:
+            break;
+        }
+      }
+    } catch (err) {
+      console.error('Error parsing user:', err);
+      localStorage.clear();
+      window.location.href = '/login';
+    }
+
+    // Set up timer for countdown
+    const timer = setInterval(() => {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const seconds = now.getSeconds();
+      
+      setTimeRemaining(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    navigate('/login');
+    window.location.href = '/login';
   };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
-
-  const stats = [
-    { icon: <BookOpen className="w-6 h-6" />, label: 'Active Courses', value: '3', color: 'bg-blue-100 text-blue-600' },
-    { icon: <Video className="w-6 h-6" />, label: 'Live Sessions', value: '2', color: 'bg-green-100 text-green-600' },
-    { icon: <Calendar className="w-6 h-6" />, label: 'Upcoming Classes', value: '5', color: 'bg-purple-100 text-purple-600' },
-    { icon: <BarChart className="w-6 h-6" />, label: 'Learning Hours', value: '24', color: 'bg-orange-100 text-orange-600' },
-  ];
-
-  const recentActivities = [
-    { action: 'Completed lesson', course: 'Business English', time: '2 hours ago' },
-    { action: 'Joined live class', course: 'Grammar Mastery', time: '1 day ago' },
-    { action: 'Submitted assignment', course: 'Speaking Practice', time: '2 days ago' },
-    { action: 'Earned certificate', course: 'Beginner Level', time: '1 week ago' },
-  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation */}
-      <nav className="bg-white border-b">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <GraduationCap className="w-8 h-8 text-indigo-600" />
-              <span className="text-xl font-bold text-gray-900">Fidel<span className="text-indigo-600">AI</span> Dashboard</span>
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl shadow-lg overflow-hidden text-center"
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-6 text-white">
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Clock className="w-8 h-8" />
             </div>
-            
-            <div className="flex items-center space-x-6">
-              <button className="relative">
-                <Bell className="w-6 h-6 text-gray-600" />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{user.firstName} {user.lastName}</p>
-                  <p className="text-sm text-gray-500 capitalize">{user.role?.toLowerCase()}</p>
+            <h1 className="text-2xl font-bold">Account Pending Approval</h1>
+            <p className="text-yellow-100 text-sm mt-1">Your account is under review by an administrator</p>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* Warning Icon */}
+            <div className="flex justify-center">
+              <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-10 h-10 text-yellow-600" />
+              </div>
+            </div>
+
+            {/* Status Message */}
+            <div className="space-y-2">
+              <h2 className="text-lg font-semibold text-gray-900">Account Status: Pending</h2>
+              <p className="text-gray-600 text-sm">
+                Your account has been created successfully but requires administrator approval 
+                before you can access your dashboard.
+              </p>
+            </div>
+
+            {/* What Happens Next */}
+            <div className="bg-gray-50 rounded-lg p-4 text-left">
+              <h3 className="font-medium text-gray-900 mb-2 flex items-center">
+                <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                What happens next:
+              </h3>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• An administrator will review your account</li>
+                <li>• You will receive an email notification when approved</li>
+                <li>• You can then log in and access your dashboard</li>
+              </ul>
+            </div>
+
+            {/* Contact Information */}
+            <div className="bg-blue-50 rounded-lg p-4 text-left">
+              <h3 className="font-medium text-blue-900 mb-2 flex items-center">
+                <Mail className="w-4 h-4 text-blue-500 mr-2" />
+                Need help?
+              </h3>
+              <p className="text-sm text-blue-700">
+                Contact your administrator or support team if you have questions 
+                about your account status.
+              </p>
+            </div>
+
+            {/* Profile Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <User className="w-8 h-8 text-yellow-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{user?.firstName} {user?.lastName}</h3>
+                    <p className="text-gray-600">{user?.email}</p>
+                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                        Pending Verification
+                      </span>
+                      <span>Member since: {new Date(user?.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 text-gray-600 hover:text-red-600"
+              {/* Profile Actions - Spaced out buttons */}
+              <div className="mt-6 space-y-3">
+                <button 
+                  onClick={() => setShowUpdatePopup(true)}
+                  className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors shadow-sm border border-yellow-200"
+                >
+                  <UserCog className="w-5 h-5" />
+                  <span className="text-sm font-medium">Update Profile</span>
+                </button>
+                <button 
+                  onClick={() => setShowDeleteConfirmation(true)}
+                  className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors shadow-sm border border-red-200"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  <span className="text-sm font-medium">Delete Profile</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="space-y-3">
+              <button 
+                onClick={() => window.location.reload()}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               >
-                <LogOut className="w-5 h-5" />
-                <span>Logout</span>
+                <RefreshCw className="w-4 h-4" />
+                <span>Refresh Status</span>
               </button>
+              
+              <div className="flex space-x-3">
+                <button 
+                  onClick={() => window.location.href = '/'}
+                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <Home className="w-4 h-4" />
+                  <span>Home</span>
+                </button>
+                
+                <button 
+                  onClick={handleLogout}
+                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Footer Note */}
+            <div className="pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500">
+                Last checked: {timeRemaining}
+              </p>
             </div>
           </div>
-        </div>
-      </nav>
+        </motion.div>
 
-      <div className="p-6">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {getGreeting()}, {user.firstName}!
-          </h1>
-          <p className="text-gray-600">
-            Welcome back to your English learning journey. Continue where you left off.
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-500">
+            © 2026 FidelAI - Bahir Dar University
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white p-6 rounded-xl shadow border">
-              <div className="flex items-center justify-between">
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                  {stat.icon}
-                </div>
-                <div className="text-right">
-                  <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="text-gray-600 text-sm">{stat.label}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Update Profile Popup */}
+        <UpdateProfilePopup
+          isOpen={showUpdatePopup}
+          onClose={() => setShowUpdatePopup(false)}
+          user={user}
+        />
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Quick Actions */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow border p-6 mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { icon: <BookOpen className="w-5 h-5" />, label: 'Continue Learning', color: 'bg-blue-50 text-blue-600' },
-                  { icon: <Video className="w-5 h-5" />, label: 'Join Class', color: 'bg-green-50 text-green-600' },
-                  { icon: <Users className="w-5 h-5" />, label: 'Community', color: 'bg-purple-50 text-purple-600' },
-                  { icon: <Settings className="w-5 h-5" />, label: 'Settings', color: 'bg-gray-50 text-gray-600' },
-                ].map((action, index) => (
-                  <button
-                    key={index}
-                    className={`${action.color} p-4 rounded-lg hover:opacity-90 transition flex flex-col items-center justify-center`}
-                  >
-                    {action.icon}
-                    <span className="mt-2 text-sm font-medium">{action.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Recent Activities */}
-            <div className="bg-white rounded-xl shadow border p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activities</h2>
-              <div className="space-y-4">
-                {recentActivities.map((activity, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">{activity.action}</p>
-                      <p className="text-sm text-gray-600">{activity.course}</p>
-                    </div>
-                    <span className="text-sm text-gray-500">{activity.time}</span>
+        {/* Delete Confirmation Dialog */}
+        {showDeleteConfirmation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <AlertCircle className="w-6 h-6 text-red-600" />
                   </div>
-                ))}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Delete Profile</h3>
+                    <p className="text-sm text-gray-600">This action cannot be undone</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowDeleteConfirmation(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <p className="text-gray-700 mb-6">
+                Are you sure you want to delete your profile? This will permanently remove your account and all associated data.
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirmation(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteProfile}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleting ? 'Deleting...' : 'Delete Profile'}
+                </button>
               </div>
             </div>
           </div>
-
-          {/* Upcoming Classes */}
-          <div>
-            <div className="bg-white rounded-xl shadow border p-6 mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Upcoming Classes</h2>
-              <div className="space-y-4">
-                {[
-                  { time: '10:00 AM', title: 'Business Communication', tutor: 'Dr. Alemayehu' },
-                  { time: '02:00 PM', title: 'Grammar Workshop', tutor: 'Ms. Birhanu' },
-                  { time: '04:30 PM', title: 'Speaking Practice', tutor: 'Mr. Getachew' },
-                ].map((classItem, index) => (
-                  <div key={index} className="border-l-4 border-indigo-500 pl-4 py-2">
-                    <p className="text-sm text-gray-500">{classItem.time}</p>
-                    <p className="font-medium text-gray-900">{classItem.title}</p>
-                    <p className="text-sm text-gray-600">with {classItem.tutor}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Progress */}
-            <div className="bg-white rounded-xl shadow border p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Learning Progress</h2>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">Grammar</span>
-                    <span className="text-sm font-medium text-gray-700">75%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '75%' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">Vocabulary</span>
-                    <span className="text-sm font-medium text-gray-700">60%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: '60%' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">Speaking</span>
-                    <span className="text-sm font-medium text-gray-700">45%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-purple-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

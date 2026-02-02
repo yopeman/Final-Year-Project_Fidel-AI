@@ -7,7 +7,11 @@ import client from './lib/apollo-client';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import VerificationPage from './pages/VerificationPage';
+import TestVerification from './pages/TestVerification';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import TutorDashboard from './pages/TutorDashboard'
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -19,6 +23,8 @@ const App = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify" element={<VerificationPage />} />
+          <Route path="/test-verify" element={<TestVerification />} />
           <Route 
             path="/dashboard" 
             element={
@@ -28,18 +34,10 @@ const App = () => {
             } 
           />
           <Route 
-            path="/student/dashboard" 
-            element={
-              <ProtectedRoute allowedRoles={['STUDENT']}>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
             path="/tutor/dashboard" 
             element={
               <ProtectedRoute allowedRoles={['TUTOR']}>
-                <Dashboard />
+                <TutorDashboard />
               </ProtectedRoute>
             } 
           />
@@ -47,7 +45,7 @@ const App = () => {
             path="/admin/dashboard" 
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
-                <Dashboard />
+                <AdminDashboard />
               </ProtectedRoute>
             } 
           />
@@ -59,6 +57,6 @@ const App = () => {
   );
 };
 
+
 export default App;
 
-// djjkdjkdjkdjdj

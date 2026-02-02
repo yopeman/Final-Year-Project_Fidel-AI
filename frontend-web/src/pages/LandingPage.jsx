@@ -279,7 +279,7 @@ const LandingPage = () => {
               <span className="text-2xl font-bold">Fidel<span className="text-indigo-400">AI</span></span>
             </div>
             <div className="text-center md:text-right">
-              <p className="text-gray-400">© 2024 FidelAI. All rights reserved.</p>
+              <p className="text-gray-400">© 2026 FidelAI. All rights reserved.</p>
               <p className="text-gray-500 text-sm mt-2">Bahir Dar University - Final Year Project</p>
             </div>
           </div>
