@@ -179,17 +179,17 @@ const LoginPage = () => {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Username or Email *
+                   Email *
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     {...register('username', { 
-                      required: 'Username or email is required'
+                      required: ' email is required'
                     })}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    placeholder="username or email@example.com"
+                    placeholder="email@example.com"
                     disabled={loading}
                   />
                 </div>

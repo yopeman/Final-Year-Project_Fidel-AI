@@ -24,12 +24,14 @@ import {
   Trash2
 } from 'lucide-react';
 import { GET_CURRENT_USER, GET_USERS, UPDATE_USER_MUTATION, DELETE_USER_MUTATION, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
+import UpdateProfilePopup from '../components/UpdateProfilePopup';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [showUpdatePopup, setShowUpdatePopup] = useState(false);
 
   const { data: userData, loading: userLoading, error: userError } = useQuery(GET_CURRENT_USER);
   const { data: usersData, loading: usersLoading, error: usersError, refetch } = useQuery(GET_USERS, {
@@ -235,7 +237,10 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                     <div className="flex space-x-2">
-                      <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200">
+                      <button 
+                        onClick={() => setShowUpdatePopup(true)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200"
+                      >
                         <UserCog className="w-4 h-4" />
                         <span>Update Profile</span>
                       </button>
@@ -571,6 +576,13 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Update Profile Popup */}
+      <UpdateProfilePopup
+        isOpen={showUpdatePopup}
+        onClose={() => setShowUpdatePopup(false)}
+        user={user}
+      />
     </div>
   );
 };

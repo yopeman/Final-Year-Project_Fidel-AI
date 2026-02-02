@@ -19,11 +19,13 @@ import {
   Trash2
 } from 'lucide-react';
 import { GET_CURRENT_USER, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
+import UpdateProfilePopup from '../components/UpdateProfilePopup';
 
 const TutorDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [showUpdatePopup, setShowUpdatePopup] = useState(false);
 
   const { data, loading, error } = useQuery(GET_CURRENT_USER);
 
@@ -236,7 +238,10 @@ const TutorDashboard = () => {
                       </div>
                     </div>
                     <div className="flex space-x-2">
-                      <button className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200">
+                      <button 
+                        onClick={() => setShowUpdatePopup(true)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
+                      >
                         <UserCog className="w-4 h-4" />
                         <span>Update Profile</span>
                       </button>
@@ -503,6 +508,13 @@ const TutorDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Update Profile Popup */}
+      <UpdateProfilePopup
+        isOpen={showUpdatePopup}
+        onClose={() => setShowUpdatePopup(false)}
+        user={user}
+      />
     </div>
   );
 };

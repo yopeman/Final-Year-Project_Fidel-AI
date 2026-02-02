@@ -15,9 +15,11 @@ import {
 import { motion } from 'framer-motion';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_CURRENT_USER, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
+import UpdateProfilePopup from '../components/UpdateProfilePopup';
 
 const Dashboard = () => {
   const [timeRemaining, setTimeRemaining] = useState('');
+  const [showUpdatePopup, setShowUpdatePopup] = useState(false);
   const { data, loading, error } = useQuery(GET_CURRENT_USER);
 
   const user = data?.me;
@@ -133,7 +135,7 @@ const Dashboard = () => {
 
             {/* Profile Section */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
                     <User className="w-8 h-8 text-yellow-600" />
@@ -149,16 +151,21 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex space-x-2">
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200">
-                    <UserCog className="w-4 h-4" />
-                    <span>Update Profile</span>
-                  </button>
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete Profile</span>
-                  </button>
-                </div>
+              </div>
+              
+              {/* Profile Actions - Spaced out buttons */}
+              <div className="mt-6 space-y-3">
+                <button 
+                  onClick={() => setShowUpdatePopup(true)}
+                  className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors shadow-sm border border-yellow-200"
+                >
+                  <UserCog className="w-5 h-5" />
+                  <span className="text-sm font-medium">Update Profile</span>
+                </button>
+                <button className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors shadow-sm border border-red-200">
+                  <Trash2 className="w-5 h-5" />
+                  <span className="text-sm font-medium">Delete Profile</span>
+                </button>
               </div>
             </div>
 
@@ -205,6 +212,13 @@ const Dashboard = () => {
             © 2026 FidelAI - Bahir Dar University
           </p>
         </div>
+
+        {/* Update Profile Popup */}
+        <UpdateProfilePopup
+          isOpen={showUpdatePopup}
+          onClose={() => setShowUpdatePopup(false)}
+          user={user}
+        />
       </div>
     </div>
   );
