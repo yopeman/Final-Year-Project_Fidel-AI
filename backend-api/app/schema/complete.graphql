@@ -505,7 +505,7 @@ type ConversationInteractions {
 input CreateConversationInteractionInput {
   conversationId: ID!
   text: String
-  audioFile: Upload
+  audioFile: String
 }
 
 extend type Query {

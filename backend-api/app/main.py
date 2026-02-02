@@ -1,6 +1,6 @@
 import os
 
-from ariadne import ScalarType, make_executable_schema
+from ariadne import ScalarType, make_executable_schema, upload_scalar
 from ariadne.asgi import GraphQL
 from ariadne.asgi.handlers import GraphQLTransportWSHandler, GraphQLWSHandler
 from broadcaster import Broadcast
@@ -187,6 +187,7 @@ bindables = [
     ci_type,
     datetime_scalar,
     date_scalar,
+    upload_scalar
 ]
 
 schema = make_executable_schema(type_defs, *bindables)
@@ -194,6 +195,10 @@ os.makedirs("static", exist_ok=True)
 
 
 def get_context_value(request: Request):
+    print(
+        request._body
+    )
+
     db = next(get_db())
     context = {"db": db, "pubsub": broadcast}
     context["base_url"] = request.base_url
