@@ -37,6 +37,8 @@ const AdminDashboard = () => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showUserDetails, setShowUserDetails] = useState(false);
 
   const { data: userData, loading: userLoading, error: userError } = useQuery(GET_CURRENT_USER);
   const { data: usersData, loading: usersLoading, error: usersError, refetch } = useQuery(GET_USERS, {
@@ -44,6 +46,7 @@ const AdminDashboard = () => {
   });
 
   const [updateUser] = useMutation(UPDATE_USER_MUTATION);
+  const [updateMe] = useMutation(UPDATE_ME_MUTATION);
   const [deleteUser] = useMutation(DELETE_USER_MUTATION);
 
   const user = userData?.me;
@@ -483,37 +486,34 @@ const AdminDashboard = () => {
                             </div>
                           </div>
                           <div className="flex space-x-2">
-                            <button className="flex items-center space-x-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200">
+                            <button 
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setShowUserDetails(true);
+                              }}
+                              className="flex items-center space-x-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200"
+                            >
                               <Eye className="w-4 h-4" />
                               <span>View</span>
                             </button>
-                            {!user.isVerified && (
-                              <button 
-                                onClick={() => handleUserAction(user.id, 'approve')}
-                                className="flex items-center space-x-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
-                              >
-                                <UserCheck className="w-4 h-4" />
-                                <span>Approve</span>
-                              </button>
-                            )}
-                            {user.isVerified && (
-                              <button 
-                                onClick={() => handleUserAction(user.id, 'suspend')}
-                                className="flex items-center space-x-2 px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200"
-                              >
-                                <UserX className="w-4 h-4" />
-                                <span>Suspend</span>
-                              </button>
-                            )}
-                            <button className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                            <button 
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setShowUpdatePopup(true);
+                              }}
+                              className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                            >
                               <Edit className="w-4 h-4" />
                               <span>Edit</span>
                             </button>
                             <button 
-                              onClick={() => handleUserAction(user.id, 'delete')}
+                              onClick={() => {
+                                setUserToDelete(user.id);
+                                setShowDeleteConfirmation(true);
+                              }}
                               className="flex items-center space-x-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
                             >
-                              <UserX className="w-4 h-4" />
+                              <Trash2 className="w-4 h-4" />
                               <span>Delete</span>
                             </button>
                           </div>
@@ -627,8 +627,125 @@ const AdminDashboard = () => {
       <UpdateProfilePopup
         isOpen={showUpdatePopup}
         onClose={() => setShowUpdatePopup(false)}
-        user={user}
+        user={selectedUser || user}
+        onUpdateUserMutation={selectedUser && selectedUser.id !== user.id ? UPDATE_USER_MUTATION : UPDATE_ME_MUTATION}
       />
+
+      {/* User Details Modal */}
+      {showUserDetails && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
+                  <User className="w-8 h-8 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {selectedUser.firstName} {selectedUser.lastName}
+                  </h3>
+                  <p className="text-gray-600">{selectedUser.email}</p>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      selectedUser.role === 'ADMIN' 
+                        ? 'bg-purple-100 text-purple-800' 
+                        : selectedUser.role === 'TUTOR'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {selectedUser.role}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      selectedUser.isVerified 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {selectedUser.isVerified ? 'Verified' : 'Unverified'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowUserDetails(false);
+                  setSelectedUser(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Personal Information</h4>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>ID:</span>
+                    <span className="font-mono text-xs">{selectedUser.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>First Name:</span>
+                    <span>{selectedUser.firstName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Last Name:</span>
+                    <span>{selectedUser.lastName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Email:</span>
+                    <span>{selectedUser.email}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Role:</span>
+                    <span>{selectedUser.role}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Account Details</h4>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Status:</span>
+                    <span>{selectedUser.isVerified ? 'Verified' : 'Unverified'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Joined:</span>
+                    <span>{new Date(selectedUser.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Last Updated:</span>
+                    <span>{new Date(selectedUser.updatedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowUserDetails(false);
+                  setSelectedUser(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setShowUserDetails(false);
+                  setSelectedUser(null);
+                  setShowUpdatePopup(true);
+                }}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              >
+                Edit User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirmation && (

@@ -11,9 +11,9 @@ import {
   EyeOff 
 } from 'lucide-react';
 import { useMutation } from '@apollo/client';
-import { UPDATE_ME_MUTATION } from '../graphql/auth';
+import { UPDATE_ME_MUTATION, UPDATE_USER_MUTATION } from '../graphql/auth';
 
-const UpdateProfilePopup = ({ isOpen, onClose, user }) => {
+const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => {
   console.log(user);
   
   const [formData, setFormData] = useState({
@@ -29,7 +29,8 @@ const UpdateProfilePopup = ({ isOpen, onClose, user }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const [updateUser] = useMutation(UPDATE_ME_MUTATION);
+  // Use provided mutation or default to UPDATE_ME_MUTATION for current user
+  const [updateUser] = useMutation(onUpdateUserMutation || UPDATE_ME_MUTATION);
 
   const validateForm = () => {
     const newErrors = {};

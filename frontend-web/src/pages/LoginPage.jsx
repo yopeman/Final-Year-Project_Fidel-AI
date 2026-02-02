@@ -246,6 +246,7 @@ const LoginPage = () => {
                   type="checkbox"
                   className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                   disabled={loading}
+                  checked={true}
                 />
                 <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
                   Remember me
