@@ -234,13 +234,12 @@ const AdminDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Navigation Tabs */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
+            <div className="bg-white rounded-lg shadow-sm mb-6">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8 px-6">
-              {[
+              {[ 
                 { id: 'overview', name: 'Overview', icon: BarChart3 },
                 { id: 'users', name: 'Users', icon: Users },
-                { id: 'pending', name: 'Pending', icon: Clock },
                 { id: 'reports', name: 'Reports', icon: BookOpen }
               ].map((tab) => (
                 <button
@@ -531,53 +530,6 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {activeTab === 'pending' && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium text-gray-900">Pending Verifications</h3>
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                    <Plus className="w-4 h-4" />
-                    <span>Review All</span>
-                  </button>
-                </div>
-
-                <div className="grid gap-6">
-                  {users
-                    .filter(u => !u.isVerified)
-                    .map((user) => (
-                      <div key={user.id} className="bg-white rounded-lg border border-gray-200 p-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="text-lg font-medium text-gray-900">
-                              {user.firstName} {user.lastName}
-                            </h4>
-                            <p className="text-gray-600 mt-1">{user.email}</p>
-                            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                                {user.role}
-                              </span>
-                              <span>Registered: {new Date(user.createdAt).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button 
-                              onClick={() => handleUserAction(user.id, 'approve')}
-                              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                            >
-                              <UserCheck className="w-4 h-4" />
-                              <span>Approve</span>
-                            </button>
-                            <button className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-                              <Eye className="w-4 h-4" />
-                              <span>Review</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
 
             {activeTab === 'reports' && (
               <div className="space-y-6">
