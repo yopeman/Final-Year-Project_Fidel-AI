@@ -10,7 +10,9 @@ import {
   LogIn,
   User,
   UserCog,
-  Trash2
+  Trash2,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation } from '@apollo/client';
@@ -20,9 +22,27 @@ import UpdateProfilePopup from '../components/UpdateProfilePopup';
 const Dashboard = () => {
   const [timeRemaining, setTimeRemaining] = useState('');
   const [showUpdatePopup, setShowUpdatePopup] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  
+  const [deleteMe] = useMutation(DELETE_ME_MUTATION);
+  
   const { data, loading, error } = useQuery(GET_CURRENT_USER);
 
   const user = data?.me;
+
+  const handleDeleteProfile = async () => {
+    try {
+      setDeleting(true);
+      await deleteMe();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    } catch (err) {
+      console.error('Error deleting profile:', err);
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     // Check if user is authenticated but not verified
@@ -162,7 +182,10 @@ const Dashboard = () => {
                   <UserCog className="w-5 h-5" />
                   <span className="text-sm font-medium">Update Profile</span>
                 </button>
-                <button className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors shadow-sm border border-red-200">
+                <button 
+                  onClick={() => setShowDeleteConfirmation(true)}
+                  className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors shadow-sm border border-red-200"
+                >
                   <Trash2 className="w-5 h-5" />
                   <span className="text-sm font-medium">Delete Profile</span>
                 </button>
@@ -219,6 +242,51 @@ const Dashboard = () => {
           onClose={() => setShowUpdatePopup(false)}
           user={user}
         />
+
+        {/* Delete Confirmation Dialog */}
+        {showDeleteConfirmation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <AlertCircle className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Delete Profile</h3>
+                    <p className="text-sm text-gray-600">This action cannot be undone</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowDeleteConfirmation(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <p className="text-gray-700 mb-6">
+                Are you sure you want to delete your profile? This will permanently remove your account and all associated data.
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowDeleteConfirmation(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteProfile}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleting ? 'Deleting...' : 'Delete Profile'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

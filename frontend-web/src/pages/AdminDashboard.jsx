@@ -21,7 +21,9 @@ import {
   BarChart3,
   User,
   UserCog,
-  Trash2
+  Trash2,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { GET_CURRENT_USER, GET_USERS, UPDATE_USER_MUTATION, DELETE_USER_MUTATION, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
 import UpdateProfilePopup from '../components/UpdateProfilePopup';
@@ -32,6 +34,9 @@ const AdminDashboard = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showUpdatePopup, setShowUpdatePopup] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: userData, loading: userLoading, error: userError } = useQuery(GET_CURRENT_USER);
   const { data: usersData, loading: usersLoading, error: usersError, refetch } = useQuery(GET_USERS, {
@@ -103,6 +108,41 @@ const AdminDashboard = () => {
       refetch();
     } catch (err) {
       console.error('Error performing action:', err);
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    try {
+      setDeleting(true);
+      await deleteUser({ variables: { id: user.id } });
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    } catch (err) {
+      console.error('Error deleting profile:', err);
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    try {
+      setDeleting(true);
+      await deleteUser({ variables: { id: userId } });
+      
+      // If admin is deleting their own account, logout
+      if (userId === user.id) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      } else {
+        setShowDeleteConfirmation(false);
+        setUserToDelete(null);
+        refetch();
+      }
+    } catch (err) {
+      console.error('Error deleting user:', err);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -244,7 +284,13 @@ const AdminDashboard = () => {
                         <UserCog className="w-4 h-4" />
                         <span>Update Profile</span>
                       </button>
-                      <button className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">
+                      <button 
+                        onClick={() => {
+                          setUserToDelete(user.id);
+                          setShowDeleteConfirmation(true);
+                        }}
+                        className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                      >
                         <Trash2 className="w-4 h-4" />
                         <span>Delete Profile</span>
                       </button>
@@ -583,6 +629,57 @@ const AdminDashboard = () => {
         onClose={() => setShowUpdatePopup(false)}
         user={user}
       />
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Delete User</h3>
+                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirmation(false);
+                  setUserToDelete(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete this user? This will permanently remove their account and all associated data.
+            </p>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirmation(false);
+                  setUserToDelete(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteUser(userToDelete)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? 'Deleting...' : 'Delete User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
