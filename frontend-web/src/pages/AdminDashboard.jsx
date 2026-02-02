@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { GET_CURRENT_USER, GET_USERS, UPDATE_USER_MUTATION, DELETE_USER_MUTATION, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
 import UpdateProfilePopup from '../components/UpdateProfilePopup';
+import EditUserPopup from '../components/EditUserPopup';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -34,6 +35,7 @@ const AdminDashboard = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showUpdatePopup, setShowUpdatePopup] = useState(false);
+  const [showEditUserPopup, setShowEditUserPopup] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -499,7 +501,11 @@ const AdminDashboard = () => {
                             <button 
                               onClick={() => {
                                 setSelectedUser(user);
-                                setShowUpdatePopup(true);
+                                if (user.id === userData?.me?.id) {
+                                  setShowUpdatePopup(true);
+                                } else {
+                                  setShowEditUserPopup(true);
+                                }
                               }}
                               className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                             >
@@ -631,6 +637,18 @@ const AdminDashboard = () => {
         onUpdateUserMutation={selectedUser && selectedUser.id !== user.id ? UPDATE_USER_MUTATION : UPDATE_ME_MUTATION}
       />
 
+      {/* Edit User Popup */}
+      <EditUserPopup
+        isOpen={showEditUserPopup}
+        onClose={() => setShowEditUserPopup(false)}
+        user={selectedUser}
+        onUpdateSuccess={(updatedUser) => {
+          // Handle successful update
+          refetch();
+          setSelectedUser(updatedUser);
+        }}
+      />
+
       {/* User Details Modal */}
       {showUserDetails && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -736,7 +754,11 @@ const AdminDashboard = () => {
                 onClick={() => {
                   setShowUserDetails(false);
                   setSelectedUser(null);
-                  setShowUpdatePopup(true);
+                  if (selectedUser.id === userData?.me?.id) {
+                    setShowUpdatePopup(true);
+                  } else {
+                    setShowEditUserPopup(true);
+                  }
                 }}
                 className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
               >
