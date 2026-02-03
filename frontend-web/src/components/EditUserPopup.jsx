@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, 
@@ -8,19 +8,25 @@ import {
   Save, 
   AlertCircle,
   Eye, 
-  EyeOff 
+  EyeOff,
+  Users,
+  CheckCircle,
+  Ban,
+  UserCheck,
+  UserX
 } from 'lucide-react';
 import { useMutation } from '@apollo/client';
-import { UPDATE_ME_MUTATION, UPDATE_USER_MUTATION } from '../graphql/auth';
+import { UPDATE_USER_MUTATION } from '../graphql/auth';
 
-const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => {
-  
+const EditUserPopup = ({ isOpen, onClose, user, onUpdateSuccess }) => {
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: user?.role || 'UNDETERMINED',
+    isVerified: user?.isVerified || false
   });
   
   const [errors, setErrors] = useState({});
@@ -28,17 +34,30 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Use provided mutation or default to UPDATE_ME_MUTATION for current user
-  const [updateUser] = useMutation(onUpdateUserMutation || UPDATE_ME_MUTATION);
+  const [updateUser] = useMutation(UPDATE_USER_MUTATION);
+
+  useEffect(() => {
+    if (!user) return;
+
+    setFormData({
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      password: '',
+      confirmPassword: '',
+      role: user.role || 'UNDETERMINED',
+      isVerified: user.isVerified || false
+    });
+    setErrors({});
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+  }, [user, isOpen]);
 
   const validateForm = () => {
     const newErrors = {};
-    
-    // Only validate email if it's provided
-    if (formData.email && formData.email.trim()) {
-      if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = 'Email is invalid';
-      }
+
+    if (formData.email.trim() && !/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
     }
     
     // Only validate password if it's provided
@@ -61,10 +80,12 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    const newValue = type === 'checkbox' ? checked : value;
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: newValue
     }));
     
     // Clear error when user starts typing
@@ -85,11 +106,13 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
 
     setIsUpdating(true);
     
-    try {
+    try { ///////////////////////////////// userId is required
       const input = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email
+        firstName: formData.firstName.trim() || user.firstName,
+        lastName: formData.lastName.trim() || user.lastName,
+        email: formData.email.trim() || user.email,
+        role: formData.role,
+        isVerified: formData.isVerified
       };
 
       // Only include password if it's provided
@@ -97,26 +120,19 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
         input.password = formData.password;
       }
 
-      await updateUser({
-        variables: { input }
+      const { data } = await updateUser({
+        variables: { id: user.id, input }
       });
 
-      // Update local storage with new user data
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        localStorage.setItem('user', JSON.stringify({
-          ...userData,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email
-        }));
+      // Call success callback if provided
+      if (onUpdateSuccess) {
+        onUpdateSuccess(data.updateUser);
       }
 
       onClose();
     } catch (err) {
-      console.error('Error updating profile:', err);
-      setErrors({ submit: 'Failed to update profile. Please try again.' });
+      console.error('Error updating user:', err);
+      setErrors({ submit: 'Failed to update user. Please try again.' });
     } finally {
       setIsUpdating(false);
     }
@@ -131,7 +147,7 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-auto"
+          className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-auto"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -140,8 +156,8 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
                 <User className="w-5 h-5 text-indigo-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Update Profile</h2>
-                <p className="text-sm text-gray-600">Make changes to your account</p>
+                <h2 className="text-lg font-semibold text-gray-900">Edit User</h2>
+                <p className="text-sm text-gray-600">Update user details</p>
               </div>
             </div>
             <button
@@ -153,7 +169,7 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
             {/* Error Display */}
             {errors.submit && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
@@ -163,6 +179,54 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
                 </div>
               </div>
             )}
+
+            {/* User Info Display */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-gray-600" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">{user.firstName} {user.lastName}</h4>
+                  <p className="text-sm text-gray-600">{user.email}</p>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      user.role === 'ADMIN' 
+                        ? 'bg-purple-100 text-purple-800' 
+                        : user.role === 'TUTOR'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {user.role}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      user.isVerified 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {user.isVerified ? 'Verified' : 'Unverified'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ID Field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                User ID
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  value={user.id || ''}
+                  readOnly
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                  placeholder="User ID"
+                />
+              </div>
+            </div>
 
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
@@ -295,6 +359,60 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
               </div>
             </div>
 
+            {/* Role Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                User Role
+              </label>
+              <div className="grid grid-cols-4 gap-4">
+                {[
+                  { value: 'UNDETERMINED', label: 'Undetermined', icon: Users },
+                  { value: 'STUDENT', label: 'Student', icon: Users },
+                  { value: 'TUTOR', label: 'Tutor', icon: UserCheck },
+                  { value: 'ADMIN', label: 'Admin', icon: UserX }
+                ].map((role) => {
+                  const Icon = role.icon;
+                  return (
+                    <button
+                      key={role.value}
+                      type="button"
+                      onClick={() => handleInputChange({
+                        target: { name: 'role', value: role.value }
+                      })}
+                      className={`flex items-center justify-center space-x-2 p-3 border rounded-lg transition-colors w-full whitespace-nowrap ${
+                        formData.role === role.value
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                          : 'border-gray-300 hover:border-gray-400 text-gray-700'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="text-sm font-medium">{role.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Verification Status */}
+            <div>
+              <label className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  name="isVerified"
+                  checked={formData.isVerified}
+                  onChange={handleInputChange}
+                  className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="text-sm font-medium text-gray-700">User is verified</span>
+                </div>
+              </label>
+              <p className="text-xs text-gray-500 mt-1">
+                Check this box to verify the user's email address
+              </p>
+            </div>
+
             {/* Actions */}
             <div className="flex space-x-3 pt-4">
               <button
@@ -317,7 +435,7 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    <span>Update Profile</span>
+                    <span>Update User</span>
                   </>
                 )}
               </button>
@@ -329,4 +447,4 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
   );
 };
 
-export default UpdateProfilePopup;
+export default EditUserPopup;

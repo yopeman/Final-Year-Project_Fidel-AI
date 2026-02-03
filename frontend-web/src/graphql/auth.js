@@ -145,8 +145,8 @@ export const GET_USERS = gql`
 
 // Update user (admin only)
 export const UPDATE_USER_MUTATION = gql`
-  mutation UpdateUser($input: UpdateUserInput!) {
-    updateUser(input: $input) {
+  mutation UpdateUser($id: ID!, $input: UpdateUserInput!) {
+    updateUser(id: $id, input: $input) {
       id
       firstName
       lastName
