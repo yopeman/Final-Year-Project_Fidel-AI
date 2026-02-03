@@ -547,8 +547,7 @@ const AdminCourses = ({
               <button
                 onClick={() => {
                   setShowCourseDetails(false);
-                  setSelectedCourse(null);
-                  onEditCourse(selectedCourse);
+                  handleEditClick(selectedCourse);
                 }}
                 className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
               >
