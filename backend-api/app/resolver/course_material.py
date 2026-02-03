@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..model.course import Course
 from ..model.course_material import CourseMaterial
+from ..model.material_files import MaterialFiles
 from ..model.user import User
 
 
@@ -179,8 +180,8 @@ def resolve_course(material, info):
 @course_material.field("files")
 def resolve_files(material, info):
     db: Session = info.context["db"]
-    files = db.query("material_files").filter(
-        "material_files.material_id" == material.id,
-        "material_files.is_deleted" == False
+    files = db.query(MaterialFiles).filter(
+        MaterialFiles.material_id == material.id,
+        MaterialFiles.is_deleted == False
     ).all()
     return files

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..model.course import Course
 from ..model.course_material import CourseMaterial
+from ..model.batch_course import BatchCourse
 from ..model.user import User
 
 
@@ -159,8 +160,8 @@ def resolve_materials(course, info):
 @course.field("batchCourses")
 def resolve_batch_courses(course, info):
     db: Session = info.context["db"]
-    batch_courses = db.query("batch_courses").filter(
-        "batch_courses.course_id" == course.id,
-        "batch_courses.is_deleted" == False
+    batch_courses = db.query(BatchCourse).filter(
+        BatchCourse.course_id == course.id,
+        BatchCourse.is_deleted == False
     ).all()
     return batch_courses
