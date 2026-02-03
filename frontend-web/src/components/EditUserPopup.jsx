@@ -106,7 +106,7 @@ const EditUserPopup = ({ isOpen, onClose, user, onUpdateSuccess }) => {
 
     setIsUpdating(true);
     
-    try {
+    try { ///////////////////////////////// userId is required
       const input = {
         firstName: formData.firstName.trim() || user.firstName,
         lastName: formData.lastName.trim() || user.lastName,
@@ -121,7 +121,7 @@ const EditUserPopup = ({ isOpen, onClose, user, onUpdateSuccess }) => {
       }
 
       const { data } = await updateUser({
-        variables: { input }
+        variables: { id: user.id, input }
       });
 
       // Call success callback if provided
@@ -208,6 +208,23 @@ const EditUserPopup = ({ isOpen, onClose, user, onUpdateSuccess }) => {
                     </span>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* ID Field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                User ID
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  value={user.id || ''}
+                  readOnly
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                  placeholder="User ID"
+                />
               </div>
             </div>
 

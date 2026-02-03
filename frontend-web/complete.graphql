@@ -505,7 +505,7 @@ type ConversationInteractions {
 input CreateConversationInteractionInput {
   conversationId: ID!
   text: String
-  audioFile: Upload
+  audioFile: String
 }
 
 extend type Query {
@@ -1127,7 +1127,7 @@ extend type Mutation {
   forgetPassword(input: ForgetPasswordInput!): Boolean!
   passwordRecovery(input: PasswordRecoveryInput!): Boolean!
 
-  updateUser(input: UpdateUserInput!): User!
+  updateUser(id: ID!, input: UpdateUserInput!): User!
   updateMe(input: UpdateMeInput!): User!
 
   deleteUser(id: ID!): Boolean!

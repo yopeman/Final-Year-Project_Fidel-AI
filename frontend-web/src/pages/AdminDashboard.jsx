@@ -28,6 +28,10 @@ import {
 import { GET_CURRENT_USER, GET_USERS, UPDATE_USER_MUTATION, DELETE_USER_MUTATION, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
 import UpdateProfilePopup from '../components/UpdateProfilePopup';
 import EditUserPopup from '../components/EditUserPopup';
+import AdminOverview from '../components/AdminOverview';
+import AdminUsers from '../components/AdminUsers';
+import AdminReports from '../components/AdminReports';
+import AdminCourses from '../components/AdminCourses';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -151,16 +155,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = filterRole === 'all' || user.role.toLowerCase() === filterRole.toLowerCase();
-    const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'verified' && user.isVerified) ||
-                         (filterStatus === 'unverified' && !user.isVerified);
-    return matchesSearch && matchesRole && matchesStatus;
-  });
 
   const stats = {
     totalUsers: users.length,
@@ -240,6 +234,7 @@ const AdminDashboard = () => {
               {[ 
                 { id: 'overview', name: 'Overview', icon: BarChart3 },
                 { id: 'users', name: 'Users', icon: Users },
+                { id: 'courses', name: 'Courses', icon: BookOpen },
                 { id: 'reports', name: 'Reports', icon: BookOpen }
               ].map((tab) => (
                 <button
@@ -261,321 +256,76 @@ const AdminDashboard = () => {
           {/* Tab Content */}
           <div className="p-6">
             {activeTab === 'overview' && (
-              <div className="space-y-6">
-                {/* Profile Section */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <User className="w-8 h-8 text-indigo-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{user?.firstName} {user?.lastName}</h3>
-                        <p className="text-gray-600">{user?.email}</p>
-                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                            Administrator
-                          </span>
-                          <span>Member since: {new Date(user?.createdAt).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => setShowUpdatePopup(true)}
-                        className="flex items-center space-x-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200"
-                      >
-                        <UserCog className="w-4 h-4" />
-                        <span>Update Profile</span>
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setUserToDelete(user.id);
-                          setShowDeleteConfirmation(true);
-                        }}
-                        className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>Delete Profile</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-blue-100 text-sm">Total Users</p>
-                        <p className="text-2xl font-bold">{stats.totalUsers}</p>
-                      </div>
-                      <Users className="w-8 h-8 opacity-80" />
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-green-100 text-sm">Verified Users</p>
-                        <p className="text-2xl font-bold">{stats.verified}</p>
-                      </div>
-                      <CheckCircle className="w-8 h-8 opacity-80" />
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-purple-100 text-sm">Pending Verification</p>
-                        <p className="text-2xl font-bold">{stats.unverified}</p>
-                      </div>
-                      <Clock className="w-8 h-8 opacity-80" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">User Distribution</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                          <span className="text-sm text-gray-600">Students</span>
-                        </div>
-                        <span className="text-sm font-medium">{stats.students}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                          <span className="text-sm text-gray-600">Tutors</span>
-                        </div>
-                        <span className="text-sm font-medium">{stats.tutors}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                          <span className="text-sm text-gray-600">Admins</span>
-                        </div>
-                        <span className="text-sm font-medium">{stats.admins}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">System Status</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">System Health</span>
-                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Good</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Database Status</span>
-                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Connected</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Last Backup</span>
-                        <span className="text-sm text-gray-500">2 hours ago</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent Activity */}
-                <div className="bg-white rounded-lg border border-gray-200">
-                  <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
-                  </div>
-                  <div className="p-6 space-y-4">
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                      <div>
-                        <p className="font-medium">New tutor approved: Dr. Sarah Johnson</p>
-                        <p className="text-sm text-gray-500">30 minutes ago</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <UserPlus className="w-5 h-5 text-blue-500" />
-                      <div>
-                        <p className="font-medium">New student registered: Michael Chen</p>
-                        <p className="text-sm text-gray-500">2 hours ago</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                      <div>
-                        <p className="font-medium">Suspicious activity detected on user account</p>
-                        <p className="text-sm text-gray-500">4 hours ago</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <AdminOverview 
+                user={user}
+                stats={stats}
+                onAction={(action) => {
+                  if (action === 'updateProfile') {
+                    setShowUpdatePopup(true);
+                  } else if (action === 'deleteProfile') {
+                    setUserToDelete(user.id);
+                    setShowDeleteConfirmation(true);
+                  }
+                }}
+              />
             )}
 
             {activeTab === 'users' && (
-              <div className="space-y-6">
-                {/* Search and Filters */}
-                <div className="flex flex-col lg:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Search users by name or email..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-                  <select
-                    value={filterRole}
-                    onChange={(e) => setFilterRole(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="all">All Roles</option>
-                    <option value="student">Students</option>
-                    <option value="tutor">Tutors</option>
-                    <option value="admin">Admins</option>
-                  </select>
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="verified">Verified</option>
-                    <option value="unverified">Unverified</option>
-                  </select>
-                </div>
-
-                {/* Users List */}
-                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900">Users ({filteredUsers.length})</h3>
-                  </div>
-                  <div className="divide-y divide-gray-200">
-                    {filteredUsers.map((user) => (
-                      <div key={user.id} className="p-6 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3">
-                              <h4 className="text-lg font-medium text-gray-900">
-                                {user.firstName} {user.lastName}
-                              </h4>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                user.role === 'ADMIN' 
-                                  ? 'bg-purple-100 text-purple-800' 
-                                  : user.role === 'TUTOR'
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-blue-100 text-blue-800'
-                              }`}>
-                                {user.role}
-                              </span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                user.isVerified 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {user.isVerified ? 'Verified' : 'Unverified'}
-                              </span>
-                            </div>
-                            <p className="text-gray-600 mt-1">{user.email}</p>
-                            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                              <span>Joined: {new Date(user.createdAt).toLocaleDateString()}</span>
-                              <span>Last updated: {new Date(user.updatedAt).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button 
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setShowUserDetails(true);
-                              }}
-                              className="flex items-center space-x-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200"
-                            >
-                              <Eye className="w-4 h-4" />
-                              <span>View</span>
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setSelectedUser(user);
-                                if (user.id === userData?.me?.id) {
-                                  setShowUpdatePopup(true);
-                                } else {
-                                  setShowEditUserPopup(true);
-                                }
-                              }}
-                              className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                            >
-                              <Edit className="w-4 h-4" />
-                              <span>Edit</span>
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setUserToDelete(user.id);
-                                setShowDeleteConfirmation(true);
-                              }}
-                              className="flex items-center space-x-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              <span>Delete</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <AdminUsers 
+                users={users}
+                loading={usersLoading}
+                onUserAction={handleUserAction}
+                onEditUser={(user) => {
+                  setSelectedUser(user);
+                  if (user.id === userData?.me?.id) {
+                    setShowUpdatePopup(true);
+                  } else {
+                    setShowEditUserPopup(true);
+                  }
+                }}
+                onViewUser={(user) => {
+                  setSelectedUser(user);
+                  setShowUserDetails(true);
+                }}
+                onDeleteUser={(userId) => {
+                  setUserToDelete(userId);
+                  setShowDeleteConfirmation(true);
+                }}
+                selectedUser={selectedUser}
+                showUserDetails={showUserDetails}
+                setShowUserDetails={setShowUserDetails}
+              />
             )}
 
 
+            {activeTab === 'courses' && (
+              <AdminCourses 
+                onCourseAction={(action, courseId) => {
+                  console.log(`Course action: ${action} for course ${courseId}`);
+                  // Add course action logic here
+                }}
+                onEditCourse={(course) => {
+                  console.log('Editing course:', course);
+                  // Add edit course logic here
+                }}
+                onViewCourse={(course) => {
+                  console.log('Viewing course:', course);
+                  // Add view course logic here
+                }}
+                onDeleteCourse={(courseId) => {
+                  console.log('Deleting course:', courseId);
+                  // Add delete course logic here
+                }}
+              />
+            )}
+
             {activeTab === 'reports' && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium text-gray-900">System Reports</h3>
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                    <Plus className="w-4 h-4" />
-                    <span>Generate Report</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-medium text-gray-900">User Activity Report</h4>
-                      <span className="text-sm text-gray-500">Monthly</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-4">Comprehensive user activity and engagement metrics</p>
-                    <button className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700">
-                      View Report
-                    </button>
-                  </div>
-
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-medium text-gray-900">System Performance</h4>
-                      <span className="text-sm text-gray-500">Real-time</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-4">Server performance and resource utilization</p>
-                    <button className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700">
-                      View Report
-                    </button>
-                  </div>
-
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-medium text-gray-900">Security Audit</h4>
-                      <span className="text-sm text-gray-500">Daily</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-4">Security events and potential threats</p>
-                    <button className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700">
-                      View Report
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <AdminReports 
+                onGenerateReport={(reportType, action = 'view') => {
+                  console.log(`Generating ${action} report: ${reportType}`);
+                  // Add report generation logic here
+                }}
+              />
             )}
           </div>
         </div>
