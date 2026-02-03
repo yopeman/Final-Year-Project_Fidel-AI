@@ -3,7 +3,8 @@ import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 
 // Get your GraphQL endpoint
-const GRAPHQL_URI = import.meta.env.VITE_GRAPHQL_URI || 'https://brittny-reprehensible-joel.ngrok-free.dev/graphql';
+export const BASE_URL = import.meta.env.VITE_BASE_URL || 'https://brittny-reprehensible-joel.ngrok-free.dev'
+const GRAPHQL_URI = `${BASE_URL}/graphql`;
 
 // Create HTTP link
 const httpLink = createHttpLink({

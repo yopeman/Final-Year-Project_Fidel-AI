@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 import { 
   BookOpen, 
   Plus, 
@@ -24,8 +25,10 @@ import {
   DELETE_COURSE,
   GET_COURSE,
   ADD_MATERIAL,
-  DELETE_MATERIAL
+  DELETE_MATERIAL,
+  DELETE_MATERIAL_FILE
 } from '../graphql/course';
+import { BASE_URL } from '../lib/apollo-client';
 
 const AdminCourses = ({ 
   onCourseAction, 
@@ -45,6 +48,13 @@ const AdminCourses = ({
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [showDeleteMaterialConfirmation, setShowDeleteMaterialConfirmation] = useState(false);
   const [materialToDelete, setMaterialToDelete] = useState(null);
+  const [showViewMaterialModal, setShowViewMaterialModal] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [showDeleteFileConfirmation, setShowDeleteFileConfirmation] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState(null);
+  const [fileForm, setFileForm] = useState({
+    files: []
+  });
   const [materialForm, setMaterialForm] = useState({
     name: '',
     description: ''
@@ -175,6 +185,61 @@ const AdminCourses = ({
     }
   };
 
+  // Handle file upload
+  const handleFileUpload = async () => {
+    if (!fileForm.files || fileForm.files.length === 0) return;
+
+    setIsSubmitting(true);
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Append each file to FormData
+      fileForm.files.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      // Make REST API call using axios
+      const response = await axios.post(
+        `${BASE_URL}/api/upload/material/${selectedMaterial.id}/files`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      
+
+      // Update selected material files directly
+      setSelectedMaterial(prev => ({
+        ...prev,
+        files: [...(prev.files || []), ...response.data]
+      }));
+
+      // console.log(selectedMaterial);
+      
+      
+      // Also update the course materials
+      setSelectedCourse(prev => ({
+        ...prev,
+        materials: prev.materials.map(material => 
+          material.id === selectedMaterial.id 
+            ? { ...material, files: [...(material.files || []), ...response.data] }
+            : material
+        )
+      }));
+      
+      // Reset file form
+      setFileForm({ files: [] });
+    } catch (err) {
+      console.error('Error uploading files:', err);
+      setFormErrors({ submit: 'Failed to upload files. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Handle material form input changes
   const handleMaterialFormChange = (field, value) => {
     setMaterialForm(prev => ({
@@ -245,6 +310,9 @@ const AdminCourses = ({
     refetchQueries: [{ query: GET_COURSES }]
   });
   const [deleteMaterialMutation] = useMutation(DELETE_MATERIAL, {
+    refetchQueries: [{ query: GET_COURSES }]
+  });
+  const [deleteMaterialFileMutation] = useMutation(DELETE_MATERIAL_FILE, {
     refetchQueries: [{ query: GET_COURSES }]
   });
 
@@ -510,6 +578,16 @@ const AdminCourses = ({
                         <div className="flex space-x-2">
                           <button
                             onClick={() => {
+                              setSelectedMaterial(material);
+                              setShowViewMaterialModal(true);
+                            }}
+                            className="p-1 text-blue-500 hover:text-blue-700"
+                            title="View Material"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
                               setMaterialToDelete(material.id);
                               setShowDeleteMaterialConfirmation(true);
                             }}
@@ -524,6 +602,22 @@ const AdminCourses = ({
                       <div className="mt-2 text-xs text-gray-500">
                         Created: {new Date(material.createdAt).toLocaleDateString()}
                       </div>
+                      {material.files && material.files.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <p className="text-xs text-gray-600 mb-2">Files: {material.files.length}</p>
+                          <div className="space-y-1">
+                            {material.files.slice(0, 3).map((file) => (
+                              <div key={file.id} className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
+                                <span className="truncate">{file.fileName}</span>
+                                <span>{(file.fileSize / 1024).toFixed(1)} KB</span>
+                              </div>
+                            ))}
+                            {material.files.length > 3 && (
+                              <p className="text-xs text-gray-500 text-center pt-1">+{material.files.length - 3} more files</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -898,6 +992,235 @@ const AdminCourses = ({
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
                 Delete Material
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Material Modal */}
+      {showViewMaterialModal && selectedMaterial && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Eye className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">{selectedMaterial.name}</h3>
+                  <p className="text-sm text-gray-600">Material Details</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowViewMaterialModal(false);
+                  setSelectedMaterial(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-3">Material Information</h4>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>ID:</span>
+                    <span className="font-mono text-xs">{selectedMaterial.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Deleted:</span>
+                    <span>{selectedMaterial.isDeleted ? 'Yes' : 'No'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Deleted At:</span>
+                    <span>{selectedMaterial.deletedAt ? new Date(selectedMaterial.deletedAt).toLocaleDateString() : 'Not deleted'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-3">Dates</h4>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Created:</span>
+                    <span>{new Date(selectedMaterial.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Updated:</span>
+                    <span>{new Date(selectedMaterial.updatedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="font-medium text-gray-900 mb-3">Description</h4>
+              <p className="text-gray-700">{selectedMaterial.description}</p>
+            </div>
+
+            {/* Files Section */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-medium text-gray-900">Material Files</h4>
+                <div className="flex space-x-2">
+                  <label className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm cursor-pointer">
+                    <Plus className="w-4 h-4" />
+                    <span>Upload Files</span>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files);
+                        setFileForm({ files });
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                  {fileForm.files && fileForm.files.length > 0 && (
+                    <button
+                      onClick={handleFileUpload}
+                      disabled={isSubmitting}
+                      className="flex items-center space-x-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          <span>Upload {fileForm.files.length} File(s)</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              {selectedMaterial.files && selectedMaterial.files.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedMaterial.files.map((file) => (
+                    <div key={file.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-blue-600 text-sm font-medium">
+                            {(file.fileExtension || file.file_extension).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <h6 className="font-medium text-gray-900">{file.fileName || file.file_name}</h6>
+                          <p className="text-sm text-gray-600">
+                            {(file.fileSize / 1024).toFixed(1)} KB • 
+                            Uploaded: {new Date(file.createdAt || file.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setFileToDelete(file.id);
+                          setShowDeleteFileConfirmation(true);
+                        }}
+                        className="p-2 text-red-500 hover:text-red-700"
+                        title="Delete File"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
+                  No files uploaded yet. Click "Upload Files" to add files to this material.
+                </div>
+              )}
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowViewMaterialModal(false);
+                  setSelectedMaterial(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete File Confirmation Dialog */}
+      {showDeleteFileConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Delete File</h3>
+                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDeleteFileConfirmation(false);
+                  setFileToDelete(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete this file? This action cannot be undone.
+            </p>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteFileConfirmation(false);
+                  setFileToDelete(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await deleteMaterialFileMutation({ variables: { id: fileToDelete } });
+                    setShowDeleteFileConfirmation(false);
+                    setFileToDelete(null);
+                    // Update selected material files directly
+                    setSelectedMaterial(prev => ({
+                      ...prev,
+                      files: prev.files.filter(file => file.id !== fileToDelete)
+                    }));
+                    // Also update the course materials
+                    setSelectedCourse(prev => ({
+                      ...prev,
+                      materials: prev.materials.map(material => 
+                        material.id === selectedMaterial.id 
+                          ? { ...material, files: material.files.filter(file => file.id !== fileToDelete) }
+                          : material
+                      )
+                    }));
+                  } catch (err) {
+                    console.error('Error deleting file:', err);
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Delete File
               </button>
             </div>
           </div>

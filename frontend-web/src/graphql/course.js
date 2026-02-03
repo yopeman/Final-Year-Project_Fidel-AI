@@ -19,6 +19,18 @@ export const GET_COURSES = gql`
         updatedAt
         isDeleted
         deletedAt
+        files {
+            id
+            materialId
+            fileName
+            filePath
+            fileExtension
+            fileSize
+            createdAt
+            updatedAt
+            isDeleted
+            deletedAt
+        }
       }
     }
   }
@@ -43,6 +55,18 @@ export const GET_COURSE = gql`
         updatedAt
         isDeleted
         deletedAt
+        files {
+            id
+            materialId
+            fileName
+            filePath
+            fileExtension
+            fileSize
+            createdAt
+            updatedAt
+            isDeleted
+            deletedAt
+        }
       }
     }
   }
@@ -229,5 +253,22 @@ export const UPLOAD_MATERIAL_FILE = gql`
 export const DELETE_MATERIAL_FILE = gql`
   mutation DeleteMaterialFile($id: ID!) {
     deleteMaterialFile(id: $id)
+  }
+`;
+
+// Upload multiple material files
+export const UPLOAD_MATERIAL_FILES = gql`
+  mutation UploadMaterialFiles($materialId: ID!, $files: [Upload!]!) {
+    uploadMaterialFiles(materialId: $materialId, files: $files) {
+      id
+      fileName
+      filePath
+      fileExtension
+      fileSize
+      createdAt
+      updatedAt
+      isDeleted
+      deletedAt
+    }
   }
 `;

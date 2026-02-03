@@ -14,7 +14,6 @@ import { useMutation } from '@apollo/client';
 import { UPDATE_ME_MUTATION, UPDATE_USER_MUTATION } from '../graphql/auth';
 
 const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => {
-  console.log(user);
   
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
