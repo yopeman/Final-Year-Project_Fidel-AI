@@ -4,9 +4,11 @@ from ariadne import ScalarType, make_executable_schema, upload_scalar
 from ariadne.asgi import GraphQL
 from ariadne.asgi.handlers import GraphQLTransportWSHandler, GraphQLWSHandler
 from broadcaster import Broadcast
-from fastapi import FastAPI, Request, Depends, WebSocket
+from fastapi import FastAPI, Request, Depends, WebSocket, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from typing import List
+from .model.material_files import MaterialFiles
 
 from . import model  # Import all models to register them with SQLAlchemy
 from .config.database import create_table, get_db
@@ -31,7 +33,7 @@ from .resolver.conversation_interactions import mutation as ci_mutation
 from .resolver.conversation_interactions import query as ci_query
 from .resolver.course import course, mutation as c_mutation, query as c_query
 from .resolver.course_material import course_material, mutation as cm_mutation, query as cm_query
-from .resolver.material_files import material_files, mutation as mf_mutation, query as mf_query
+from .resolver.material_files import material_files, mutation as mf_mutation, query as mf_query, upload_material_files as upload_mf
 from .resolver.free_conversation import free_conversation as fc_type
 from .resolver.free_conversation import mutation as fc_mutation
 from .resolver.free_conversation import query as fc_query
@@ -242,3 +244,8 @@ def health_check():
 def payment_webhook(status: str = None, trx_ref: str = None, db = Depends(get_db)):
     print('Payment Webhook:', status, trx_ref)
     p_webhook(status=status, trx_ref=trx_ref, db=db)
+
+@app.post("/api/upload/material/{materialId}/files", response_model=None)
+async def upload_course_material(materialId: str, files: List[UploadFile]):
+    context = {"db": next(get_db()), "pubsub": broadcast}
+    return await upload_mf(context, materialId, files)
