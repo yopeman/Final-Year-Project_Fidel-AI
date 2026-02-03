@@ -381,7 +381,7 @@ def resolve_account_recovery(_, info, input):
 
 
 @mutation.field("updateUser")
-def resolve_update_user(_, info, input):
+def resolve_update_user(_, info, id, input):
     current_user: User = info.context.get("current_user")
     if not current_user or current_user.role != UserRole.admin:
         raise Exception("Unauthorized")
@@ -389,7 +389,7 @@ def resolve_update_user(_, info, input):
     # Assuming admin check, but for now allow
     db: Session = info.context["db"]
     user = (
-        db.query(User).filter(User.id == input["id"], User.is_deleted == False).first()
+        db.query(User).filter(User.id == id, User.is_deleted == False).first()
     )
     if not user:
         raise Exception("User not found")
