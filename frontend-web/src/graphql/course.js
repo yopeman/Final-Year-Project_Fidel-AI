@@ -11,6 +11,15 @@ export const GET_COURSES = gql`
       updatedAt
       isDeleted
       deletedAt
+      materials {
+        id
+        name
+        description
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
     }
   }
 `;
