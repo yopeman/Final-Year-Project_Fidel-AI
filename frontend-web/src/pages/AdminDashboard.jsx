@@ -26,6 +26,7 @@ import {
   X
 } from 'lucide-react';
 import { GET_CURRENT_USER, GET_USERS, UPDATE_USER_MUTATION, DELETE_USER_MUTATION, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
+import { GET_BATCHES } from '../graphql/batch';
 import UpdateProfilePopup from '../components/UpdateProfilePopup';
 import EditUserPopup from '../components/EditUserPopup';
 import AdminOverview from '../components/AdminOverview';
@@ -33,6 +34,7 @@ import AdminUsers from '../components/AdminUsers';
 import AdminReports from '../components/AdminReports';
 import AdminCourses from '../components/AdminCourses';
 import AdminSchedules from '../components/AdminSchedules';
+import AdminBatches from '../components/AdminBatches';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -51,6 +53,7 @@ const AdminDashboard = () => {
   const { data: usersData, loading: usersLoading, error: usersError, refetch } = useQuery(GET_USERS, {
     variables: { pagination: { page: 1, limit: 100 } }
   });
+  const { data: batchesData } = useQuery(GET_BATCHES);
 
   const [updateUser] = useMutation(UPDATE_USER_MUTATION);
   const [updateMe] = useMutation(UPDATE_ME_MUTATION);
@@ -157,13 +160,21 @@ const AdminDashboard = () => {
   };
 
 
+  const batches = batchesData?.batches || [];
+  
   const stats = {
     totalUsers: users.length,
     students: users.filter(u => u.role === 'STUDENT').length,
     tutors: users.filter(u => u.role === 'TUTOR').length,
     admins: users.filter(u => u.role === 'ADMIN').length,
     verified: users.filter(u => u.isVerified).length,
-    unverified: users.filter(u => !u.isVerified).length
+    unverified: users.filter(u => !u.isVerified).length,
+    totalBatches: batches.length,
+    activeBatches: batches.filter(b => b.status === 'ACTIVE').length,
+    upcomingBatches: batches.filter(b => b.status === 'UPCOMING').length,
+    completedBatches: batches.filter(b => b.status === 'COMPLETED').length,
+    totalEnrollments: batches.reduce((total, batch) => total + (batch.enrollments?.length || 0), 0),
+    totalCourses: batches.reduce((total, batch) => total + (batch.batchCourses?.length || 0), 0)
   };
 
   if (userLoading || usersLoading) {
@@ -234,9 +245,10 @@ const AdminDashboard = () => {
             <nav className="-mb-px flex space-x-8 px-6">
               {[ 
                 { id: 'overview', name: 'Overview', icon: BarChart3 },
-                { id: 'users', name: 'Users', icon: Users },
-                { id: 'schedules', name: 'Schedules', icon: Calendar },
+                { id: 'users', name: 'Users', icon: Users }, 
                 { id: 'courses', name: 'Courses', icon: BookOpen },
+                { id: 'schedules', name: 'Schedules', icon: Calendar },
+                { id: 'batches', name: 'Batches', icon: GraduationCap },
                 { id: 'reports', name: 'Reports', icon: BookOpen }
               ].map((tab) => (
                 <button
@@ -296,6 +308,27 @@ const AdminDashboard = () => {
                 selectedUser={selectedUser}
                 showUserDetails={showUserDetails}
                 setShowUserDetails={setShowUserDetails}
+              />
+            )}
+
+            {activeTab === 'batches' && (
+              <AdminBatches 
+                onBatchAction={(action, batchId) => {
+                  console.log(`Batch action: ${action} for batch ${batchId}`);
+                  // Add batch action logic here
+                }}
+                onEditBatch={(batch) => {
+                  console.log('Editing batch:', batch);
+                  // Add edit batch logic here
+                }}
+                onViewBatch={(batch) => {
+                  console.log('Viewing batch:', batch);
+                  // Add view batch logic here
+                }}
+                onDeleteBatch={(batchId) => {
+                  console.log('Deleting batch:', batchId);
+                  // Add delete batch logic here
+                }}
               />
             )}
 

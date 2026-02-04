@@ -107,7 +107,7 @@ const AdminOverview = ({ user, stats, onAction }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
       >
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
           <div className="flex items-center justify-between">
@@ -132,10 +132,68 @@ const AdminOverview = ({ user, stats, onAction }) => {
         <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-purple-100 text-sm">Pending Verification</p>
-              <p className="text-2xl font-bold">{stats.unverified}</p>
+              <p className="text-purple-100 text-sm">Total Batches</p>
+              <p className="text-2xl font-bold">{stats.totalBatches}</p>
             </div>
-            <Clock className="w-8 h-8 opacity-80" />
+            <Calendar className="w-8 h-8 opacity-80" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-orange-100 text-sm">Active Batches</p>
+              <p className="text-2xl font-bold">{stats.activeBatches}</p>
+            </div>
+            <BarChart3 className="w-8 h-8 opacity-80" />
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Additional Stats Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+      >
+        <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-teal-100 text-sm">Upcoming Batches</p>
+              <p className="text-2xl font-bold">{stats.upcomingBatches}</p>
+            </div>
+            <Calendar className="w-8 h-8 opacity-80" />
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-red-100 text-sm">Completed Batches</p>
+              <p className="text-2xl font-bold">{stats.completedBatches}</p>
+            </div>
+            <CheckCircle className="w-8 h-8 opacity-80" />
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-indigo-100 text-sm">Total Enrollments</p>
+              <p className="text-2xl font-bold">{stats.totalEnrollments}</p>
+            </div>
+            <UserPlus className="w-8 h-8 opacity-80" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-emerald-100 text-sm">Total Courses</p>
+              <p className="text-2xl font-bold">{stats.totalCourses}</p>
+            </div>
+            <BarChart3 className="w-8 h-8 opacity-80" />
           </div>
         </div>
       </motion.div>
