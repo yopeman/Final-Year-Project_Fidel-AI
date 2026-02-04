@@ -22,7 +22,10 @@ import {
   BookOpen,
   Calendar as CalendarIcon,
   MapPin,
-  FileText
+  FileText,
+  User,
+  Clock as ClockIcon,
+  Calendar as CalendarLucide
 } from 'lucide-react';
 import { 
   GET_BATCHES, 
@@ -30,10 +33,15 @@ import {
   UPDATE_BATCH, 
   DELETE_BATCH,
   CREATE_BATCH_COURSE,
-  DELETE_BATCH_COURSE
+  DELETE_BATCH_COURSE,
+  CREATE_INSTRUCTOR,
+  DELETE_INSTRUCTOR,
+  CREATE_COURSE_SCHEDULE,
+  DELETE_COURSE_SCHEDULE
 } from '../graphql/batch';
 import { GET_COURSES } from '../graphql/course';
 import { GET_SCHEDULES } from '../graphql/schedule';
+import { GET_USERS } from '../graphql/auth';
 import { useApolloClient } from '@apollo/client';
 
 const AdminBatches = ({ 
@@ -61,18 +69,37 @@ const AdminBatches = ({
   const [deleteBatchMutation] = useMutation(DELETE_BATCH);
   const [createBatchCourse] = useMutation(CREATE_BATCH_COURSE);
   const [deleteBatchCourseMutation] = useMutation(DELETE_BATCH_COURSE);
+  const [createInstructor] = useMutation(CREATE_INSTRUCTOR);
+  const [deleteInstructorMutation] = useMutation(DELETE_INSTRUCTOR);
+  const [createCourseSchedule] = useMutation(CREATE_COURSE_SCHEDULE);
+  const [deleteCourseScheduleMutation] = useMutation(DELETE_COURSE_SCHEDULE);
+  const { data: usersData } = useQuery(GET_USERS);
   
   // State for activity indicators
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAssigningCourse, setIsAssigningCourse] = useState(false);
   const [isDeletingCourse, setIsDeletingCourse] = useState(false);
+  const [isAddingInstructor, setIsAddingInstructor] = useState(false);
+  const [isDeletingInstructor, setIsDeletingInstructor] = useState(false);
+  const [isAddingSchedule, setIsAddingSchedule] = useState(false);
+  const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState(null);
   const [courseToDelete, setCourseToDelete] = useState(null);
+  const [instructorToDelete, setInstructorToDelete] = useState(null);
+  const [scheduleToDelete, setScheduleToDelete] = useState(null);
   const [showDeleteCourseConfirm, setShowDeleteCourseConfirm] = useState(false);
+  const [showDeleteInstructorConfirm, setShowDeleteInstructorConfirm] = useState(false);
+  const [showDeleteScheduleConfirm, setShowDeleteScheduleConfirm] = useState(false);
   const [showAssignCourseModal, setShowAssignCourseModal] = useState(false);
+  const [showAddInstructorModal, setShowAddInstructorModal] = useState(false);
+  const [showAddScheduleModal, setShowAddScheduleModal] = useState(false);
   const [selectedBatchForCourse, setSelectedBatchForCourse] = useState(null);
+  const [selectedCourseForInstructor, setSelectedCourseForInstructor] = useState(null);
+  const [selectedCourseForSchedule, setSelectedCourseForSchedule] = useState(null);
+  const [showCourseDetailsModal, setShowCourseDetailsModal] = useState(false);
+  const [selectedCourseDetails, setSelectedCourseDetails] = useState(null);
 
   const batches = data?.batches || [];
   const courses = coursesData?.courses || [];
@@ -219,6 +246,117 @@ const AdminBatches = ({
   const cancelDeleteCourse = () => {
     setShowDeleteCourseConfirm(false);
     setCourseToDelete(null);
+  };
+
+  const handleAddInstructor = async (batchCourseId, userId, role) => {
+    setIsAddingInstructor(true);
+    try {
+      await createInstructor({
+        variables: {
+          input: {
+            batchCourseId: batchCourseId,
+            userId: userId,
+            role: role
+          }
+        }
+      });
+      setShowAddInstructorModal(false);
+      setSelectedCourseForInstructor(null);
+      // Refresh the batch details to show updated instructors
+      if (selectedBatch) {
+        handleViewBatchDetails(selectedBatch);
+      }
+      refetch();
+    } catch (err) {
+      console.error('Error adding instructor:', err);
+    } finally {
+      setIsAddingInstructor(false);
+    }
+  };
+
+  const handleDeleteInstructor = async (instructorId) => {
+    setInstructorToDelete(instructorId);
+    setShowDeleteInstructorConfirm(true);
+  };
+
+  const confirmDeleteInstructor = async () => {
+    if (!instructorToDelete) return;
+    
+    setIsDeletingInstructor(true);
+    try {
+      await deleteInstructorMutation({ variables: { id: instructorToDelete } });
+      setShowDeleteInstructorConfirm(false);
+      setInstructorToDelete(null);
+      // Refresh the batch details to show updated instructors
+      if (selectedBatch) {
+        handleViewBatchDetails(selectedBatch);
+      }
+      refetch();
+    } catch (err) {
+      console.error('Error deleting instructor:', err);
+    } finally {
+      setIsDeletingInstructor(false);
+    }
+  };
+
+  const cancelDeleteInstructor = () => {
+    setShowDeleteInstructorConfirm(false);
+    setInstructorToDelete(null);
+  };
+
+  const handleAddSchedule = async (batchCourseId, scheduleId) => {
+    setIsAddingSchedule(true);
+    try {
+      await createCourseSchedule({
+        variables: {
+          input: {
+            batchCourseId: batchCourseId,
+            scheduleId: scheduleId
+          }
+        }
+      });
+      setShowAddScheduleModal(false);
+      setSelectedCourseForSchedule(null);
+      // Refresh the batch details to show updated schedules
+      if (selectedBatch) {
+        handleViewBatchDetails(selectedBatch);
+      }
+      refetch();
+    } catch (err) {
+      console.error('Error adding schedule:', err);
+    } finally {
+      setIsAddingSchedule(false);
+    }
+  };
+
+  const handleDeleteSchedule = async (scheduleId) => {
+    setScheduleToDelete(scheduleId);
+    setShowDeleteScheduleConfirm(true);
+  };
+
+  const confirmDeleteSchedule = async () => {
+    if (!scheduleToDelete) return;
+    
+    setIsDeletingSchedule(true);
+    try {
+      await deleteCourseScheduleMutation({ variables: { id: scheduleToDelete } });
+      setShowDeleteScheduleConfirm(false);
+      setScheduleToDelete(null);
+      // Refresh the batch details to show updated schedules
+      if (selectedBatch) {
+        handleViewBatchDetails(selectedBatch);
+      }
+      refetch();
+    } catch (err) {
+      console.error('Error deleting schedule:', err);
+    } finally {
+      setIsDeletingSchedule(false);
+    }
+  };
+
+  const cancelDeleteSchedule = () => {
+    setShowDeleteScheduleConfirm(false);
+    setScheduleToDelete(null);
   };
 
   const handleViewBatchDetails = async (batch) => {
@@ -484,6 +622,10 @@ const AdminBatches = ({
             setShowAssignCourseModal(true);
           }}
           onDeleteCourse={handleDeleteCourse}
+          onViewCourseDetails={(courseDetails) => {
+            setSelectedCourseDetails(courseDetails);
+            setShowCourseDetailsModal(true);
+          }}
         />
       )}
 
@@ -512,6 +654,60 @@ const AdminBatches = ({
         />
       )}
 
+      {/* Add Instructor Modal */}
+      {showAddInstructorModal && selectedCourseForInstructor && (
+        <AddInstructorModal
+          isOpen={showAddInstructorModal}
+          onClose={() => {
+            setShowAddInstructorModal(false);
+            setSelectedCourseForInstructor(null);
+          }}
+          onSubmit={handleAddInstructor}
+          batchCourseId={selectedCourseForInstructor}
+          users={usersData?.users || []}
+          isAdding={isAddingInstructor}
+          zIndex={60}
+        />
+      )}
+
+      {/* Delete Instructor Confirmation Modal */}
+      {showDeleteInstructorConfirm && (
+        <DeleteInstructorConfirmationModal
+          isOpen={showDeleteInstructorConfirm}
+          onClose={cancelDeleteInstructor}
+          onConfirm={confirmDeleteInstructor}
+          isDeleting={isDeletingInstructor}
+          zIndex={60}
+        />
+      )}
+
+      {/* Add Schedule Modal */}
+      {showAddScheduleModal && selectedCourseForSchedule && (
+        <AddScheduleModal
+          isOpen={showAddScheduleModal}
+          onClose={() => {
+            setShowAddScheduleModal(false);
+            setSelectedCourseForSchedule(null);
+          }}
+          onSubmit={handleAddSchedule}
+          batchCourseId={selectedCourseForSchedule}
+          schedules={schedules}
+          isAdding={isAddingSchedule}
+          zIndex={60}
+        />
+      )}
+
+      {/* Delete Schedule Confirmation Modal */}
+      {showDeleteScheduleConfirm && (
+        <DeleteScheduleConfirmationModal
+          isOpen={showDeleteScheduleConfirm}
+          onClose={cancelDeleteSchedule}
+          onConfirm={confirmDeleteSchedule}
+          isDeleting={isDeletingSchedule}
+          zIndex={60}
+        />
+      )}
+
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <DeleteConfirmationModal
@@ -519,6 +715,30 @@ const AdminBatches = ({
           onClose={cancelDelete}
           onConfirm={confirmDeleteBatch}
           isDeleting={isDeleting}
+          zIndex={60}
+        />
+      )}
+
+      {/* View Course Details Modal */}
+      {showCourseDetailsModal && selectedCourseDetails && (
+        <ViewCourseDetailsModal
+          isOpen={showCourseDetailsModal}
+          onClose={() => {
+            setShowCourseDetailsModal(false);
+            setSelectedCourseDetails(null);
+          }}
+          courseDetails={selectedCourseDetails}
+          onAddInstructor={(batchCourseId) => {
+            setSelectedCourseForInstructor(batchCourseId);
+            setShowAddInstructorModal(true);
+          }}
+          onDeleteInstructor={handleDeleteInstructor}
+          onAddSchedule={(batchCourseId) => {
+            setSelectedCourseForSchedule(batchCourseId);
+            setShowAddScheduleModal(true);
+          }}
+          onDeleteSchedule={handleDeleteSchedule}
+          zIndex={60}
         />
       )}
     </div>
@@ -824,7 +1044,7 @@ const EditBatchModal = ({ isOpen, onClose, onSubmit, batch, courses, isUpdating 
 };
 
 // View Batch Details Modal Component
-const ViewBatchModal = ({ isOpen, onClose, batch, details, onAssignCourse, onDeleteCourse }) => {
+const ViewBatchModal = ({ isOpen, onClose, batch, details, onAssignCourse, onDeleteCourse, onViewCourseDetails }) => {
   if (!isOpen) return null;
 
   return (
@@ -927,13 +1147,22 @@ const ViewBatchModal = ({ isOpen, onClose, batch, details, onAssignCourse, onDel
                       <div className="font-medium text-sm">{bc.course?.name}</div>
                       <div className="text-xs text-gray-500 mt-1">{bc.course?.description}</div>
                     </div>
-                    <button
-                      onClick={() => onDeleteCourse(bc.id)}
-                      className="text-red-600 hover:text-red-900"
-                      title="Delete Course Assignment"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => onViewCourseDetails(bc)}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="View Course Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => onDeleteCourse(bc.id)}
+                        className="text-red-600 hover:text-red-900"
+                        title="Delete Course Assignment"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1152,6 +1381,173 @@ const getLevelColor = (level) => {
   }
 };
 
+// View Course Details Modal Component
+const ViewCourseDetailsModal = ({ 
+  isOpen, 
+  onClose, 
+  courseDetails, 
+  onAddInstructor, 
+  onDeleteInstructor, 
+  onAddSchedule, 
+  onDeleteSchedule 
+}) => {
+  if (!isOpen || !courseDetails) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+              <BookOpen className="w-8 h-8 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-semibold text-gray-900">{courseDetails.course?.name}</h3>
+              <p className="text-gray-600">{courseDetails.course?.description}</p>
+              <div className="flex items-center space-x-2 mt-2">
+                <span className="text-xs text-gray-500">Batch: {courseDetails.batch?.name}</span>
+              </div>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Batch Instructors */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-gray-900 flex items-center space-x-2">
+                <User className="w-4 h-4" />
+                <span>Batch Instructors</span>
+              </h4>
+              <button
+                onClick={() => onAddInstructor(courseDetails.id)}
+                className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+              >
+                <UserPlus className="w-3 h-3" />
+                <span>Add Instructor</span>
+              </button>
+            </div>
+            {courseDetails.instructors && courseDetails.instructors.length > 0 ? (
+              <div className="space-y-3">
+                {courseDetails.instructors.map((instructor) => (
+                  <div key={instructor.id} className="bg-white rounded-lg p-3 border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-sm">
+                          {instructor.user?.firstName} {instructor.user?.lastName}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">{instructor.user?.email}</div>
+                        <div className="text-xs text-blue-600 mt-1 font-medium">{instructor.role}</div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => onDeleteInstructor(instructor.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Remove Instructor"
+                        >
+                          <UserX className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No instructors assigned</p>
+            )}
+          </div>
+
+          {/* Course Schedule */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-gray-900 flex items-center space-x-2">
+                <CalendarLucide className="w-4 h-4" />
+                <span>Course Schedule</span>
+              </h4>
+              <button
+                onClick={() => onAddSchedule(courseDetails.id)}
+                className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+              >
+                <CalendarLucide className="w-3 h-3" />
+                <span>Add Schedule</span>
+              </button>
+            </div>
+            {courseDetails.schedules && courseDetails.schedules.length > 0 ? (
+              <div className="space-y-3">
+                {courseDetails.schedules.map((scheduleItem) => (
+                  <div key={scheduleItem.id} className="bg-white rounded-lg p-3 border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-sm">
+                          {scheduleItem.schedule?.dayOfWeek}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {scheduleItem.schedule?.startTime} - {scheduleItem.schedule?.endTime}
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => onDeleteSchedule(scheduleItem.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Remove Schedule"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No schedule assigned</p>
+            )}
+          </div>
+        </div>
+
+        {/* Additional Course Information */}
+        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
+            <FileText className="w-4 h-4" />
+            <span>Course Information</span>
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+            <div>
+              <span className="font-medium">Course ID:</span>
+              <span className="ml-2">{courseDetails.course?.id}</span>
+            </div>
+            <div>
+              <span className="font-medium">Batch ID:</span>
+              <span className="ml-2">{courseDetails.batch?.id}</span>
+            </div>
+            <div>
+              <span className="font-medium">Assignment Date:</span>
+              <span className="ml-2">{new Date(courseDetails.createdAt).toLocaleDateString()}</span>
+            </div>
+            <div>
+              <span className="font-medium">Status:</span>
+              <span className="ml-2">
+                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex space-x-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Delete Confirmation Modal Component
 const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting }) => {
   if (!isOpen) return null;
@@ -1210,6 +1606,321 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting }) => 
               <>
                 <Trash2 className="w-4 h-4" />
                 <span>Delete Batch</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Add Instructor Modal Component
+const AddInstructorModal = ({ isOpen, onClose, onSubmit, batchCourseId, users, isAdding, zIndex = 50 }) => {
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [role, setRole] = useState('MAIN');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (selectedUserId && role) {
+      onSubmit(batchCourseId, selectedUserId, role);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex }}>
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Add Instructor to Course</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select User</label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select a user...</option>
+              {users
+                .filter(user => user.role === 'TUTOR')
+                .map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName} - {user.email}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="MAIN">Main Instructor</option>
+              <option value="ASSISTANT">Assistant Instructor</option>
+            </select>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-blue-800">
+                <strong>Note:</strong> This will assign the selected user as an instructor for this course. They will have access to manage course content and students.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isAdding}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isAdding || !selectedUserId}
+              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              {isAdding ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Adding...</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  <span>Add Instructor</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Delete Instructor Confirmation Modal Component
+const DeleteInstructorConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting, zIndex = 50 }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex }}>
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Delete Instructor</h3>
+              <p className="text-sm text-gray-600">This action cannot be undone</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <p className="text-sm text-gray-700 mb-4">
+            Are you sure you want to remove this instructor from the course? This will revoke their access to manage this course.
+          </p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-yellow-800">
+                <strong>Warning:</strong> This action will remove the instructor's access to this course. Students will no longer be able to interact with this instructor for this course.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex space-x-3">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {isDeleting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Deleting...</span>
+              </>
+            ) : (
+              <>
+                <UserX className="w-4 h-4" />
+                <span>Remove Instructor</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Add Schedule Modal Component
+const AddScheduleModal = ({ isOpen, onClose, onSubmit, batchCourseId, schedules, isAdding }) => {
+  const [selectedScheduleId, setSelectedScheduleId] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (selectedScheduleId) {
+      onSubmit(batchCourseId, selectedScheduleId);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Add Schedule to Course</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select Schedule</label>
+            <select
+              value={selectedScheduleId}
+              onChange={(e) => setSelectedScheduleId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select a schedule...</option>
+              {schedules.map((schedule) => (
+                <option key={schedule.id} value={schedule.id}>
+                  {schedule.dayOfWeek} - {schedule.startTime} to {schedule.endTime}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-blue-800">
+                <strong>Note:</strong> This will assign the selected schedule to this course. Students enrolled in this course will attend classes according to this schedule.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isAdding}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isAdding || !selectedScheduleId}
+              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              {isAdding ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Adding...</span>
+                </>
+              ) : (
+                <>
+                  <CalendarLucide className="w-4 h-4" />
+                  <span>Add Schedule</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Delete Schedule Confirmation Modal Component
+const DeleteScheduleConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Delete Schedule</h3>
+              <p className="text-sm text-gray-600">This action cannot be undone</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <p className="text-sm text-gray-700 mb-4">
+            Are you sure you want to remove this schedule from the course? This will affect the class timing for enrolled students.
+          </p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-yellow-800">
+                <strong>Warning:</strong> This action will remove the schedule from this course. Students will no longer have classes at this time.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex space-x-3">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {isDeleting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Deleting...</span>
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Schedule</span>
               </>
             )}
           </button>

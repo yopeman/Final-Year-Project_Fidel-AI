@@ -26,6 +26,27 @@ export const GET_BATCHES = gql`
           name
           description
         }
+        instructors {
+          id
+          userId
+          role
+          user {
+            id
+            firstName
+            lastName
+            email
+          }
+        }
+        schedules {
+          id
+          scheduleId
+          schedule {
+            id
+            dayOfWeek
+            startTime
+            endTime
+          }
+        }
       }
       enrollments {
         id
