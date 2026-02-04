@@ -29,15 +29,12 @@ import {
   CREATE_BATCH, 
   UPDATE_BATCH, 
   DELETE_BATCH,
-  GET_BATCH_COURSES,
   CREATE_BATCH_COURSE,
-  DELETE_BATCH_COURSE,
-  GET_INSTRUCTORS,
-  GET_ENROLLMENTS,
-  GET_COURSE_SCHEDULES
+  DELETE_BATCH_COURSE
 } from '../graphql/batch';
 import { GET_COURSES } from '../graphql/course';
 import { GET_SCHEDULES } from '../graphql/schedule';
+import { useApolloClient } from '@apollo/client';
 
 const AdminBatches = ({ 
   onBatchAction, 
@@ -54,6 +51,7 @@ const AdminBatches = ({
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [batchDetails, setBatchDetails] = useState(null);
 
+  const client = useApolloClient();
   const { data, loading, error, refetch } = useQuery(GET_BATCHES);
   const { data: coursesData } = useQuery(GET_COURSES);
   const { data: schedulesData } = useQuery(GET_SCHEDULES);
@@ -61,12 +59,20 @@ const AdminBatches = ({
   const [createBatch] = useMutation(CREATE_BATCH);
   const [updateBatch] = useMutation(UPDATE_BATCH);
   const [deleteBatchMutation] = useMutation(DELETE_BATCH);
+  const [createBatchCourse] = useMutation(CREATE_BATCH_COURSE);
+  const [deleteBatchCourseMutation] = useMutation(DELETE_BATCH_COURSE);
   
   // State for activity indicators
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAssigningCourse, setIsAssigningCourse] = useState(false);
+  const [isDeletingCourse, setIsDeletingCourse] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [batchToDelete, setBatchToDelete] = useState(null);
+  const [courseToDelete, setCourseToDelete] = useState(null);
+  const [showDeleteCourseConfirm, setShowDeleteCourseConfirm] = useState(false);
+  const [showAssignCourseModal, setShowAssignCourseModal] = useState(false);
+  const [selectedBatchForCourse, setSelectedBatchForCourse] = useState(null);
 
   const batches = data?.batches || [];
   const courses = coursesData?.courses || [];
@@ -160,28 +166,73 @@ const AdminBatches = ({
     setBatchToDelete(null);
   };
 
+  const handleAssignCourse = async (batchId, courseId) => {
+    setIsAssigningCourse(true);
+    try {
+      await createBatchCourse({
+        variables: {
+          input: {
+            batchId: batchId,
+            courseId: courseId
+          }
+        }
+      });
+      setShowAssignCourseModal(false);
+      setSelectedBatchForCourse(null);
+      // Refresh the batch details to show updated courses
+      if (selectedBatch && selectedBatch.id === batchId) {
+        handleViewBatchDetails(selectedBatch);
+      }
+      refetch();
+    } catch (err) {
+      console.error('Error assigning course:', err);
+    } finally {
+      setIsAssigningCourse(false);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId) => {
+    setCourseToDelete(courseId);
+    setShowDeleteCourseConfirm(true);
+  };
+
+  const confirmDeleteCourse = async () => {
+    if (!courseToDelete) return;
+    
+    setIsDeletingCourse(true);
+    try {
+      await deleteBatchCourseMutation({ variables: { id: courseToDelete } });
+      setShowDeleteCourseConfirm(false);
+      setCourseToDelete(null);
+      // Refresh the batch details to show updated courses
+      if (selectedBatch) {
+        handleViewBatchDetails(selectedBatch);
+      }
+      refetch();
+    } catch (err) {
+      console.error('Error deleting course:', err);
+    } finally {
+      setIsDeletingCourse(false);
+    }
+  };
+
+  const cancelDeleteCourse = () => {
+    setShowDeleteCourseConfirm(false);
+    setCourseToDelete(null);
+  };
+
   const handleViewBatchDetails = async (batch) => {
     setSelectedBatch(batch);
     setShowViewModal(true);
     
-    // Fetch detailed batch information
-    try {
-      const [coursesResult, instructorsResult, enrollmentsResult, schedulesResult] = await Promise.all([
-        useQuery(GET_BATCH_COURSES, { variables: { batchId: batch.id } }),
-        useQuery(GET_INSTRUCTORS, { variables: { batchId: batch.id } }),
-        useQuery(GET_ENROLLMENTS, { variables: { batchId: batch.id } }),
-        useQuery(GET_COURSE_SCHEDULES, { variables: { batchCourseId: null } })
-      ]);
-      
-      setBatchDetails({
-        courses: coursesResult.data?.batchCourses || [],
-        instructors: instructorsResult.data?.instructors || [],
-        enrollments: enrollmentsResult.data?.enrollments || [],
-        schedules: schedulesResult.data?.courseSchedules || []
-      });
-    } catch (err) {
-      console.error('Error fetching batch details:', err);
-    }
+    // Use the data already available in the batch object
+    // The batch query already includes batchCourses, instructors, and enrollments
+    setBatchDetails({
+      courses: batch.batchCourses || [],
+      instructors: batch.instructors || [],
+      enrollments: batch.enrollments || [],
+      schedules: [] // Schedules are not available in the current schema
+    });
   };
 
   const getStatusColor = (status) => {
@@ -428,6 +479,36 @@ const AdminBatches = ({
           }}
           batch={selectedBatch}
           details={batchDetails}
+          onAssignCourse={(batchId) => {
+            setSelectedBatchForCourse(batchId);
+            setShowAssignCourseModal(true);
+          }}
+          onDeleteCourse={handleDeleteCourse}
+        />
+      )}
+
+      {/* Assign Course Modal */}
+      {showAssignCourseModal && selectedBatchForCourse && (
+        <AssignCourseModal
+          isOpen={showAssignCourseModal}
+          onClose={() => {
+            setShowAssignCourseModal(false);
+            setSelectedBatchForCourse(null);
+          }}
+          onSubmit={handleAssignCourse}
+          batchId={selectedBatchForCourse}
+          courses={courses}
+          isAssigning={isAssigningCourse}
+        />
+      )}
+
+      {/* Delete Course Confirmation Modal */}
+      {showDeleteCourseConfirm && (
+        <DeleteCourseConfirmationModal
+          isOpen={showDeleteCourseConfirm}
+          onClose={cancelDeleteCourse}
+          onConfirm={confirmDeleteCourse}
+          isDeleting={isDeletingCourse}
         />
       )}
 
@@ -743,7 +824,7 @@ const EditBatchModal = ({ isOpen, onClose, onSubmit, batch, courses, isUpdating 
 };
 
 // View Batch Details Modal Component
-const ViewBatchModal = ({ isOpen, onClose, batch, details }) => {
+const ViewBatchModal = ({ isOpen, onClose, batch, details, onAssignCourse, onDeleteCourse }) => {
   if (!isOpen) return null;
 
   return (
@@ -825,16 +906,34 @@ const ViewBatchModal = ({ isOpen, onClose, batch, details }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
-              <BookOpen className="w-4 h-4" />
-              <span>Courses</span>
-            </h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-gray-900 flex items-center space-x-2">
+                <BookOpen className="w-4 h-4" />
+                <span>Courses</span>
+              </h4>
+              <button
+                onClick={() => onAssignCourse(batch.id)}
+                className="flex items-center space-x-2 px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Assign Course</span>
+              </button>
+            </div>
             {batch.batchCourses && batch.batchCourses.length > 0 ? (
               <div className="grid grid-cols-1 gap-2">
                 {batch.batchCourses.map((bc) => (
-                  <div key={bc.id} className="bg-white rounded p-3">
-                    <div className="font-medium text-sm">{bc.course?.name}</div>
-                    <div className="text-xs text-gray-500 mt-1">{bc.course?.description}</div>
+                  <div key={bc.id} className="bg-white rounded p-3 flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-sm">{bc.course?.name}</div>
+                      <div className="text-xs text-gray-500 mt-1">{bc.course?.description}</div>
+                    </div>
+                    <button
+                      onClick={() => onDeleteCourse(bc.id)}
+                      className="text-red-600 hover:text-red-900"
+                      title="Delete Course Assignment"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -875,6 +974,156 @@ const ViewBatchModal = ({ isOpen, onClose, batch, details }) => {
             className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
           >
             Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Assign Course Modal Component
+const AssignCourseModal = ({ isOpen, onClose, onSubmit, batchId, courses, isAssigning }) => {
+  const [selectedCourseId, setSelectedCourseId] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (selectedCourseId) {
+      onSubmit(batchId, selectedCourseId);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Assign Course to Batch</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select Course</label>
+            <select
+              value={selectedCourseId}
+              onChange={(e) => setSelectedCourseId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select a course...</option>
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name} - {course.description}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-blue-800">
+                <strong>Note:</strong> This will assign the selected course to the batch. Students enrolled in this batch will have access to this course.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isAssigning}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isAssigning || !selectedCourseId}
+              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              {isAssigning ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Assigning...</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  <span>Assign Course</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Delete Course Confirmation Modal Component
+const DeleteCourseConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Delete Course Assignment</h3>
+              <p className="text-sm text-gray-600">This action cannot be undone</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <p className="text-sm text-gray-700 mb-4">
+            Are you sure you want to delete this course assignment? This will remove the course from the batch and may affect enrolled students.
+          </p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-yellow-800">
+                <strong>Warning:</strong> This action will remove the course from the batch. Students will lose access to this course.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex space-x-3">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {isDeleting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Deleting...</span>
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Assignment</span>
+              </>
+            )}
           </button>
         </div>
       </div>
