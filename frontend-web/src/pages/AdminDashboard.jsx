@@ -32,6 +32,7 @@ import AdminOverview from '../components/AdminOverview';
 import AdminUsers from '../components/AdminUsers';
 import AdminReports from '../components/AdminReports';
 import AdminCourses from '../components/AdminCourses';
+import AdminSchedules from '../components/AdminSchedules';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -234,6 +235,7 @@ const AdminDashboard = () => {
               {[ 
                 { id: 'overview', name: 'Overview', icon: BarChart3 },
                 { id: 'users', name: 'Users', icon: Users },
+                { id: 'schedules', name: 'Schedules', icon: Calendar },
                 { id: 'courses', name: 'Courses', icon: BookOpen },
                 { id: 'reports', name: 'Reports', icon: BookOpen }
               ].map((tab) => (
@@ -294,6 +296,27 @@ const AdminDashboard = () => {
                 selectedUser={selectedUser}
                 showUserDetails={showUserDetails}
                 setShowUserDetails={setShowUserDetails}
+              />
+            )}
+
+            {activeTab === 'schedules' && (
+              <AdminSchedules 
+                onScheduleAction={(action, scheduleId) => {
+                  console.log(`Schedule action: ${action} for schedule ${scheduleId}`);
+                  // Add schedule action logic here
+                }}
+                onEditSchedule={(schedule) => {
+                  console.log('Editing schedule:', schedule);
+                  // Add edit schedule logic here
+                }}
+                onViewSchedule={(schedule) => {
+                  console.log('Viewing schedule:', schedule);
+                  // Add view schedule logic here
+                }}
+                onDeleteSchedule={(scheduleId) => {
+                  console.log('Deleting schedule:', scheduleId);
+                  // Add delete schedule logic here
+                }}
               />
             )}
 
