@@ -27,6 +27,8 @@ import {
   Clock as ClockIcon,
   Calendar as CalendarLucide
 } from 'lucide-react';
+import AddSchedulePopup from './AddSchedulePopup';
+import DeleteSchedulePopup from './DeleteSchedulePopup';
 import { 
   GET_BATCHES, 
   CREATE_BATCH, 
@@ -681,9 +683,9 @@ const AdminBatches = ({
         />
       )}
 
-      {/* Add Schedule Modal */}
+      {/* Add Schedule Popup */}
       {showAddScheduleModal && selectedCourseForSchedule && (
-        <AddScheduleModal
+        <AddSchedulePopup
           isOpen={showAddScheduleModal}
           onClose={() => {
             setShowAddScheduleModal(false);
@@ -697,9 +699,9 @@ const AdminBatches = ({
         />
       )}
 
-      {/* Delete Schedule Confirmation Modal */}
+      {/* Delete Schedule Popup */}
       {showDeleteScheduleConfirm && (
-        <DeleteScheduleConfirmationModal
+        <DeleteSchedulePopup
           isOpen={showDeleteScheduleConfirm}
           onClose={cancelDeleteSchedule}
           onConfirm={confirmDeleteSchedule}
