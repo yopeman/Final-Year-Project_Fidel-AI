@@ -18,7 +18,7 @@ mutation = MutationType()
 attendance = ObjectType("Attendance")
 
 @query.field("attendances")
-def resolve_attendances(_, info, courseId: str):
+def resolve_attendances(_, info, batchId: str):
     db: Session = info.context["db"]
     
     # Get current user to determine their role and access
@@ -26,16 +26,16 @@ def resolve_attendances(_, info, courseId: str):
     if not current_user:
         raise Exception("Authentication required")
     
-    # Check if user has access to this course's attendance
+    # Check if user has access to this batch's attendance
     # For now, allow access if user is admin, tutor, or enrolled student
     if current_user.role not in ["admin", "tutor"]:
         # For students, they can only see their own attendance
         # This would need more complex logic to check enrollment
         pass
     
-    # Get all course schedules for this course
+    # Get all course schedules for this batch
     course_schedules = db.query(CourseSchedule).join(BatchCourse).filter(
-        BatchCourse.course_id == courseId,
+        BatchCourse.batch_id == batchId,
         CourseSchedule.is_deleted == False,
         BatchCourse.is_deleted == False
     ).all()
