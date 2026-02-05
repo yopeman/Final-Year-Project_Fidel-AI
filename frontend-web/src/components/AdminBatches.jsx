@@ -43,7 +43,8 @@ import {
   GET_ENROLLMENTS,
   CREATE_ENROLLMENT,
   UPDATE_ENROLLMENT,
-  DELETE_ENROLLMENT
+  DELETE_ENROLLMENT,
+  GET_ATTENDANCES
 } from '../graphql/batch';
 import { GET_COURSES } from '../graphql/course';
 import { GET_SCHEDULES } from '../graphql/schedule';
@@ -119,6 +120,14 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isUpdatingEnrollment, setIsUpdatingEnrollment] = useState(false);
   const [isDeletingEnrollment, setIsDeletingEnrollment] = useState(false);
+  
+  // Attendance state
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [selectedBatchForAttendance, setSelectedBatchForAttendance] = useState(null);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isFetchingAttendance, setIsFetchingAttendance] = useState(false);
+  const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
 
   const batches = data?.batches || [];
   const courses = coursesData?.courses || [];
@@ -378,7 +387,7 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
     setScheduleToDelete(null);
   };
 
-const handleViewBatchDetails = async (batch) => {
+  const handleViewBatchDetails = async (batch) => {
     setSelectedBatch(batch);
     setShowViewModal(true);
     
@@ -393,6 +402,9 @@ const handleViewBatchDetails = async (batch) => {
     
     // Initialize enrollment state
     setSelectedBatchForEnrollment(batch.id);
+    
+    // Initialize attendance state
+    setSelectedBatchForAttendance(batch);
   };
 
   const handleEnrollStudent = async (batchId, studentId) => {
@@ -473,6 +485,70 @@ const handleViewBatchDetails = async (batch) => {
     setEnrollmentToDelete(null);
   };
 
+  // Attendance Functions
+  const handleFetchAttendance = async (batchId, date) => {
+    setIsFetchingAttendance(true);
+    try {
+      // For now, we'll simulate fetching attendance data from enrollments
+      // In a real implementation, this would be a GraphQL query
+      const batch = batches.find(b => b.id === batchId);
+      if (batch && batch.enrollments) {
+        const attendanceList = batch.enrollments.map(enrollment => ({
+          id: enrollment.id,
+          profile: enrollment.profile,
+          attendance: {
+            status: 'NOT_MARKED', // Default status
+            date: date
+          }
+        }));
+        setAttendanceData(attendanceList);
+      }
+    } catch (err) {
+      console.error('Error fetching attendance:', err);
+    } finally {
+      setIsFetchingAttendance(false);
+    }
+  };
+
+  const handleMarkAttendance = async (studentId, status) => {
+    setIsMarkingAttendance(true);
+    try {
+      // Find the student in the current attendance data
+      const studentIndex = attendanceData.findIndex(s => s.id === studentId);
+      if (studentIndex !== -1) {
+        const updatedAttendance = [...attendanceData];
+        updatedAttendance[studentIndex] = {
+          ...updatedAttendance[studentIndex],
+          attendance: {
+            ...updatedAttendance[studentIndex].attendance,
+            status: status,
+            date: selectedDate
+          }
+        };
+        setAttendanceData(updatedAttendance);
+
+        // In a real implementation, this would be a GraphQL mutation
+        console.log(`Marked student ${studentId} as ${status} for date ${selectedDate}`);
+      }
+    } catch (err) {
+      console.error('Error marking attendance:', err);
+    } finally {
+      setIsMarkingAttendance(false);
+    }
+  };
+
+  const handleMarkPresent = (studentId) => {
+    handleMarkAttendance(studentId, 'PRESENT');
+  };
+
+  const handleMarkAbsent = (studentId) => {
+    handleMarkAttendance(studentId, 'ABSENT');
+  };
+
+  const handleMarkLate = (studentId) => {
+    handleMarkAttendance(studentId, 'LATE');
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'ACTIVE': return 'bg-green-100 text-green-800';
@@ -491,6 +567,225 @@ const handleViewBatchDetails = async (batch) => {
       case 'ADVANCED': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // View Batch Details Modal Component
+  const ViewBatchModal = ({ 
+    isOpen, 
+    onClose, 
+    batch, 
+    details, 
+    onAssignCourse, 
+    onDeleteCourse, 
+    onViewCourseDetails,
+    onEnrollStudent,
+    onUpdateEnrollment,
+    onDeleteEnrollment
+  }) => {
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
+                <GraduationCap className="w-8 h-8 text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-semibold text-gray-900">{batch.name}</h3>
+                <p className="text-gray-600">{batch.description}</p>
+                <div className="flex items-center space-x-2 mt-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLevelColor(batch.level)}`}>
+                    {batch.level}
+                  </span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(batch.status)}`}>
+                    {batch.status}
+                  </span>
+                  <span className="text-xs text-gray-500">{batch.language}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  setSelectedBatchForAttendance(batch);
+                  setShowAttendanceModal(true);
+                }}
+                className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Attendance</span>
+              </button>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="font-medium text-gray-900 mb-2 flex items-center space-x-2">
+                <CalendarIcon className="w-4 h-4" />
+                <span>Schedule</span>
+              </h4>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex justify-between">
+                  <span>Start Date:</span>
+                  <span>{batch.startDate ? new Date(batch.startDate).toLocaleDateString() : 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>End Date:</span>
+                  <span>{batch.endDate ? new Date(batch.endDate).toLocaleDateString() : 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Fee Amount:</span>
+                  <span>${batch.feeAmount}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="font-medium text-gray-900 mb-2 flex items-center space-x-2">
+                <Users className="w-4 h-4" />
+                <span>Capacity</span>
+              </h4>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex justify-between">
+                  <span>Max Students:</span>
+                  <span>{batch.maxStudents}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Enrolled:</span>
+                  <span>{batch.enrollments?.length || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Available:</span>
+                  <span>{batch.maxStudents - (batch.enrollments?.length || 0)}</span>
+                </div>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-indigo-600 h-2 rounded-full" 
+                  style={{ width: `${((batch.enrollments?.length || 0) / batch.maxStudents) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium text-gray-900 flex items-center space-x-2">
+                  <BookOpen className="w-4 h-4" />
+                  <span>Courses</span>
+                </h4>
+                <button
+                  onClick={() => onAssignCourse(batch.id)}
+                  className="flex items-center space-x-2 px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Assign Course</span>
+                </button>
+              </div>
+              {batch.batchCourses && batch.batchCourses.length > 0 ? (
+                <div className="grid grid-cols-1 gap-2">
+                  {batch.batchCourses.map((bc) => (
+                    <div key={bc.id} className="bg-white rounded p-3 flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-sm">{bc.course?.name}</div>
+                        <div className="text-xs text-gray-500 mt-1">{bc.course?.description}</div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => onViewCourseDetails(bc)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="View Course Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteCourse(bc.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete Course Assignment"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No courses assigned</p>
+              )}
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium text-gray-900 flex items-center space-x-2">
+                  <UserPlus className="w-4 h-4" />
+                  <span>Enrollments</span>
+                </h4>
+                <button
+                  onClick={() => onEnrollStudent(batch.id)}
+                  className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                >
+                  <UserPlus className="w-3 h-3" />
+                  <span>Enroll Student</span>
+                </button>
+              </div>
+              {details?.enrollments && details.enrollments.length > 0 ? (
+                <div className="grid grid-cols-1 gap-2">
+                  {details.enrollments.map((enrollment) => (
+                    <div key={enrollment.id} className="bg-white rounded p-3 border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-sm">
+                            {enrollment.profile?.user?.firstName} {enrollment.profile?.user?.lastName}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">{enrollment.profile?.user?.email}</div>
+                          <div className="flex justify-between text-xs text-gray-500 mt-2">
+                            <span>Status: {enrollment.status}</span>
+                            <span>Enrolled: {new Date(enrollment.enrollmentDate).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => onUpdateEnrollment(enrollment)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Update Enrollment"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => onDeleteEnrollment(enrollment.id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Delete Enrollment"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No enrollments yet</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -892,6 +1187,28 @@ const handleViewBatchDetails = async (batch) => {
           isDeleting={isDeletingEnrollment}
         />
       )}
+
+      {/* Attendance Modal */}
+      {showAttendanceModal && selectedBatchForAttendance && (
+        <AttendanceModal
+          isOpen={showAttendanceModal}
+          onClose={() => {
+            setShowAttendanceModal(false);
+            setSelectedBatchForAttendance(null);
+          }}
+          batch={selectedBatchForAttendance}
+          selectedDate={selectedDate}
+          onDateChange={(date) => {
+            setSelectedDate(date);
+            handleFetchAttendance(selectedBatchForAttendance.id, date);
+          }}
+          attendanceData={attendanceData}
+          onMarkPresent={handleMarkPresent}
+          onMarkAbsent={handleMarkAbsent}
+          onMarkLate={handleMarkLate}
+          isFetching={isFetchingAttendance}
+        />
+      )}
     </div>
   );
 };
@@ -1231,9 +1548,21 @@ const ViewBatchModal = ({
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => {
+                setSelectedBatchForAttendance(batch);
+                setShowAttendanceModal(true);
+              }}
+              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Attendance</span>
+            </button>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -2358,6 +2687,140 @@ const DeleteEnrollmentConfirmationModal = ({ isOpen, onClose, onConfirm, isDelet
                 <span>Delete Enrollment</span>
               </>
             )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Attendance Modal Component
+const AttendanceModal = ({ 
+  isOpen, 
+  onClose, 
+  batch, 
+  selectedDate, 
+  onDateChange, 
+  attendanceData, 
+  onMarkPresent, 
+  onMarkAbsent, 
+  onMarkLate, 
+  isFetching 
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+              <Calendar className="w-8 h-8 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-semibold text-gray-900">Attendance for {batch?.name}</h3>
+              <p className="text-gray-600">Date: {new Date(selectedDate).toLocaleDateString()}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Date Selector */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => onDateChange(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Attendance Table */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {isFetching ? (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                      Loading attendance data...
+                    </td>
+                  </tr>
+                ) : attendanceData.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                      No students enrolled in this batch for the selected date.
+                    </td>
+                  </tr>
+                ) : (
+                  attendanceData.map((student) => (
+                    <tr key={student.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {student.profile?.user?.firstName} {student.profile?.user?.lastName}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{student.profile?.user?.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          student.attendance?.status === 'PRESENT' ? 'bg-green-100 text-green-800' :
+                          student.attendance?.status === 'ABSENT' ? 'bg-red-100 text-red-800' :
+                          student.attendance?.status === 'LATE' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {student.attendance?.status || 'NOT_MARKED'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <button
+                          onClick={() => onMarkPresent(student.id)}
+                          className="text-green-600 hover:text-green-900"
+                          title="Mark Present"
+                        >
+                          Present
+                        </button>
+                        <button
+                          onClick={() => onMarkAbsent(student.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Mark Absent"
+                        >
+                          Absent
+                        </button>
+                        <button
+                          onClick={() => onMarkLate(student.id)}
+                          className="text-yellow-600 hover:text-yellow-900"
+                          title="Mark Late"
+                        >
+                          Late
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-6 flex space-x-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+          >
+            Close
           </button>
         </div>
       </div>

@@ -169,6 +169,103 @@ export const GET_BATCHES = gql`
   }
 `;
 
+// Attendance Queries
+export const GET_ATTENDANCES = gql`
+  query GetAttendances($batchId: ID!) {
+    attendances(batchId: $batchId) {
+      id
+      courseScheduleId
+      userId
+      userType
+      status
+      attendanceDate
+      createdAt
+      updatedAt
+      isDeleted
+      deletedAt
+      courseSchedule {
+        id
+        scheduleId
+        batchCourseId
+        schedule {
+          id
+          dayOfWeek
+          startTime
+          endTime
+        }
+        batchCourse {
+          id
+          batchId
+          courseId
+          batch {
+            id
+            name
+          }
+          course {
+            id
+            name
+          }
+        }
+      }
+      user {
+        id
+        firstName
+        lastName
+        email
+        role
+      }
+    }
+  }
+`;
+
+export const GET_ATTENDANCE = gql`
+  query GetAttendance($id: ID!) {
+    attendance(id: $id) {
+      id
+      courseScheduleId
+      userId
+      userType
+      status
+      attendanceDate
+      createdAt
+      updatedAt
+      isDeleted
+      deletedAt
+      courseSchedule {
+        id
+        scheduleId
+        batchCourseId
+        schedule {
+          id
+          dayOfWeek
+          startTime
+          endTime
+        }
+        batchCourse {
+          id
+          batchId
+          courseId
+          batch {
+            id
+            name
+          }
+          course {
+            id
+            name
+          }
+        }
+      }
+      user {
+        id
+        firstName
+        lastName
+        email
+        role
+      }
+    }
+  }
+`;
+
 export const GET_BATCH = gql`
   query GetBatch($id: ID!) {
     batch(id: $id) {
