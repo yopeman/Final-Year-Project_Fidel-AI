@@ -269,7 +269,7 @@ def resolve_user(batch_instructor_obj, info):
     db: Session = info.context["db"]
     user_obj = db.query(User).filter(
         User.id == batch_instructor_obj.user_id,
-        User.is_deleted == False
+        # User.is_deleted == False
     ).first()
     return user_obj
 

@@ -176,14 +176,14 @@ def resolve_delete_batch(_, info, id):
         raise Exception("Batch not found")
 
     # Check if batch has active enrollments
-    active_enrollments = db.query(BatchEnrollment).filter(
-        BatchEnrollment.batch_id == id,
-        BatchEnrollment.status.in_(['enrolled', 'applied']),
-        BatchEnrollment.is_deleted == False
-    ).count()
+    # active_enrollments = db.query(BatchEnrollment).filter(
+    #     BatchEnrollment.batch_id == id,
+    #     BatchEnrollment.status.in_(['enrolled', 'applied']),
+    #     BatchEnrollment.is_deleted == False
+    # ).count()
 
-    if active_enrollments > 0:
-        raise Exception("Cannot delete batch with active enrollments. Please cancel enrollments first.")
+    # if active_enrollments > 0:
+    #     raise Exception("Cannot delete batch with active enrollments. Please cancel enrollments first.")
 
     # Mark as deleted
     batch_obj.is_deleted = True

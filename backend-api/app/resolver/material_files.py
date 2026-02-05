@@ -110,7 +110,22 @@ async def upload_material_files(context: Dict[str, Any], materialId: str, files:
     for file in created_files:
         db.refresh(file)
 
-    return created_files
+    uploaded_files = []
+    for f in created_files:
+        uploaded_files.append({
+            'id': f.id,
+            'materialId': f.material_id,
+            'fileName': f.file_name,
+            'filePath': f.file_path,
+            'fileExtension': f.file_extension,
+            'fileSize': f.file_size,
+            'createdAt': f.created_at,
+            'updatedAt': f.updated_at,
+            'isDeleted': f.is_deleted,
+            'deletedAt': f.deleted_at
+        })
+
+    return uploaded_files
 
 @mutation.field("deleteMaterialFile")
 def resolve_delete_material_file(_, info, id):
