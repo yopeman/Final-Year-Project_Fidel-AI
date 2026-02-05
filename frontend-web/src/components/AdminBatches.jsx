@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useQuery, useMutation, useApolloClient } from '@apollo/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   GraduationCap, 
@@ -39,12 +39,15 @@ import {
   CREATE_INSTRUCTOR,
   DELETE_INSTRUCTOR,
   CREATE_COURSE_SCHEDULE,
-  DELETE_COURSE_SCHEDULE
+  DELETE_COURSE_SCHEDULE,
+  GET_ENROLLMENTS,
+  CREATE_ENROLLMENT,
+  UPDATE_ENROLLMENT,
+  DELETE_ENROLLMENT
 } from '../graphql/batch';
 import { GET_COURSES } from '../graphql/course';
 import { GET_SCHEDULES } from '../graphql/schedule';
 import { GET_USERS } from '../graphql/auth';
-import { useApolloClient } from '@apollo/client';
 
 const AdminBatches = ({ 
   onBatchAction, 
@@ -75,6 +78,9 @@ const AdminBatches = ({
   const [deleteInstructorMutation] = useMutation(DELETE_INSTRUCTOR);
   const [createCourseSchedule] = useMutation(CREATE_COURSE_SCHEDULE);
   const [deleteCourseScheduleMutation] = useMutation(DELETE_COURSE_SCHEDULE);
+  const [createEnrollment] = useMutation(CREATE_ENROLLMENT);
+  const [updateEnrollment] = useMutation(UPDATE_ENROLLMENT);
+  const [deleteEnrollmentMutation] = useMutation(DELETE_ENROLLMENT);
   const { data: usersData } = useQuery(GET_USERS);
   
   // State for activity indicators
@@ -102,6 +108,17 @@ const AdminBatches = ({
   const [selectedCourseForSchedule, setSelectedCourseForSchedule] = useState(null);
   const [showCourseDetailsModal, setShowCourseDetailsModal] = useState(false);
   const [selectedCourseDetails, setSelectedCourseDetails] = useState(null);
+  
+  // Enrollment state
+const [selectedBatchForEnrollment, setSelectedBatchForEnrollment] = useState(null);
+const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
+  const [selectedEnrollment, setSelectedEnrollment] = useState(null);
+  const [showUpdateEnrollmentModal, setShowUpdateEnrollmentModal] = useState(false);
+  const [enrollmentToDelete, setEnrollmentToDelete] = useState(null);
+  const [showDeleteEnrollmentConfirm, setShowDeleteEnrollmentConfirm] = useState(false);
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isUpdatingEnrollment, setIsUpdatingEnrollment] = useState(false);
+  const [isDeletingEnrollment, setIsDeletingEnrollment] = useState(false);
 
   const batches = data?.batches || [];
   const courses = coursesData?.courses || [];
@@ -361,7 +378,7 @@ const AdminBatches = ({
     setScheduleToDelete(null);
   };
 
-  const handleViewBatchDetails = async (batch) => {
+const handleViewBatchDetails = async (batch) => {
     setSelectedBatch(batch);
     setShowViewModal(true);
     
@@ -373,6 +390,87 @@ const AdminBatches = ({
       enrollments: batch.enrollments || [],
       schedules: [] // Schedules are not available in the current schema
     });
+    
+    // Initialize enrollment state
+    setSelectedBatchForEnrollment(batch.id);
+  };
+
+  const handleEnrollStudent = async (batchId, studentId) => {
+    setIsEnrolling(true);
+    try {
+      await createEnrollment({
+        variables: {
+          batchId: batchId,
+          studentId: studentId
+        }
+      });
+      setShowEnrollStudentModal(false);
+      setSelectedBatchForEnrollment(null);
+      // Refresh the batch details to show updated enrollments
+      if (selectedBatch && selectedBatch.id === batchId) {
+        handleViewBatchDetails(selectedBatch);
+      }
+      refetch();
+    } catch (err) {
+      console.error('Error enrolling student:', err);
+    } finally {
+      setIsEnrolling(false);
+    }
+  };
+
+  const handleUpdateEnrollment = async (enrollmentId, status) => {
+    setIsUpdatingEnrollment(true);
+    try {
+      await updateEnrollment({
+        variables: {
+          id: enrollmentId,
+          input: {
+            status: status
+          }
+        }
+      });
+      setShowUpdateEnrollmentModal(false);
+      setSelectedEnrollment(null);
+      // Refresh the batch details to show updated enrollments
+      if (selectedBatch) {
+        handleViewBatchDetails(selectedBatch);
+      }
+      refetch();
+    } catch (err) {
+      console.error('Error updating enrollment:', err);
+    } finally {
+      setIsUpdatingEnrollment(false);
+    }
+  };
+
+  const handleDeleteEnrollment = async (enrollmentId) => {
+    setEnrollmentToDelete(enrollmentId);
+    setShowDeleteEnrollmentConfirm(true);
+  };
+
+  const confirmDeleteEnrollment = async () => {
+    if (!enrollmentToDelete) return;
+    
+    setIsDeletingEnrollment(true);
+    try {
+      await deleteEnrollmentMutation({ variables: { id: enrollmentToDelete } });
+      setShowDeleteEnrollmentConfirm(false);
+      setEnrollmentToDelete(null);
+      // Refresh the batch details to show updated enrollments
+      if (selectedBatch) {
+        handleViewBatchDetails(selectedBatch);
+      }
+      refetch();
+    } catch (err) {
+      console.error('Error deleting enrollment:', err);
+    } finally {
+      setIsDeletingEnrollment(false);
+    }
+  };
+
+  const cancelDeleteEnrollment = () => {
+    setShowDeleteEnrollmentConfirm(false);
+    setEnrollmentToDelete(null);
   };
 
   const getStatusColor = (status) => {
@@ -628,6 +726,18 @@ const AdminBatches = ({
             setSelectedCourseDetails(courseDetails);
             setShowCourseDetailsModal(true);
           }}
+          onEnrollStudent={(batchId) => {
+            setSelectedBatchForEnrollment(batchId);
+            setShowEnrollStudentModal(true);
+          }}
+          onUpdateEnrollment={(enrollment) => {
+            setSelectedEnrollment(enrollment);
+            setShowUpdateEnrollmentModal(true);
+          }}
+          onDeleteEnrollment={(enrollmentId) => {
+            setEnrollmentToDelete(enrollmentId);
+            setShowDeleteEnrollmentConfirm(true);
+          }}
         />
       )}
 
@@ -741,6 +851,45 @@ const AdminBatches = ({
           }}
           onDeleteSchedule={handleDeleteSchedule}
           zIndex={60}
+        />
+      )}
+
+      {/* Enroll Student Modal */}
+      {showEnrollStudentModal && selectedBatchForEnrollment && (
+        <EnrollStudentModal
+          isOpen={showEnrollStudentModal}
+          onClose={() => {
+            setShowEnrollStudentModal(false);
+            setSelectedBatchForEnrollment(null);
+          }}
+          onSubmit={handleEnrollStudent}
+          batchId={selectedBatchForEnrollment}
+          users={usersData?.users || []}
+          isEnrolling={isEnrolling}
+        />
+      )}
+
+      {/* Update Enrollment Modal */}
+      {showUpdateEnrollmentModal && selectedEnrollment && (
+        <UpdateEnrollmentModal
+          isOpen={showUpdateEnrollmentModal}
+          onClose={() => {
+            setShowUpdateEnrollmentModal(false);
+            setSelectedEnrollment(null);
+          }}
+          onSubmit={handleUpdateEnrollment}
+          enrollment={selectedEnrollment}
+          isUpdating={isUpdatingEnrollment}
+        />
+      )}
+
+      {/* Delete Enrollment Confirmation Modal */}
+      {showDeleteEnrollmentConfirm && (
+        <DeleteEnrollmentConfirmationModal
+          isOpen={showDeleteEnrollmentConfirm}
+          onClose={cancelDeleteEnrollment}
+          onConfirm={confirmDeleteEnrollment}
+          isDeleting={isDeletingEnrollment}
         />
       )}
     </div>
@@ -1046,7 +1195,18 @@ const EditBatchModal = ({ isOpen, onClose, onSubmit, batch, courses, isUpdating 
 };
 
 // View Batch Details Modal Component
-const ViewBatchModal = ({ isOpen, onClose, batch, details, onAssignCourse, onDeleteCourse, onViewCourseDetails }) => {
+const ViewBatchModal = ({ 
+  isOpen, 
+  onClose, 
+  batch, 
+  details, 
+  onAssignCourse, 
+  onDeleteCourse, 
+  onViewCourseDetails,
+  onEnrollStudent,
+  onUpdateEnrollment,
+  onDeleteEnrollment
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -1174,21 +1334,50 @@ const ViewBatchModal = ({ isOpen, onClose, batch, details, onAssignCourse, onDel
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
-              <UserPlus className="w-4 h-4" />
-              <span>Enrollments</span>
-            </h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-gray-900 flex items-center space-x-2">
+                <UserPlus className="w-4 h-4" />
+                <span>Enrollments</span>
+              </h4>
+              <button
+                onClick={() => onEnrollStudent(batch.id)}
+                className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+              >
+                <UserPlus className="w-3 h-3" />
+                <span>Enroll Student</span>
+              </button>
+            </div>
             {details?.enrollments && details.enrollments.length > 0 ? (
               <div className="grid grid-cols-1 gap-2">
                 {details.enrollments.map((enrollment) => (
-                  <div key={enrollment.id} className="bg-white rounded p-3">
-                    <div className="font-medium text-sm">
-                      {enrollment.profile?.user?.firstName} {enrollment.profile?.user?.lastName}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">{enrollment.profile?.user?.email}</div>
-                    <div className="flex justify-between text-xs text-gray-500 mt-2">
-                      <span>Status: {enrollment.status}</span>
-                      <span>Enrolled: {new Date(enrollment.enrollmentDate).toLocaleDateString()}</span>
+                  <div key={enrollment.id} className="bg-white rounded p-3 border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-sm">
+                          {enrollment.profile?.user?.firstName} {enrollment.profile?.user?.lastName}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">{enrollment.profile?.user?.email}</div>
+                        <div className="flex justify-between text-xs text-gray-500 mt-2">
+                          <span>Status: {enrollment.status}</span>
+                          <span>Enrolled: {new Date(enrollment.enrollmentDate).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => onUpdateEnrollment(enrollment)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Update Enrollment"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteEnrollment(enrollment.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete Enrollment"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1923,6 +2112,250 @@ const DeleteScheduleConfirmationModal = ({ isOpen, onClose, onConfirm, isDeletin
               <>
                 <Trash2 className="w-4 h-4" />
                 <span>Delete Schedule</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Enroll Student Modal Component
+const EnrollStudentModal = ({ isOpen, onClose, onSubmit, batchId, users, isEnrolling }) => {
+  const [selectedUserId, setSelectedUserId] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (selectedUserId) {
+      onSubmit(batchId, selectedUserId);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Enroll Student</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select Student</label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select a student...</option>
+              {users
+                .filter(user => user.role === 'STUDENT')
+                .map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName} - {user.email}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-green-800">
+                <strong>Note:</strong> This will enroll the selected student in this batch. They will have access to all assigned courses.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isEnrolling}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isEnrolling || !selectedUserId}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              {isEnrolling ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Enrolling...</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  <span>Enroll Student</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Update Enrollment Modal Component
+const UpdateEnrollmentModal = ({ isOpen, onClose, onSubmit, enrollment, isUpdating }) => {
+  const [status, setStatus] = useState(enrollment?.status || 'ACTIVE');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(enrollment.id, status);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Update Enrollment</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Student</label>
+            <div className="px-3 py-2 bg-gray-100 rounded-lg">
+              {enrollment?.profile?.user?.firstName} {enrollment?.profile?.user?.lastName}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Current Status</label>
+            <div className="px-3 py-2 bg-gray-100 rounded-lg">
+              {enrollment?.status}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">New Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="DROPPED">Dropped</option>
+            </select>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-blue-800">
+                <strong>Note:</strong> This will update the enrollment status for this student in the batch.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isUpdating}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isUpdating}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            >
+              {isUpdating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Updating...</span>
+                </>
+              ) : (
+                <>
+                  <UserCheck className="w-4 h-4" />
+                  <span>Update Enrollment</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Delete Enrollment Confirmation Modal Component
+const DeleteEnrollmentConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Delete Enrollment</h3>
+              <p className="text-sm text-gray-600">This action cannot be undone</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <p className="text-sm text-gray-700 mb-4">
+            Are you sure you want to delete this enrollment? This will remove the student from the batch and revoke their access to all courses.
+          </p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-yellow-800">
+                <strong>Warning:</strong> This action will remove the student's access to this batch and all its courses. This cannot be undone.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex space-x-3">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {isDeleting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Deleting...</span>
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Enrollment</span>
               </>
             )}
           </button>

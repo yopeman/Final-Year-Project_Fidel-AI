@@ -67,21 +67,44 @@ def resolve_enrollment(_, info, id):
 
 
 @mutation.field("createEnrollment")
-def resolve_create_enrollment(_, info, batchId: str):
+def resolve_create_enrollment(_, info, batchId: str, studentId: Optional[str] = None):
     current_user: User = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
 
     db: Session = info.context["db"]
     
-    # Validate that profile exists
-    profile = db.query(StudentProfile).filter(
-        StudentProfile.user_id == current_user.id,
-        StudentProfile.is_deleted == False
-    ).first()
-    
-    if not profile:
-        raise Exception("Student profile not found")
+    # If studentId is provided, check if user is admin
+    if studentId:
+        if current_user.role.value != "admin":
+            raise Exception("Unauthorized: Admin access required to enroll other students")
+        
+        # Validate that student exists and has a profile
+        student = db.query(User).filter(
+            User.id == studentId,
+            User.is_deleted == False,
+            User.role.value == "student"
+        ).first()
+        
+        if not student:
+            raise Exception("Student not found or is not a student")
+        
+        profile = db.query(StudentProfile).filter(
+            StudentProfile.user_id == studentId,
+            StudentProfile.is_deleted == False
+        ).first()
+        
+        if not profile:
+            raise Exception("Student profile not found")
+    else:
+        # If no studentId, enroll current user
+        profile = db.query(StudentProfile).filter(
+            StudentProfile.user_id == current_user.id,
+            StudentProfile.is_deleted == False
+        ).first()
+        
+        if not profile:
+            raise Exception("Student profile not found")
 
     # Validate that batch exists
     batch = db.query(Batch).filter(

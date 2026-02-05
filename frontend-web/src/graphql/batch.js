@@ -51,16 +51,107 @@ export const GET_BATCHES = gql`
       enrollments {
         id
         profileId
+        batchId
         enrollmentDate
+        completionDate
         status
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
         profile {
           id
+          userId
+          ageRange
+          proficiency
+          nativeLanguage
+          learningGoal
+          targetDuration
+          durationUnit
+          constraints
+          aiLearningPlan
           user {
             id
             firstName
             lastName
             email
+            isVerified
           }
+        }
+        batch {
+          id
+          name
+          description
+          level
+          language
+          startDate
+          endDate
+          maxStudents
+          status
+          feeAmount
+        }
+        quizResults {
+          id
+          enrollmentId
+          quizId
+          score
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+          quiz {
+            id
+            question
+            answer
+            type
+          }
+        }
+        skillResults {
+          id
+          enrollmentId
+          skillId
+          score
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+          skillTest {
+            id
+            evaluatorId
+            type
+            evaluator {
+              id
+              firstName
+              lastName
+              email
+            }
+          }
+        }
+        payments {
+          id
+          enrollmentId
+          amount
+          currency
+          method
+          status
+          paidAt
+          transactionId
+          checkoutUrl
+          receiptUrl
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+        }
+        certificates {
+          id
+          enrollmentId
+          result
+          certificateHtml
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
         }
       }
       instructors {
@@ -107,16 +198,107 @@ export const GET_BATCH = gql`
       enrollments {
         id
         profileId
+        batchId
         enrollmentDate
+        completionDate
         status
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
         profile {
           id
+          userId
+          ageRange
+          proficiency
+          nativeLanguage
+          learningGoal
+          targetDuration
+          durationUnit
+          constraints
+          aiLearningPlan
           user {
             id
             firstName
             lastName
             email
+            isVerified
           }
+        }
+        batch {
+          id
+          name
+          description
+          level
+          language
+          startDate
+          endDate
+          maxStudents
+          status
+          feeAmount
+        }
+        quizResults {
+          id
+          enrollmentId
+          quizId
+          score
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+          quiz {
+            id
+            question
+            answer
+            type
+          }
+        }
+        skillResults {
+          id
+          enrollmentId
+          skillId
+          score
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+          skillTest {
+            id
+            evaluatorId
+            type
+            evaluator {
+              id
+              firstName
+              lastName
+              email
+            }
+          }
+        }
+        payments {
+          id
+          enrollmentId
+          amount
+          currency
+          method
+          status
+          paidAt
+          transactionId
+          checkoutUrl
+          receiptUrl
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+        }
+        certificates {
+          id
+          enrollmentId
+          result
+          certificateHtml
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
         }
       }
       instructors {
@@ -734,8 +916,8 @@ export const GET_ENROLLMENT = gql`
 
 // Enrollment Mutations
 export const CREATE_ENROLLMENT = gql`
-  mutation CreateEnrollment($batchId: ID!) {
-    createEnrollment(batchId: $batchId) {
+  mutation CreateEnrollment($batchId: ID!, $studentId: ID!) {
+    createEnrollment(batchId: $batchId, studentId: $studentId) {
       id
       profileId
       batchId
