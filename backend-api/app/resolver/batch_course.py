@@ -236,7 +236,7 @@ def resolve_batch(batch_course_obj, info):
     db: Session = info.context["db"]
     batch_obj = db.query(Batch).filter(
         Batch.id == batch_course_obj.batch_id,
-        Batch.is_deleted == False
+        # Batch.is_deleted == False
     ).first()
     return batch_obj
 

@@ -1,5 +1,5 @@
 from typing import Optional
-
+from datetime import datetime
 from ariadne import MutationType, ObjectType, QueryType
 from sqlalchemy.orm import Session
 
@@ -79,7 +79,7 @@ def resolve_delete_course_schedule(_, info, id: str):
         raise Exception("CourseSchedule not found")
     
     course_schedule.is_deleted = True
-    course_schedule.deleted_at = db.func.now()
+    course_schedule.deleted_at = datetime.now()
     db.commit()
     return True
 
