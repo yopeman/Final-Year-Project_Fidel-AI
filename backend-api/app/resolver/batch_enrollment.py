@@ -67,7 +67,7 @@ def resolve_enrollment(_, info, id):
 
 
 @mutation.field("createEnrollment")
-def resolve_create_enrollment(_, info, batchId: str, studentId: str = None):
+def resolve_create_enrollment(_, info, batchId: str, studentId: Optional[str] = None):
     current_user: User = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -81,16 +81,14 @@ def resolve_create_enrollment(_, info, batchId: str, studentId: str = None):
             StudentProfile.is_deleted == False
         ).first()
         
-        if not profile:
-            raise Exception("Student profile not found")
     else:
         profile = db.query(StudentProfile).filter(
             StudentProfile.user_id == current_user.id,
             StudentProfile.is_deleted == False
         ).first()
-        
-        if not profile:
-            raise Exception("Student profile not found")
+    
+    if not profile:
+        raise Exception("Student profile not found")
 
     # Validate that batch exists
     batch = db.query(Batch).filter(

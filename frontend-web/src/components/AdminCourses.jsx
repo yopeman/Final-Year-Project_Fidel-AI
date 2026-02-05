@@ -607,10 +607,16 @@ const AdminCourses = ({
                           <p className="text-xs text-gray-600 mb-2">Files: {material.files.length}</p>
                           <div className="space-y-1">
                             {material.files.slice(0, 3).map((file) => (
-                              <div key={file.id} className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
+                              <a 
+                                key={file.id} 
+                                href={`${BASE_URL}/${file.filePath}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
+                              >
                                 <span className="truncate">{file.fileName}</span>
                                 <span>{(file.fileSize / 1024).toFixed(1)} KB</span>
-                              </div>
+                              </a>
                             ))}
                             {material.files.length > 3 && (
                               <p className="text-xs text-gray-500 text-center pt-1">+{material.files.length - 3} more files</p>
@@ -1105,23 +1111,30 @@ const AdminCourses = ({
               {selectedMaterial.files && selectedMaterial.files.length > 0 ? (
                 <div className="space-y-3">
                   {selectedMaterial.files.map((file) => (
-                    <div key={file.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                    <a 
+                      key={file.id} 
+                      href={`${BASE_URL}/${file.filePath}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
+                    >
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                           <span className="text-blue-600 text-sm font-medium">
-                            {(file.fileExtension || file.file_extension).toUpperCase()}
+                            {file.fileExtension.toUpperCase()}
                           </span>
                         </div>
                         <div>
-                          <h6 className="font-medium text-gray-900">{file.fileName || file.file_name}</h6>
+                          <h6 className="font-medium text-gray-900">{file.fileName}</h6>
                           <p className="text-sm text-gray-600">
                             {(file.fileSize / 1024).toFixed(1)} KB • 
-                            Uploaded: {new Date(file.createdAt || file.created_at).toLocaleDateString()}
+                            Uploaded: {new Date(file.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault(); // Prevent the link from opening when clicking delete
                           setFileToDelete(file.id);
                           setShowDeleteFileConfirmation(true);
                         }}
@@ -1130,7 +1143,7 @@ const AdminCourses = ({
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                    </div>
+                    </a>
                   ))}
                 </div>
               ) : (

@@ -139,7 +139,7 @@ type MeetingLinkResponse {
 }
 
 extend type Query {
-  attendances(courseId: ID!): [Attendance!]!
+  attendances(batchId: ID!): [Attendance!]!
   attendance(id: ID!): Attendance!
 }
 
@@ -362,7 +362,7 @@ extend type Query {
 }
 
 extend type Mutation {
-  createEnrollment(batchId: ID!): BatchEnrollment!
+  createEnrollment(batchId: ID!, studentId: ID): BatchEnrollment!
   updateEnrollment(id: ID!, input: UpdateEnrollmentInput!): BatchEnrollment!
   deleteEnrollment(id: ID!): Boolean!
 }
