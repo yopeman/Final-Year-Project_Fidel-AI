@@ -489,22 +489,25 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
   const handleFetchAttendance = async (batchId, date) => {
     setIsFetchingAttendance(true);
     try {
-      // For now, we'll simulate fetching attendance data from enrollments
-      // In a real implementation, this would be a GraphQL query
-      const batch = batches.find(b => b.id === batchId);
-      if (batch && batch.enrollments) {
-        const attendanceList = batch.enrollments.map(enrollment => ({
-          id: enrollment.id,
-          profile: enrollment.profile,
-          attendance: {
-            status: 'NOT_MARKED', // Default status
-            date: date
-          }
-        }));
-        setAttendanceData(attendanceList);
-      }
+      // Use the correct GraphQL query to fetch attendance data
+      const { data } = await client.query({
+        query: GET_ATTENDANCES,
+        variables: { batchId: batchId }
+      });
+      
+      // Filter attendance data by the selected date
+      const filteredAttendance = data.attendances.filter(attendance => {
+        const attendanceDate = new Date(attendance.attendanceDate).toISOString().split('T')[0];
+        console.log("Attendance Date:", attendanceDate);
+        console.log("Selecte Date:", date);
+        return attendanceDate === date;
+      });
+      
+      setAttendanceData(filteredAttendance);
     } catch (err) {
       console.error('Error fetching attendance:', err);
+      // Fallback to empty array if query fails
+      setAttendanceData([]);
     } finally {
       setIsFetchingAttendance(false);
     }
@@ -2744,10 +2747,10 @@ const AttendanceModal = ({
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -2764,48 +2767,28 @@ const AttendanceModal = ({
                     </td>
                   </tr>
                 ) : (
-                  attendanceData.map((student) => (
-                    <tr key={student.id} className="hover:bg-gray-50">
+                  attendanceData.map((attendance) => (
+                    <tr key={attendance.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {student.profile?.user?.firstName} {student.profile?.user?.lastName}
+                          {attendance.user?.firstName} {attendance.user?.lastName}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{student.profile?.user?.email}</div>
+                        <div className="text-sm text-gray-500">{attendance.user?.role}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{attendance.user?.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          student.attendance?.status === 'PRESENT' ? 'bg-green-100 text-green-800' :
-                          student.attendance?.status === 'ABSENT' ? 'bg-red-100 text-red-800' :
-                          student.attendance?.status === 'LATE' ? 'bg-yellow-100 text-yellow-800' :
+                          attendance.status === 'PRESENT' ? 'bg-green-100 text-green-800' :
+                          attendance.status === 'ABSENT' ? 'bg-red-100 text-red-800' :
+                          attendance.status === 'LATE' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {student.attendance?.status || 'NOT_MARKED'}
+                          {attendance.status || 'NOT_MARKED'}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button
-                          onClick={() => onMarkPresent(student.id)}
-                          className="text-green-600 hover:text-green-900"
-                          title="Mark Present"
-                        >
-                          Present
-                        </button>
-                        <button
-                          onClick={() => onMarkAbsent(student.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Mark Absent"
-                        >
-                          Absent
-                        </button>
-                        <button
-                          onClick={() => onMarkLate(student.id)}
-                          className="text-yellow-600 hover:text-yellow-900"
-                          title="Mark Late"
-                        >
-                          Late
-                        </button>
                       </td>
                     </tr>
                   ))
