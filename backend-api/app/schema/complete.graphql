@@ -139,7 +139,7 @@ type MeetingLinkResponse {
 }
 
 extend type Query {
-  attendances(courseId: ID!): [Attendance!]!
+  attendances(batchId: ID!): [Attendance!]!
   attendance(id: ID!): Attendance!
 }
 
