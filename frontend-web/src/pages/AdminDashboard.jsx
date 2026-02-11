@@ -23,7 +23,8 @@ import {
   UserCog,
   Trash2,
   AlertCircle,
-  X
+  X,
+  CreditCard
 } from 'lucide-react';
 import { GET_CURRENT_USER, GET_USERS, UPDATE_USER_MUTATION, DELETE_USER_MUTATION, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
 import { GET_BATCHES } from '../graphql/batch';
@@ -31,10 +32,10 @@ import UpdateProfilePopup from '../components/UpdateProfilePopup';
 import EditUserPopup from '../components/EditUserPopup';
 import AdminOverview from '../components/AdminOverview';
 import AdminUsers from '../components/AdminUsers';
-import AdminReports from '../components/AdminReports';
 import AdminCourses from '../components/AdminCourses';
 import AdminSchedules from '../components/AdminSchedules';
 import AdminBatches from '../components/AdminBatches';
+import AdminPayments from '../components/AdminPayments';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -249,7 +250,7 @@ const AdminDashboard = () => {
                 { id: 'courses', name: 'Courses', icon: BookOpen },
                 { id: 'schedules', name: 'Schedules', icon: Calendar },
                 { id: 'batches', name: 'Batches', icon: GraduationCap },
-                { id: 'reports', name: 'Reports', icon: BookOpen }
+                { id: 'payments', name: 'Payments', icon: CreditCard }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -375,14 +376,27 @@ const AdminDashboard = () => {
               />
             )}
 
-            {activeTab === 'reports' && (
-              <AdminReports 
-                onGenerateReport={(reportType, action = 'view') => {
-                  console.log(`Generating ${action} report: ${reportType}`);
-                  // Add report generation logic here
+            {activeTab === 'payments' && (
+              <AdminPayments 
+                onPaymentAction={(action, paymentId) => {
+                  console.log(`Payment action: ${action} for payment ${paymentId}`);
+                  // Add payment action logic here
+                }}
+                onEditPayment={(payment) => {
+                  console.log('Editing payment:', payment);
+                  // Add edit payment logic here
+                }}
+                onViewPayment={(payment) => {
+                  console.log('Viewing payment:', payment);
+                  // Add view payment logic here
+                }}
+                onDeletePayment={(paymentId) => {
+                  console.log('Deleting payment:', paymentId);
+                  // Add delete payment logic here
                 }}
               />
             )}
+
           </div>
         </div>
       </div>
