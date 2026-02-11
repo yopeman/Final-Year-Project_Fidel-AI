@@ -24,7 +24,8 @@ import {
   Trash2,
   AlertCircle,
   X,
-  CreditCard
+  CreditCard,
+  MessageSquare
 } from 'lucide-react';
 import { GET_CURRENT_USER, GET_USERS, UPDATE_USER_MUTATION, DELETE_USER_MUTATION, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
 import { GET_BATCHES } from '../graphql/batch';
@@ -36,6 +37,7 @@ import AdminCourses from '../components/AdminCourses';
 import AdminSchedules from '../components/AdminSchedules';
 import AdminBatches from '../components/AdminBatches';
 import AdminPayments from '../components/AdminPayments';
+import AdminFeedback from '../components/AdminFeedback';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -250,7 +252,8 @@ const AdminDashboard = () => {
                 { id: 'courses', name: 'Courses', icon: BookOpen },
                 { id: 'schedules', name: 'Schedules', icon: Calendar },
                 { id: 'batches', name: 'Batches', icon: GraduationCap },
-                { id: 'payments', name: 'Payments', icon: CreditCard }
+                { id: 'payments', name: 'Payments', icon: CreditCard },
+                { id: 'feedback', name: 'Feedback', icon: MessageSquare }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -393,6 +396,27 @@ const AdminDashboard = () => {
                 onDeletePayment={(paymentId) => {
                   console.log('Deleting payment:', paymentId);
                   // Add delete payment logic here
+                }}
+              />
+            )}
+
+            {activeTab === 'feedback' && (
+              <AdminFeedback 
+                onFeedbackAction={(action, feedbackId) => {
+                  console.log(`Feedback action: ${action} for feedback ${feedbackId}`);
+                  // Add feedback action logic here
+                }}
+                onEditFeedback={(feedback) => {
+                  console.log('Editing feedback:', feedback);
+                  // Add edit feedback logic here
+                }}
+                onViewFeedback={(feedback) => {
+                  console.log('Viewing feedback:', feedback);
+                  // Add view feedback logic here
+                }}
+                onDeleteFeedback={(feedbackId) => {
+                  console.log('Deleting feedback:', feedbackId);
+                  // Add delete feedback logic here
                 }}
               />
             )}
