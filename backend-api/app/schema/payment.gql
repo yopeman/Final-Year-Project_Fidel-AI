@@ -2,6 +2,7 @@ enum PaymentStatus {
   PENDING
   COMPLETED
   FAILED
+  CANCELED
 }
 
 type Payment {
