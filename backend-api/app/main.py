@@ -34,6 +34,7 @@ from .resolver.conversation_interactions import query as ci_query
 from .resolver.course import course, mutation as c_mutation, query as c_query
 from .resolver.course_material import course_material, mutation as cm_mutation, query as cm_query
 from .resolver.material_files import material_files, mutation as mf_mutation, query as mf_query, upload_material_files as upload_mf
+from .resolver.community_attachment_files import upload_attachments as upload_ca
 from .resolver.free_conversation import free_conversation as fc_type
 from .resolver.free_conversation import mutation as fc_mutation
 from .resolver.free_conversation import query as fc_query
@@ -249,3 +250,8 @@ def payment_webhook(status: str = None, trx_ref: str = None, db = Depends(get_db
 async def upload_course_material(materialId: str, files: List[UploadFile]):
     context = {"db": next(get_db()), "pubsub": broadcast}
     return await upload_mf(context, materialId, files)
+
+@app.post("/api/upload/community/{communityId}/files", response_model=None)
+async def upload_community_attachments(communityId: str, files: List[UploadFile]):
+    context = {"db": next(get_db()), "pubsub": broadcast}
+    return await upload_ca(context, communityId, files)

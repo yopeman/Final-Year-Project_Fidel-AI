@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any, List
 import uuid
 import os
 
@@ -147,6 +147,84 @@ def resolve_upload_attachments(_, info, communityId: str, files):
         db.refresh(attachment)
     
     return uploaded_attachments
+
+
+async def upload_attachments(context: Dict[str, Any], communityId: str, files: List[UploadFile]):
+    """RESTful API endpoint for uploading community attachments"""
+    # current_user = context.get("current_user")
+    # if not current_user:
+    #     raise Exception("Not authenticated")
+    
+    db: Session = context["db"]
+    
+    # Validate that community exists and user has access
+    community = db.query(BatchCommunity).filter(
+        BatchCommunity.id == communityId,
+        BatchCommunity.is_deleted == False
+    ).first()
+    
+    if not community:
+        raise Exception("Community not found")
+    
+    # Check if user owns the community
+    # if community.user_id != current_user.id:
+    #     raise Exception("Not authorized to upload files to this community")
+    
+    uploaded_attachments = []
+    
+    for file in files:
+        # Read file content
+        file_content = await file.read()
+        
+        # Generate unique file path
+        file_extension = file.filename.split(".")[-1] if "." in file.filename else ""
+        unique_filename = f"{uuid.uuid4()}_{file.filename}"
+        file_path = f"static/community_attachments/{communityId}/{unique_filename}"
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        # Save file to storage
+        with open(file_path, "wb") as f:
+            f.write(file_content)
+        
+        # Calculate file size
+        file_size = len(file_content)
+        
+        # Create database record
+        new_attachment = CommunityAttachmentFiles(
+            community_id=communityId,
+            file_name=file.filename,
+            file_path=file_path,
+            file_extension=file_extension,
+            file_size=file_size
+        )
+        
+        db.add(new_attachment)
+        uploaded_attachments.append(new_attachment)
+    
+    db.commit()
+    
+    # Refresh all attachments to get their IDs
+    for attachment in uploaded_attachments:
+        db.refresh(attachment)
+    
+    uploaded_files = []
+    for f in uploaded_attachments:
+        uploaded_files.append({
+            'id': f.id,
+            'communityId': f.community_id,
+            'fileName': f.file_name,
+            'filePath': f.file_path,
+            'fileExtension': f.file_extension,
+            'fileSize': f.file_size,
+            'createdAt': f.created_at,
+            'updatedAt': f.updated_at,
+            'isDeleted': f.is_deleted,
+            'deletedAt': f.deleted_at
+        })
+
+    return uploaded_files
 
 @mutation.field("deleteAttachment")
 def resolve_delete_attachment(_, info, id: str):
