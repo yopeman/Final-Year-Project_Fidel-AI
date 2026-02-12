@@ -50,7 +50,7 @@ def send_verification_email(email: str, verification_code: str):
         return False
 
 
-def send_notification_email(user_id: str, title: str, content: str, db: Session):
+def send_notification(user_id: str, title: str, content: str, db: Session):
     """Send notification email to user"""
 
     # Check if user exists

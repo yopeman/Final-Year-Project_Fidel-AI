@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..model.notification import Notification
 from ..model.user import User, UserRole
-from ..util.email_service import send_notification_email
+from ..util.email_service import send_notification
 
 query = QueryType()
 mutation = MutationType()
@@ -82,7 +82,7 @@ def resolve_send_notification(_, info, input):
 
     db: Session = info.context["db"]
     # Send email notification to the user
-    notification_obj = send_notification_email(input["userId"], input["title"], input["content"], db)
+    notification_obj = send_notification(input["userId"], input["title"], input["content"], db)
     
     return notification_obj
 
