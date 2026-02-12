@@ -118,7 +118,7 @@ def resolve_create_lesson_interaction(_, info, input):
         .first()
     )
 
-    if not lesson:
+    if not module:
         raise Exception("Module not found")
 
     # Check ownership through profile
@@ -127,6 +127,9 @@ def resolve_create_lesson_interaction(_, info, input):
         .filter(StudentProfile.id == lesson.module.profile_id)
         .first()
     )
+
+    if not profile:
+        raise Exception("Student profile not found")
 
     prev_lesson_interactions = (
         db.query(LessonInteractions)
