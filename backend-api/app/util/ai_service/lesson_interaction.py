@@ -40,7 +40,7 @@ def ask_on_lesson(
             interactions.append(f"Teacher: {interaction.ai_answer}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
-    llm = ChatOllama(model="gemma3:4b")
+    llm = ChatOllama(model="gemma2:2b")
     prompts = PromptTemplate.from_template(
         """
     # PERSONALIZED LESSON-INTEGRATED Q&A SUPPORT

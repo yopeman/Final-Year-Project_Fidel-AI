@@ -1,5 +1,5 @@
 import os
-
+import logging
 from ariadne import ScalarType, make_executable_schema, upload_scalar
 from ariadne.asgi import GraphQL
 from ariadne.asgi.handlers import GraphQLTransportWSHandler, GraphQLWSHandler
@@ -10,8 +10,17 @@ from fastapi.staticfiles import StaticFiles
 from typing import List
 from .model.material_files import MaterialFiles
 
+# Ensure logging is configured to output to stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
+
 from . import model  # Import all models to register them with SQLAlchemy
-from .config.database import create_table, get_db
+from sqlalchemy.orm import Session
+from .config.database import create_table, get_db, SessionLocal
 from .resolver.attendance import attendance, mutation as a_mutation, query as a_query
 from .resolver.batch import batch, mutation as b_mutation, query as b_query
 from .resolver.batch_course import batch_course, mutation as bc_mutation, query as bc_query
@@ -73,7 +82,6 @@ app = FastAPI(
     debug=True
 )
 
-# Add CORS middleware to allow all origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -81,6 +89,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def db_session_middleware(request: Request, call_next):
+    request.state.db = SessionLocal()
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        request.state.db.close()
 
 create_table()
 create_default_admin()
@@ -197,11 +214,7 @@ os.makedirs("static", exist_ok=True)
 
 
 def get_context_value(request: Request):
-    print(
-        request._body
-    )
-
-    db = next(get_db())
+    db = request.state.db
     context = {"db": db, "pubsub": broadcast}
     context["base_url"] = request.base_url
     auth_header = request.headers.get("authorization")
@@ -246,6 +259,6 @@ def payment_webhook(status: str = None, trx_ref: str = None, db = Depends(get_db
     p_webhook(status=status, trx_ref=trx_ref, db=db)
 
 @app.post("/api/upload/material/{materialId}/files", response_model=None)
-async def upload_course_material(materialId: str, files: List[UploadFile]):
-    context = {"db": next(get_db()), "pubsub": broadcast}
+async def upload_course_material(materialId: str, files: List[UploadFile], db: Session = Depends(get_db)):
+    context = {"db": db, "pubsub": broadcast}
     return await upload_mf(context, materialId, files)

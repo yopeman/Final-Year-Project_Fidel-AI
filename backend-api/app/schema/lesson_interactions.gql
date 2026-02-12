@@ -22,6 +22,6 @@ extend type Query {
 }
 
 extend type Mutation {
-  createLessonInteraction(input: CreateLessonInteractionInput!): LessonInteractions!
+  createLessonInteraction(input: CreateLessonInteractionInput!): LessonInteractions
   deleteLessonInteraction(id: ID!): Boolean!
 }

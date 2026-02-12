@@ -32,7 +32,7 @@ if not logger.handlers:
 
 
 ResultLike = Dict[str, Any]
-llm = ChatOllama(model="llama3.1:8b")
+llm = ChatOllama(model="gemma2:2b")
 
 
 class AIAgent:

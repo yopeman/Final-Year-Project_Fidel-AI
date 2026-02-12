@@ -106,6 +106,21 @@ def resolve_create_conversation(_, info, startingTopic: str):
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
         raise Exception("Unauthorized")
 
+    # Check for existing conversation with same topic
+    existing_conversation = (
+        db.query(FreeConversation)
+        .filter(
+            FreeConversation.profile_id == profile.id,
+            FreeConversation.starting_topic == startingTopic,
+            FreeConversation.is_deleted == False
+        )
+        .order_by(FreeConversation.created_at.desc())
+        .first()
+    )
+
+    if existing_conversation:
+        return existing_conversation
+
     topic_summary_phrase = ai_topic_summary(startingTopic)
     # Create conversation
     conversation = FreeConversation(

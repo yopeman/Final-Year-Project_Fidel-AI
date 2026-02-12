@@ -19,7 +19,7 @@ def generate_learning_plan(profile: StudentProfile) -> str:
         str: The generated learning plan structured in modules and lessons.
     """
 
-    llm = ChatOllama(model="gemma3:4b")
+    llm = ChatOllama(model="gemma2:2b")
     prompts = PromptTemplate.from_template(
         """
     # PERSONALIZED ENGLISH LANGUAGE LEARNING PLAN DESIGN
@@ -163,7 +163,7 @@ def update_learning_plan(profile: StudentProfile, improvements: str) -> str:
         str: The updated learning plan structured in modules and lessons.
     """
 
-    llm = ChatOllama(model="gemma3:4b")
+    llm = ChatOllama(model="gemma2:2b")
     prompts = PromptTemplate.from_template(
         """
     # LEARNING PLAN ENHANCEMENT & OPTIMIZATION

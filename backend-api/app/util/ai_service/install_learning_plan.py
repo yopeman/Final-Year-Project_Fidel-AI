@@ -128,7 +128,7 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
     )
 
     response: ModuleResponse = (
-        ChatOllama(model="llama3.1:8b")
+        ChatOllama(model="gemma2:2b")
         .with_structured_output(ModuleResponse)
         .invoke([HumanMessage(content=prompts)])
     )
@@ -315,7 +315,7 @@ def _generate_content(
     )
 
     response: str = (
-        ChatOllama(model="gemma3:4b").invoke([HumanMessage(content=prompts)]).content
+        ChatOllama(model="gemma2:2b").invoke([HumanMessage(content=prompts)]).content
     )
 
     return response
@@ -393,7 +393,7 @@ def _generate_vocabularies(
     )
 
     response: VocabularyResponse = (
-        ChatOllama(model="llama3.1:8b")
+        ChatOllama(model="gemma2:2b")
         .with_structured_output(VocabularyResponse)
         .invoke([HumanMessage(content=prompts)])
     )

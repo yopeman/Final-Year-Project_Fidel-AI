@@ -193,18 +193,31 @@ async def resolve_talk_with_ai(_, info, input):
     else:
         raise Exception("Require text or audio")
 
+    if not profile:
+        raise Exception("Student profile not found")
+
     ai_response = ask_on_conversation(
         student_text, profile, conversation, prev_interactions
     )
 
-    # Create new interaction
-    interaction = ConversationInteractions(
-        conversation_id=input["conversationId"],
-        student_text=student_text,
-        student_audio_url=f'{info.context["base_url"]}{student_audio_url}',
-        ai_text=ai_response["ai_text"],
-        ai_audio_url=f'{info.context["base_url"]}{ai_response["ai_audio_path"]}',
-    )
+    if not isinstance(ai_response, dict):
+        # Fallback if AI service returns a string (error message) instead of dict
+        interaction = ConversationInteractions(
+            conversation_id=input["conversationId"],
+            student_text=student_text,
+            student_audio_url=f'{info.context["base_url"]}{student_audio_url}',
+            ai_text=str(ai_response),
+            ai_audio_url="",
+        )
+    else:
+        # Create new interaction from valid dict response
+        interaction = ConversationInteractions(
+            conversation_id=input.get("conversationId"),
+            student_text=student_text,
+            student_audio_url=f'{info.context["base_url"]}{student_audio_url}',
+            ai_text=ai_response.get("ai_text", "Sorry, I couldn't generate a response."),
+            ai_audio_url=f'{info.context["base_url"]}{ai_response.get("ai_audio_path", "")}',
+        )
 
     db.add(interaction)
     db.commit()

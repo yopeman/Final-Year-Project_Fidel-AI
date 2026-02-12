@@ -308,6 +308,10 @@ def resolve_update_learning_plan(_, info, input):
     return profile
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 @mutation.field("installLearningPlan")
 def resolve_install_learning_plan(_, info):
     current_user: User = info.context.get("current_user")
@@ -315,39 +319,50 @@ def resolve_install_learning_plan(_, info):
         raise Exception("Not authenticated")
 
     db: Session = info.context["db"]
+    logger.info(f"Installing learning plan for user: {current_user.id}")
 
-    profile = (
-        db.query(StudentProfile)
-        .filter(
-            StudentProfile.user_id == current_user.id,
-            StudentProfile.is_deleted == False,
-        )
-        .first()
-    )
-
-    if not profile:
-        raise Exception("Profile not found. Create a profile first.")
-
-    if not profile.ai_learning_plan:
-        raise Exception(
-            "No learning plan to install. Generate or update a learning plan first."
+    try:
+        profile = (
+            db.query(StudentProfile)
+            .filter(
+                StudentProfile.user_id == current_user.id,
+                StudentProfile.is_deleted == False,
+            )
+            .first()
         )
 
-    sample_module = (
-        db.query(Modules)
-        .filter(
-            Modules.profile_id == profile.id,
-            Modules.is_deleted == False,
+        if not profile:
+            logger.error(f"Profile not found for user: {current_user.id}")
+            raise Exception("Profile not found. Create a profile first.")
+
+        if not profile.ai_learning_plan:
+            logger.error(f"No learning plan found for profile: {profile.id}")
+            raise Exception(
+                "No learning plan to install. Generate or update a learning plan first."
+            )
+
+        sample_module = (
+            db.query(Modules)
+            .filter(
+                Modules.profile_id == profile.id,
+                Modules.is_deleted == False,
+            )
+            .first()
         )
-        .first()
-    )
-    if sample_module:
+        if sample_module:
+            logger.info(f"Modules already exist for profile: {profile.id}. Skipping installation.")
+            return profile
+
+        logger.info(f"Calling install_learning_plan for profile: {profile.id}")
+        if not install_learning_plan(profile, db):
+            logger.error(f"install_learning_plan returned False for profile: {profile.id}")
+            raise Exception("Error when installing the plan")
+
+        logger.info(f"Successfully installed learning plan for profile: {profile.id}")
         return profile
-
-    if not install_learning_plan(profile, db):
-        raise Exception("Error when installing the plan")
-
-    return profile
+    except Exception as e:
+        logger.error(f"Exception in resolve_install_learning_plan: {str(e)}")
+        raise e
 
 
 @mutation.field("deletePlan")

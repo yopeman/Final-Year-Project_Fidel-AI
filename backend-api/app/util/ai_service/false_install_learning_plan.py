@@ -912,61 +912,70 @@ from ...model.modules import Modules
 from ...model.student_profile import StudentProfile
 
 
-def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
-    for module in data["modules"]:
-        new_module = Modules(
-            profile_id=profile.id,
-            name=module["name"],
-            description=module["description"],
-            display_order=module["displayOrder"],
-            is_locked=module["isLocked"],
-        )
-        db.add(new_module)
-        db.flush()
+import logging
 
-        for lesson in module["lessons"]:
-            new_lesson = ModuleLessons(
-                module_id=new_module.id,
-                title=lesson["title"],
-                content=lesson["content"],
-                display_order=lesson["displayOrder"],
-                is_completed=lesson["isCompleted"],
-                is_locked=lesson["isLocked"],
+logger = logging.getLogger(__name__)
+
+def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
+    try:
+        for module in data["modules"]:
+            new_module = Modules(
+                profile_id=profile.id,
+                name=module["name"],
+                description=module["description"],
+                display_order=module["displayOrder"],
+                is_locked=module["isLocked"],
             )
-            db.add(new_lesson)
+            db.add(new_module)
             db.flush()
 
-            for vocabulary in lesson["vocabularies"]:
-                new_vocabulary = LessonVocabularies(
-                    lesson_id=new_lesson.id,
-                    vocabulary=vocabulary["vocabulary"],
-                    meaning=vocabulary["meaning"],
-                    description=vocabulary["description"],
+            for lesson in module["lessons"]:
+                new_lesson = ModuleLessons(
+                    module_id=new_module.id,
+                    title=lesson["title"],
+                    content=lesson["content"],
+                    display_order=lesson["displayOrder"],
+                    is_completed=lesson["isCompleted"],
+                    is_locked=lesson["isLocked"],
                 )
-                db.add(new_vocabulary)
+                db.add(new_lesson)
                 db.flush()
 
-            for article in lesson["onlineArticles"]:
-                new_article = LessonOnlineArticles(
-                    lesson_id=new_lesson.id,
-                    title=article["title"],
-                    favicon_url=article["faviconUrl"],
-                    description=article["description"],
-                    page_url=article["pageUrl"],
-                )
-                db.add(new_article)
-                db.flush()
+                for vocabulary in lesson["vocabularies"]:
+                    new_vocabulary = LessonVocabularies(
+                        lesson_id=new_lesson.id,
+                        vocabulary=vocabulary["vocabulary"],
+                        meaning=vocabulary["meaning"],
+                        description=vocabulary["description"],
+                    )
+                    db.add(new_vocabulary)
+                    db.flush()
 
-            for video in lesson["youtubeVideos"]:
-                new_video = LessonYouTubeVideos(
-                    lesson_id=new_lesson.id,
-                    title=video["title"],
-                    thumbnail_url=video["thumbnailUrl"],
-                    description=video["description"],
-                    video_url=video["videoUrl"],
-                )
-                db.add(new_video)
-                db.flush()
+                for article in lesson["onlineArticles"]:
+                    new_article = LessonOnlineArticles(
+                        lesson_id=new_lesson.id,
+                        title=article["title"],
+                        favicon_url=article["faviconUrl"],
+                        description=article["description"],
+                        page_url=article["pageUrl"],
+                    )
+                    db.add(new_article)
+                    db.flush()
 
-    db.commit()
-    return True
+                for video in lesson["youtubeVideos"]:
+                    new_video = LessonYouTubeVideos(
+                        lesson_id=new_lesson.id,
+                        title=video["title"],
+                        thumbnail_url=video["thumbnailUrl"],
+                        description=video["description"],
+                        video_url=video["videoUrl"],
+                    )
+                    db.add(new_video)
+                    db.flush()
+
+        db.commit()
+        return True
+    except Exception as e:
+        logger.error(f"Error installing learning plan: {str(e)}")
+        db.rollback()
+        return False

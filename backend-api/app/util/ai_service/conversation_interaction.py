@@ -190,7 +190,7 @@ def ai_topic_summary(idea: str) -> str:
     if not idea or not idea.strip():
         raise ValueError("Idea cannot be empty")
 
-    llm = ChatOllama(model="gemma3:4b")
+    llm = ChatOllama(model="gemma2:2b")
     prompts = PromptTemplate.from_template(TOPIC_SUMMARY_PROMPT)
     chain = prompts | llm
     response = chain.invoke({"idea": idea})
@@ -204,7 +204,7 @@ def ai_generated_topic(profile: StudentProfile) -> str:
     if not profile:
         raise ValueError("Student profile is required")
 
-    llm = ChatOllama(model="gemma3:4b")
+    llm = ChatOllama(model="gemma2:2b")
     prompts = PromptTemplate.from_template(TOPIC_GENERATION_PROMPT)
     chain = prompts | llm
     response = chain.invoke(
@@ -249,7 +249,7 @@ def ask_on_conversation(
             interactions.append(f"AI: {interaction.ai_text}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
-    llm = ChatOllama(model="gemma3:4b")
+    llm = ChatOllama(model="gemma2:2b")
     prompts = PromptTemplate.from_template(CONVERSATION_RESPONSE_PROMPT)
     try:
         chain = prompts | llm
@@ -317,7 +317,7 @@ def generate_possible_talk(
             interactions.append(f"Student: {interaction.ai_text}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
-    llm = ChatOllama(model="gemma3:4b")
+    llm = ChatOllama(model="gemma2:2b")
     prompts = PromptTemplate.from_template(CONVERSATION_RESPONSE_PROMPT)
     try:
         chain = prompts | llm
