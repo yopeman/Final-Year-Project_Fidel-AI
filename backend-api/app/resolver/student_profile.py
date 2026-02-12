@@ -258,6 +258,9 @@ def resolve_generate_learning_plan(_, info):
 
     if not profile:
         raise Exception("Profile not found. Create a profile first.")
+    
+    if profile.ai_learning_plan:
+        return profile
 
     learning_plan = generate_learning_plan(profile)
 
