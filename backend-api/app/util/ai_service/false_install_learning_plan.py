@@ -1,4 +1,4 @@
-data = {
+DATA = {
     "modules": [
         {
             "name": "Year 2: Refining Skills & Building Confidence",
@@ -913,7 +913,7 @@ from ...model.student_profile import StudentProfile
 
 
 def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
-    for module in data["modules"]:
+    for module in DATA["modules"]:
         new_module = Modules(
             profile_id=profile.id,
             name=module["name"],
