@@ -22,7 +22,7 @@ from ..model.user import User, UserRole
 from ..model.verification_code import VerificationCode
 from ..util.auth import (create_access_token, create_refresh_token,
                          get_password_hash, verify_password)
-from ..util.email_service import send_verification_email
+from ..util.email_service import send_verification_email, send_notification
 
 query = QueryType()
 mutation = MutationType()
@@ -242,6 +242,14 @@ def resolve_verify(_, info, input):
     user.is_verified = True
     db.commit()
     db.refresh(user)
+
+    # Send welcome notification to the user
+    send_notification(
+        user_id=user.id,
+        title="Email Verification Successful",
+        content="Welcome to Fidel AI! Your email has been successfully verified. You can now access all features of the platform.",
+        db=db
+    )
 
     return True
 

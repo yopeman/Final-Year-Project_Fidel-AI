@@ -6,10 +6,12 @@ from sqlalchemy.orm import Session
 
 from ..model.payment import Payment, PaymentStatus
 from ..model.user import User
+from ..model.student_profile import StudentProfile
 from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
 from ..model.batch import Batch
 from ..util.payment_service import PaymentService
 from ..config.settings import settings
+from ..util.email_service import send_notification
 import uuid
 
 
@@ -154,9 +156,40 @@ def payment_webhook(status: str, trx_ref: str, db: Session):
                 BatchEnrollment.is_deleted == False
             ).first()
             enrollment.status = EnrollmentStatus.enrolled
+            
+            # Send notification to student about successful payment
+            profile = db.query(StudentProfile).filter(
+                StudentProfile.id == enrollment.profile_id,
+                StudentProfile.is_deleted == False
+            ).first()
+            
+            send_notification(
+                user_id=profile.user_id,
+                title="Payment Successful",
+                content=f"Your payment of {payment_obj.amount} {payment_obj.currency} for batch '{enrollment.batch.name}' has been successfully processed. Your enrollment is now confirmed.",
+                db=db
+            )
         else:
             payment_obj.status = PaymentStatus.failed
             payment_service.cancel_transaction(payment_obj.transaction_id)
+            
+            # Send notification to student about failed payment
+            enrollment = db.query(BatchEnrollment).filter(
+                BatchEnrollment.id == payment_obj.enrollment_id,
+                BatchEnrollment.is_deleted == False
+            ).first()
+            
+            profile = db.query(StudentProfile).filter(
+                StudentProfile.id == enrollment.profile_id,
+                StudentProfile.is_deleted == False
+            ).first()
+            
+            send_notification(
+                user_id=profile.user_id,
+                title="Payment Failed",
+                content=f"Your payment of {payment_obj.amount} {payment_obj.currency} for batch '{enrollment.batch.name}' has failed. Please try again or contact support if the issue persists.",
+                db=db
+            )
 
         db.commit()
         db.refresh(payment_obj)

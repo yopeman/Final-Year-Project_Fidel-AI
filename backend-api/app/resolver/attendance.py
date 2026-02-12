@@ -12,6 +12,7 @@ from ..model.batch_course import BatchCourse
 from ..model.batch import Batch
 from ..model.user import User, UserRole
 from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
+from ..util.email_service import send_notification
 
 query = QueryType()
 mutation = MutationType()
@@ -151,6 +152,7 @@ def resolve_get_meeting_link(_, info, courseScheduleId: str):
     
     if attendance_record:
         # Update existing attendance
+        old_status = attendance_record.status
         attendance_record.status = status
         attendance_record.attendance_date = now.date()
         attendance_record.updated_at = now
@@ -165,9 +167,33 @@ def resolve_get_meeting_link(_, info, courseScheduleId: str):
             attendance_date=now.date()
         )
         db.add(attendance_record)
+        old_status = None
     
     db.commit()
     db.refresh(attendance_record)
+    
+    # Send notification based on attendance status
+    if status == AttendanceStatus.present and old_status != AttendanceStatus.present:
+        send_notification(
+            user_id=current_user.id,
+            title="Attendance Recorded - Present",
+            content=f"You have been marked present for the {schedule.day_of_week.value} class at {start_time.strftime('%H:%M')}. Meeting link: {meeting_link}",
+            db=db
+        )
+    elif status == AttendanceStatus.late and old_status != AttendanceStatus.late:
+        send_notification(
+            user_id=current_user.id,
+            title="Attendance Recorded - Late",
+            content=f"You have been marked late for the {schedule.day_of_week.value} class at {start_time.strftime('%H:%M')}. Meeting link: {meeting_link}",
+            db=db
+        )
+    elif status == AttendanceStatus.absent and old_status != AttendanceStatus.absent:
+        send_notification(
+            user_id=current_user.id,
+            title="Attendance Recorded - Absent",
+            content=f"You have been marked absent for the {schedule.day_of_week.value} class at {start_time.strftime('%H:%M')}. Please contact your instructor if this is an error.",
+            db=db
+        )
     
     # Only return meeting link if student is present or late
     if status in [AttendanceStatus.present, AttendanceStatus.late] and meeting_link:

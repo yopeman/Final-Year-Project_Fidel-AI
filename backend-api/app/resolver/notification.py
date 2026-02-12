@@ -6,11 +6,27 @@ from sqlalchemy.orm import Session
 
 from ..model.notification import Notification
 from ..model.user import User, UserRole
-from ..util.email_service import send_notification_email
+from ..util.email_service import send_notification
 
 query = QueryType()
 mutation = MutationType()
 notification = ObjectType("Notification")
+
+@query.field("myNotifications")
+def resolve_notifications(_, info, userId=None):
+    current_user: User = info.context.get("current_user")
+    if not current_user:
+        raise Exception("Not authenticated")
+
+    db: Session = info.context["db"]
+
+    # Users can only see their own notifications
+    query_obj = db.query(Notification).filter(
+        Notification.user_id == current_user.id,
+        Notification.is_deleted == False
+    )
+    
+    return query_obj.order_by(Notification.created_at.desc()).all()
 
 @query.field("notifications")
 def resolve_notifications(_, info, userId=None):
@@ -65,29 +81,8 @@ def resolve_send_notification(_, info, input):
         raise Exception("Unauthorized")
 
     db: Session = info.context["db"]
-    
-    # Check if user exists
-    target_user = db.query(User).filter(
-        User.id == input["userId"],
-        User.is_deleted == False
-    ).first()
-    
-    if not target_user:
-        raise Exception("User not found")
-    
-    notification_obj = Notification(
-        user_id=input["userId"],
-        title=input["title"],
-        content=input["content"],
-        is_read=False
-    )
-    
-    db.add(notification_obj)
-    db.commit()
-    db.refresh(notification_obj)
-    
     # Send email notification to the user
-    send_notification_email(target_user.email, input["title"], input["content"])
+    notification_obj = send_notification(input["userId"], input["title"], input["content"], db)
     
     return notification_obj
 

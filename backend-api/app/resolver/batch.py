@@ -6,9 +6,11 @@ from sqlalchemy.orm import Session
 
 from ..model.batch import Batch, BatchLevel, BatchStatus
 from ..model.batch_course import BatchCourse
-from ..model.batch_enrollment import BatchEnrollment
+from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
+from ..model.student_profile import StudentProfile
 from ..model.batch_community import BatchCommunity
 from ..model.batch_instructor import BatchInstructor
+from ..util.email_service import send_notification
 
 
 query = QueryType()
@@ -103,6 +105,20 @@ def resolve_create_batch(_, info, input):
     db.add(new_batch)
     db.commit()
     db.refresh(new_batch)
+
+    # Send notification to all students about new batch availability
+    # Get all student profiles to notify them
+    from ..model.student_profile import StudentProfile
+    students = db.query(StudentProfile).filter(StudentProfile.is_deleted == False).all()
+    
+    for student in students:
+        send_notification(
+            user_id=student.user_id,
+            title="New Batch Available",
+            content=f"A new batch '{new_batch.name}' has been created and is now available for enrollment. Check the batches section to see if it matches your learning goals.",
+            db=db
+        )
+
     return new_batch
 
 
@@ -153,6 +169,68 @@ def resolve_update_batch(_, info, id, input):
     
     if "status" in input and input["status"]:
         batch_obj.status = map_batch_status(input["status"])
+        
+        # Send notifications based on status change
+        if batch_obj.status == BatchStatus.active:
+            # Notify enrolled students that batch is now active
+            enrollments = db.query(BatchEnrollment).filter(
+                BatchEnrollment.batch_id == batch_obj.id,
+                BatchEnrollment.status == EnrollmentStatus.enrolled,
+                BatchEnrollment.is_deleted == False
+            ).all()
+            
+            for enrollment in enrollments:
+                profile = db.query(StudentProfile).filter(
+                    StudentProfile.id == enrollment.profile_id,
+                    StudentProfile.is_deleted == False
+                ).first()
+                
+                send_notification(
+                    user_id=profile.user_id,
+                    title="Batch Now Active",
+                    content=f"Great news! Batch '{batch_obj.name}' is now active and classes have started. Make sure to attend your scheduled sessions and participate in the learning activities.",
+                    db=db
+                )
+        elif batch_obj.status == BatchStatus.completed:
+            # Notify enrolled students that batch is completed
+            enrollments = db.query(BatchEnrollment).filter(
+                BatchEnrollment.batch_id == batch_obj.id,
+                BatchEnrollment.status == EnrollmentStatus.enrolled,
+                BatchEnrollment.is_deleted == False
+            ).all()
+            
+            for enrollment in enrollments:
+                profile = db.query(StudentProfile).filter(
+                    StudentProfile.id == enrollment.profile_id,
+                    StudentProfile.is_deleted == False
+                ).first()
+                
+                send_notification(
+                    user_id=profile.user_id,
+                    title="Batch Completed",
+                    content=f"Congratulations! Batch '{batch_obj.name}' has been completed. Thank you for your participation. Check your progress and consider enrolling in another batch to continue your learning journey.",
+                    db=db
+                )
+        elif batch_obj.status == BatchStatus.cancelled:
+            # Notify enrolled students that batch is cancelled
+            enrollments = db.query(BatchEnrollment).filter(
+                BatchEnrollment.batch_id == batch_obj.id,
+                BatchEnrollment.status.in_([EnrollmentStatus.applied, EnrollmentStatus.enrolled]),
+                BatchEnrollment.is_deleted == False
+            ).all()
+            
+            for enrollment in enrollments:
+                profile = db.query(StudentProfile).filter(
+                    StudentProfile.id == enrollment.profile_id,
+                    StudentProfile.is_deleted == False
+                ).first()
+                
+                send_notification(
+                    user_id=profile.user_id,
+                    title="Batch Cancelled",
+                    content=f"We regret to inform you that batch '{batch_obj.name}' has been cancelled. We apologize for any inconvenience. Please contact support for assistance with alternative options or refunds if applicable.",
+                    db=db
+                )
 
     db.commit()
     db.refresh(batch_obj)

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..model.module_lessons import ModuleLessons
 from ..model.modules import Modules
 from ..model.user import User, UserRole
+from ..util.email_service import send_notification
 
 query = QueryType()
 mutation = MutationType()
@@ -139,9 +140,18 @@ def resolve_complete_lesson(_, info, id: str):
             )
             .first()
         )
-        next_module.is_locked = False
-        db.commit()
-        db.refresh(next_module)
+        if next_module:
+            next_module.is_locked = False
+            db.commit()
+            db.refresh(next_module)
+
+    # Send notification to student about lesson completion
+    send_notification(
+        user_id=profile.user_id,
+        title="Lesson Completed",
+        content=f"Congratulations! You have successfully completed lesson '{lesson.title}' in module '{module.name}'. Keep up the great work!",
+        db=db
+    )
 
     return lesson
 

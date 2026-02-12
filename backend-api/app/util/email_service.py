@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..config.settings import settings
 from ..model.user import User, UserRole
+from ..model.notification import Notification
 
 
 def send_verification_email(email: str, verification_code: str):
@@ -49,13 +50,33 @@ def send_verification_email(email: str, verification_code: str):
         return False
 
 
-def send_notification_email(email: str, title: str, content: str):
+def send_notification(user_id: str, title: str, content: str, db: Session):
     """Send notification email to user"""
+
+    # Check if user exists
+    target_user = db.query(User).filter(
+        User.id == user_id,
+        User.is_deleted == False
+    ).first()
+    
+    if not target_user:
+        raise Exception("User not found")
+    
+    notification_obj = Notification(
+        user_id=target_user.id,
+        title=title,
+        content=content
+    )
+    
+    db.add(notification_obj)
+    db.commit()
+    db.refresh(notification_obj)
+    
     try:
         # Create message
         msg = MIMEMultipart()
         msg["From"] = settings.email_from
-        msg["To"] = email
+        msg["To"] = target_user.email
         msg["Subject"] = f"Notification: {title}"
 
         # Email body
@@ -80,13 +101,12 @@ def send_notification_email(email: str, title: str, content: str):
 
         # Send email
         text = msg.as_string()
-        server.sendmail(settings.email_from, email, text)
+        server.sendmail(settings.email_from, target_user.email, text)
         server.quit()
-
-        return True
     except Exception as e:
         print(f"Failed to send notification email: {e}")
-        return False
+        
+    return notification_obj
 
 
 def send_feedback_email_to_admins(db: Session, feedback_obj):
