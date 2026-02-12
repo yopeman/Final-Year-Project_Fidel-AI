@@ -13,6 +13,7 @@ from ..model.user import User, UserRole
 from ..util.ai_service.false_install_learning_plan import install_learning_plan
 from ..util.ai_service.learning_plan import (generate_learning_plan,
                                              update_learning_plan)
+from ..util.email_service import send_notification
 
 query = QueryType()
 mutation = MutationType()
@@ -264,6 +265,14 @@ def resolve_generate_learning_plan(_, info):
     db.commit()
     db.refresh(profile)
 
+    # Send notification to student about learning plan generation
+    send_notification(
+        user_id=current_user.id,
+        title="Learning Plan Generated",
+        content="Your personalized learning plan has been successfully generated based on your profile and goals. Review it and let us know if you'd like any adjustments.",
+        db=db
+    )
+
     return profile
 
 
@@ -304,6 +313,14 @@ def resolve_update_learning_plan(_, info, input):
     profile.ai_learning_plan = update_learning_plan(profile, input["improvements"])
     db.commit()
     db.refresh(profile)
+
+    # Send notification to student about learning plan update
+    send_notification(
+        user_id=current_user.id,
+        title="Learning Plan Updated",
+        content="Your learning plan has been successfully updated based on your feedback. Review the changes and let us know if you need any further adjustments.",
+        db=db
+    )
 
     return profile
 
@@ -346,6 +363,14 @@ def resolve_install_learning_plan(_, info):
 
     if not install_learning_plan(profile, db):
         raise Exception("Error when installing the plan")
+
+    # Send notification to student about learning plan installation
+    send_notification(
+        user_id=current_user.id,
+        title="Learning Plan Installed",
+        content="Your personalized learning plan has been successfully installed! You can now start following your customized learning modules and track your progress.",
+        db=db
+    )
 
     return profile
 

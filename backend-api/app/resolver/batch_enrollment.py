@@ -12,6 +12,7 @@ from ..model.quiz_results import QuizResults
 from ..model.skill_result import SkillResult
 from ..model.payment import Payment
 from ..model.certificate import Certificate
+from ..util.email_service import send_notification
 
 
 query = QueryType()
@@ -130,6 +131,15 @@ def resolve_create_enrollment(_, info, batchId: str, studentId: Optional[str] = 
     db.add(new_enrollment)
     db.commit()
     db.refresh(new_enrollment)
+
+    # Send notification to the student about successful enrollment
+    send_notification(
+        user_id=profile.user_id,
+        title="Batch Enrollment Successful",
+        content=f"You have successfully enrolled in batch '{batch.name}'. Your enrollment is currently pending approval. You will be notified once your enrollment is confirmed.",
+        db=db
+    )
+
     return new_enrollment
 
 
@@ -204,6 +214,34 @@ def resolve_update_enrollment(_, info, id, input):
         # Set completion date if status is completed
         if enrollment.status == EnrollmentStatus.completed and not enrollment.completion_date:
             enrollment.completion_date = datetime.now().date()
+
+        # Send notification to student about status change
+        profile = db.query(StudentProfile).filter(
+            StudentProfile.id == enrollment.profile_id,
+            StudentProfile.is_deleted == False
+        ).first()
+        
+        if enrollment.status == EnrollmentStatus.enrolled:
+            send_notification(
+                user_id=profile.user_id,
+                title="Enrollment Confirmed",
+                content=f"Congratulations! Your enrollment in batch '{enrollment.batch.name}' has been confirmed. You are now officially enrolled and can start participating in the course.",
+                db=db
+            )
+        elif enrollment.status == EnrollmentStatus.completed:
+            send_notification(
+                user_id=profile.user_id,
+                title="Course Completed",
+                content=f"Congratulations! You have successfully completed batch '{enrollment.batch.name}'. Your dedication and hard work have paid off.",
+                db=db
+            )
+        elif enrollment.status == EnrollmentStatus.dropped:
+            send_notification(
+                user_id=profile.user_id,
+                title="Enrollment Dropped",
+                content=f"Your enrollment in batch '{enrollment.batch.name}' has been dropped. If this was not intentional, please contact support.",
+                db=db
+            )
 
     db.commit()
     db.refresh(enrollment)

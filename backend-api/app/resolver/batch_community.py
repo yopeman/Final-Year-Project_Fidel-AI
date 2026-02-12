@@ -10,6 +10,7 @@ from ..model.community_comment import CommunityComment
 from ..model.community_reactions import CommunityReactions
 from ..model.user import User
 from ..util.auth import get_current_user
+from ..util.email_service import send_notification
 
 query = QueryType()
 mutation = MutationType()
@@ -115,6 +116,34 @@ async def resolve_post_community(_, info, batchId: str, content: str):
     db.commit()
     db.refresh(new_community)
     
+    # Send notification to all batch members about new community post
+    from ..model.batch import Batch
+    from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
+    from ..model.student_profile import StudentProfile
+    
+    batch = db.query(Batch).filter(Batch.id == batchId, Batch.is_deleted == False).first()
+    if batch:
+        # Get all enrolled students in the batch
+        enrollments = db.query(BatchEnrollment).filter(
+            BatchEnrollment.batch_id == batchId,
+            BatchEnrollment.status == EnrollmentStatus.enrolled,
+            BatchEnrollment.is_deleted == False
+        ).all()
+        
+        for enrollment in enrollments:
+            profile = db.query(StudentProfile).filter(
+                StudentProfile.id == enrollment.profile_id,
+                StudentProfile.is_deleted == False
+            ).first()
+            
+            if profile and profile.user_id != current_user.id:  # Don't notify the author
+                send_notification(
+                    user_id=profile.user_id,
+                    title="New Community Post",
+                    content=f"{current_user.first_name} {current_user.last_name} has posted a new message in the '{batch.name}' community. Check it out and join the conversation!",
+                    db=db
+                )
+    
     # Trigger subscription update
     await info.context["pubsub"].publish(f"batch_{batchId}", {
         "communityUpdated": new_community
@@ -137,12 +166,41 @@ async def resolve_update_community(_, info, id: str, content: str):
     if community.user_id != current_user.id:
         raise Exception("Not authorized to update this community")
     
+    old_content = community.content
     community.content = content
     community.is_edited = True
     community.updated_at = datetime.utcnow()
     
     db.commit()
     db.refresh(community)
+    
+    # Send notification to all batch members about community post update
+    from ..model.batch import Batch
+    from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
+    from ..model.student_profile import StudentProfile
+    
+    batch = db.query(Batch).filter(Batch.id == community.batch_id, Batch.is_deleted == False).first()
+    if batch:
+        # Get all enrolled students in the batch
+        enrollments = db.query(BatchEnrollment).filter(
+            BatchEnrollment.batch_id == community.batch_id,
+            BatchEnrollment.status == EnrollmentStatus.enrolled,
+            BatchEnrollment.is_deleted == False
+        ).all()
+        
+        for enrollment in enrollments:
+            profile = db.query(StudentProfile).filter(
+                StudentProfile.id == enrollment.profile_id,
+                StudentProfile.is_deleted == False
+            ).first()
+            
+            if profile and profile.user_id != current_user.id:  # Don't notify the author
+                send_notification(
+                    user_id=profile.user_id,
+                    title="Community Post Updated",
+                    content=f"{current_user.first_name} {current_user.last_name} has updated their post in the '{batch.name}' community. Check it out to see the latest changes!",
+                    db=db
+                )
     
     # Trigger subscription update
     await info.context["pubsub"].publish(f"batch_{community.batch_id}", {
@@ -171,6 +229,34 @@ async def resolve_delete_community(_, info, id: str):
     
     db.commit()
     db.refresh(community)
+    
+    # Send notification to all batch members about community post deletion
+    from ..model.batch import Batch
+    from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
+    from ..model.student_profile import StudentProfile
+    
+    batch = db.query(Batch).filter(Batch.id == community.batch_id, Batch.is_deleted == False).first()
+    if batch:
+        # Get all enrolled students in the batch
+        enrollments = db.query(BatchEnrollment).filter(
+            BatchEnrollment.batch_id == community.batch_id,
+            BatchEnrollment.status == EnrollmentStatus.enrolled,
+            BatchEnrollment.is_deleted == False
+        ).all()
+        
+        for enrollment in enrollments:
+            profile = db.query(StudentProfile).filter(
+                StudentProfile.id == enrollment.profile_id,
+                StudentProfile.is_deleted == False
+            ).first()
+            
+            if profile and profile.user_id != current_user.id:  # Don't notify the author
+                send_notification(
+                    user_id=profile.user_id,
+                    title="Community Post Deleted",
+                    content=f"{current_user.first_name} {current_user.last_name} has deleted their post in the '{batch.name}' community.",
+                    db=db
+                )
     
     # Trigger subscription update
     await info.context["pubsub"].publish(f"batch_{community.batch_id}", {
