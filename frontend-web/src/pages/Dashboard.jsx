@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_CURRENT_USER, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
 import UpdateProfilePopup from '../components/UpdateProfilePopup';
+import NotificationBell from '../components/NotificationBell';
 
 const Dashboard = () => {
   const [timeRemaining, setTimeRemaining] = useState('');
@@ -103,7 +104,10 @@ const Dashboard = () => {
           className="bg-white rounded-xl shadow-lg overflow-hidden text-center"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-6 text-white">
+          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-6 text-white relative">
+            <div className="absolute top-4 right-4">
+              <NotificationBell userId={user?.id} />
+            </div>
             <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Clock className="w-8 h-8" />
             </div>

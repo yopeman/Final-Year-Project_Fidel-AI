@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { GET_CURRENT_USER, GET_USERS, UPDATE_USER_MUTATION, DELETE_USER_MUTATION, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
 import { GET_BATCHES } from '../graphql/batch';
+import NotificationBell from '../components/NotificationBell';
 import UpdateProfilePopup from '../components/UpdateProfilePopup';
 import EditUserPopup from '../components/EditUserPopup';
 import AdminOverview from '../components/AdminOverview';
@@ -223,6 +224,7 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <NotificationBell userId={user?.id} />
               <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
                 Administrator
               </span>
