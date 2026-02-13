@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { GET_CURRENT_USER, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
 import UpdateProfilePopup from '../components/UpdateProfilePopup';
+import NotificationBell from '../components/NotificationBell';
 
 const TutorDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -188,6 +189,7 @@ const TutorDashboard = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <NotificationBell userId={user?.id} />
               <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
                 Tutor
               </span>
