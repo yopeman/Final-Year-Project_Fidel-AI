@@ -80,6 +80,25 @@ export const ME_QUERY = gql`
             isDeleted
             deletedAt
           }
+          schedules {
+            id
+            scheduleId
+            batchCourseId
+            createdAt
+            updatedAt
+            isDeleted
+            deletedAt
+            schedule {
+              id
+              dayOfWeek
+              startTime
+              endTime
+              createdAt
+              updatedAt
+              isDeleted
+              deletedAt
+            }
+          }
         }
       }
     }

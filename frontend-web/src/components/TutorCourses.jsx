@@ -68,7 +68,8 @@ const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
         batchLevel: bc.batch?.level || 'Unknown',
         batchLanguage: bc.batch?.language || 'Unknown',
         startDate: bc.batch?.startDate,
-        endDate: bc.batch?.endDate
+        endDate: bc.batch?.endDate,
+        schedules: bc.schedules || []
       };
     });
   }, [meData, coursesData]);
@@ -115,6 +116,29 @@ const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
       case 'mp3': case 'wav': return <File className="w-4 h-4 text-green-600" />;
       default: return <File className="w-4 h-4 text-gray-600" />;
     }
+  };
+
+  const formatDayOfWeek = (day) => {
+    switch (day) {
+      case 'MONDAY': return 'Monday';
+      case 'TUESDAY': return 'Tuesday';
+      case 'WEDNESDAY': return 'Wednesday';
+      case 'THURSDAY': return 'Thursday';
+      case 'FRIDAY': return 'Friday';
+      case 'SATURDAY': return 'Saturday';
+      case 'SUNDAY': return 'Sunday';
+      default: return day;
+    }
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    // Convert time format if needed (assuming it's in HH:MM:SS format)
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour}:${minutes} ${ampm}`;
   };
 
   if (meLoading || coursesLoading) {
@@ -210,6 +234,15 @@ const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
                       <div className="flex items-center space-x-2">
                         <Calendar className="w-4 h-4 text-gray-500" />
                         <span>Ends: {new Date(course.endDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    
+                    {course.schedules && course.schedules.length > 0 && (
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-4 h-4 text-blue-600" />
+                        <span className="text-xs text-gray-600">
+                          {course.schedules.length} schedule{course.schedules.length > 1 ? 's' : ''}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -314,7 +347,7 @@ const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-3">Course Information</h4>
                 <div className="space-y-2 text-sm text-gray-600">
@@ -360,11 +393,93 @@ const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
                   </div>
                 </div>
               </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-3">Schedule Details</h4>
+                {selectedCourse.schedules && selectedCourse.schedules.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Total Sessions:</span>
+                      <span className="font-medium">{selectedCourse.schedules.length}</span>
+                    </div>
+                    <div className="space-y-1">
+                      {selectedCourse.schedules.slice(0, 3).map((courseSchedule) => (
+                        <div key={courseSchedule.id} className="text-xs text-gray-600">
+                          <div className="flex justify-between">
+                            <span>{courseSchedule.schedule?.dayOfWeek}</span>
+                            <span>{courseSchedule.schedule?.startTime} - {courseSchedule.schedule?.endTime}</span>
+                          </div>
+                        </div>
+                      ))}
+                      {selectedCourse.schedules.length > 3 && (
+                        <p className="text-xs text-gray-500 text-center pt-1">
+                          +{selectedCourse.schedules.length - 3} more sessions
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500 text-center py-2">No schedules yet</p>
+                )}
+              </div>
             </div>
 
             <div className="mb-6">
               <h4 className="font-medium text-gray-900 mb-3">Course Description</h4>
               <p className="text-gray-700">{selectedCourse.courseDescription}</p>
+            </div>
+
+            {/* Schedule Section */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-medium text-gray-900">Class Schedule</h4>
+                <span className="text-sm text-gray-500">
+                  {selectedCourse.schedules?.length || 0} scheduled sessions
+                </span>
+              </div>
+              
+              {selectedCourse.schedules && selectedCourse.schedules.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedCourse.schedules.map((courseSchedule) => (
+                    <div key={courseSchedule.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-medium text-gray-900">
+                          {formatDayOfWeek(courseSchedule.schedule?.dayOfWeek)}
+                        </h5>
+                        <div className="flex items-center space-x-2">
+                          <Clock className="w-4 h-4 text-blue-600" />
+                          <span className="text-xs text-gray-500">Session</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div className="flex justify-between">
+                          <span>Time:</span>
+                          <span className="font-medium">
+                            {formatTime(courseSchedule.schedule?.startTime)} - {formatTime(courseSchedule.schedule?.endTime)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Schedule ID:</span>
+                          <span className="font-mono text-xs">{courseSchedule.schedule?.id}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Course Schedule ID:</span>
+                          <span className="font-mono text-xs">{courseSchedule.id}</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs text-gray-500">
+                          Created: {new Date(courseSchedule.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
+                  No class schedules have been set for this course yet.
+                </div>
+              )}
             </div>
 
             {/* Materials Section */}
