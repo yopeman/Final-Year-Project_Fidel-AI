@@ -11,6 +11,7 @@ from ..model.schedule import Schedule
 from ..model.batch_course import BatchCourse
 from ..model.batch import Batch
 from ..model.user import User, UserRole
+from ..model.student_profile import StudentProfile
 from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
 from ..util.email_service import send_notification
 
@@ -64,8 +65,8 @@ def resolve_attendance(_, info, id: str):
     return attendance
 
 
-@mutation.field("getMeetingLink")
-def resolve_get_meeting_link(_, info, courseScheduleId: str):
+@mutation.field("getCourseMeetingLink")
+def resolve_get_course_meeting_link(_, info, courseScheduleId: str):
     db: Session = info.context["db"]
     current_user: User = info.context.get("current_user")
     
@@ -129,9 +130,13 @@ def resolve_get_meeting_link(_, info, courseScheduleId: str):
     time_diff_minutes = int((current_datetime - start_datetime).total_seconds() / 60)
     
     # Determine attendance status based on time
-    status = AttendanceStatus.absent
+    status = None
     meeting_link = None
+    attendance_record = None
     
+    # if -6 > time_diff_minutes:
+    #     raise Exception('Now too early for class')
+
     # Check if within class time (allowing 5 minutes before and 10 minutes after)
     if -5 <= time_diff_minutes <= 10:
         status = AttendanceStatus.present
@@ -142,70 +147,241 @@ def resolve_get_meeting_link(_, info, courseScheduleId: str):
         # Generate Jitsi Meet link for late students
         meeting_link = f"https://meet.jit.si/{batch.name.replace(' ', '-').lower()}-{batch.id}"
     # For absent students (time_diff_minutes > 20 or < -5), no meeting link is generated
+    elif 21 <= time_diff_minutes <= 60:
+        status = AttendanceStatus.absent
     
     # Create or update attendance record
-    attendance_record = db.query(Attendance).filter(
-        Attendance.course_schedule_id == courseScheduleId,
-        Attendance.user_id == current_user.id,
-        Attendance.is_deleted == False
+    if status:
+        attendance_record = db.query(Attendance).filter(
+            Attendance.course_schedule_id == courseScheduleId,
+            Attendance.user_id == current_user.id,
+            Attendance.is_deleted == False
+        ).first()
+        
+        if attendance_record:
+            # Update existing attendance
+            old_status = attendance_record.status
+            attendance_record.status = status
+            attendance_record.attendance_date = now.date()
+            attendance_record.updated_at = now
+        else:
+            # Create new attendance record
+            user_type = ModelUserType.student if current_user.role == "student" else ModelUserType.tutor
+            attendance_record = Attendance(
+                course_schedule_id=courseScheduleId,
+                user_id=current_user.id,
+                user_type=user_type,
+                status=status,
+                attendance_date=now.date()
+            )
+            db.add(attendance_record)
+            old_status = None
+        
+        db.commit()
+        db.refresh(attendance_record)
+        
+        # Send notification based on attendance status
+        if status == AttendanceStatus.present and old_status != AttendanceStatus.present:
+            send_notification(
+                user_id=current_user.id,
+                title="Attendance Recorded - Present",
+                content=f"You have been marked present for the {schedule.day_of_week.value} class at {start_time.strftime('%H:%M')}. Meeting link: {meeting_link}",
+                db=db
+            )
+        elif status == AttendanceStatus.late and old_status != AttendanceStatus.late:
+            send_notification(
+                user_id=current_user.id,
+                title="Attendance Recorded - Late",
+                content=f"You have been marked late for the {schedule.day_of_week.value} class at {start_time.strftime('%H:%M')}. Meeting link: {meeting_link}",
+                db=db
+            )
+        elif status == AttendanceStatus.absent and old_status != AttendanceStatus.absent:
+            send_notification(
+                user_id=current_user.id,
+                title="Attendance Recorded - Absent",
+                content=f"You have been marked absent for the {schedule.day_of_week.value} class at {start_time.strftime('%H:%M')}. Please contact your instructor if this is an error.",
+                db=db
+            )
+    
+    return {
+        "attendance": attendance_record,
+        "meetingLink": meeting_link,
+        "remainingTimeMinutes": time_diff_minutes
+    }
+
+
+@mutation.field("getBatchMeetingLink")
+def resolve_get_batch_meeting_link(_, info, batchId: str):
+    db: Session = info.context["db"]
+    current_user: User = info.context.get("current_user")
+    
+    if not current_user:
+        raise Exception("Authentication required")
+    
+    # Get the batch
+    batch = db.query(Batch).filter(
+        Batch.id == batchId,
+        Batch.is_deleted == False
     ).first()
     
-    if attendance_record:
-        # Update existing attendance
-        old_status = attendance_record.status
-        attendance_record.status = status
-        attendance_record.attendance_date = now.date()
-        attendance_record.updated_at = now
-    else:
-        # Create new attendance record
-        user_type = ModelUserType.student if current_user.role == "student" else ModelUserType.tutor
-        attendance_record = Attendance(
-            course_schedule_id=courseScheduleId,
-            user_id=current_user.id,
-            user_type=user_type,
-            status=status,
-            attendance_date=now.date()
-        )
-        db.add(attendance_record)
-        old_status = None
+    if not batch:
+        raise Exception("Batch not found")
     
-    db.commit()
-    db.refresh(attendance_record)
+    if current_user.role == UserRole.student:
+        profile = db.query(StudentProfile).filter(
+            StudentProfile.user_id == current_user.id,
+            StudentProfile.is_deleted == False
+        ).first()
+
+        if not profile:
+            raise Exception('Profile not found')
+
+        # Get current user's enrollment to check if they're enrolled in this batch
+        enrollment = db.query(BatchEnrollment).filter(
+            BatchEnrollment.batch_id == batch.id,
+            BatchEnrollment.profile_id == profile.id,
+            BatchEnrollment.is_deleted == False
+        ).first()
+        
+        if not enrollment or enrollment.status != EnrollmentStatus.enrolled:
+            raise Exception('You are not enrolled in this batch or enrollment is not paid')
     
-    # Send notification based on attendance status
-    if status == AttendanceStatus.present and old_status != AttendanceStatus.present:
-        send_notification(
-            user_id=current_user.id,
-            title="Attendance Recorded - Present",
-            content=f"You have been marked present for the {schedule.day_of_week.value} class at {start_time.strftime('%H:%M')}. Meeting link: {meeting_link}",
-            db=db
-        )
-    elif status == AttendanceStatus.late and old_status != AttendanceStatus.late:
-        send_notification(
-            user_id=current_user.id,
-            title="Attendance Recorded - Late",
-            content=f"You have been marked late for the {schedule.day_of_week.value} class at {start_time.strftime('%H:%M')}. Meeting link: {meeting_link}",
-            db=db
-        )
-    elif status == AttendanceStatus.absent and old_status != AttendanceStatus.absent:
-        send_notification(
-            user_id=current_user.id,
-            title="Attendance Recorded - Absent",
-            content=f"You have been marked absent for the {schedule.day_of_week.value} class at {start_time.strftime('%H:%M')}. Please contact your instructor if this is an error.",
-            db=db
-        )
+    # Get all course schedules for this batch
+    course_schedules = db.query(CourseSchedule).join(BatchCourse).filter(
+        BatchCourse.batch_id == batchId,
+        CourseSchedule.is_deleted == False,
+        BatchCourse.is_deleted == False
+    ).all()
     
-    # Only return meeting link if student is present or late
-    if status in [AttendanceStatus.present, AttendanceStatus.late] and meeting_link:
-        return {
-            "attendance": attendance_record,
-            "meetingLink": meeting_link
-        }
-    else:
-        return {
-            "attendance": attendance_record,
-            "meetingLink": None
-        }
+    if not course_schedules:
+        raise Exception("No course schedules found for this batch")
+    
+    # Get current time to determine which class is active
+    now = datetime.now()
+    current_time = now.time()
+    current_day = now.strftime('%A').upper()
+    
+    # Find the active course schedule for today
+    active_schedule = None
+    active_course_schedule = None
+    
+    for cs in course_schedules:
+        schedule = db.query(Schedule).filter(
+            Schedule.id == cs.schedule_id,
+            # Schedule.is_deleted == False
+        ).first()
+        
+        if schedule and schedule.day_of_week.value.upper() == current_day:
+            start_time = schedule.start_time
+            end_time = schedule.end_time
+            
+            # Check if current time is within class time (allowing 5 minutes before and 10 minutes after)
+            current_datetime = datetime.combine(now.date(), current_time)
+            start_datetime = datetime.combine(now.date(), start_time)
+            end_datetime = datetime.combine(now.date(), end_time)
+
+            active_schedule = schedule
+            active_course_schedule = cs
+
+            print('\n'*10,
+                  {
+                      'staring': start_datetime - timedelta(minutes=5),
+                      'current': current_datetime,
+                      'ending': end_datetime
+                  }
+            ,'\n'*10)
+            
+            # if (start_datetime - timedelta(minutes=5)) <= current_datetime <= (end_datetime + timedelta(minutes=10)):
+            #     active_schedule = schedule
+            #     active_course_schedule = cs
+            #     break
+    
+    if not active_schedule:
+        raise Exception("No active class found for today")
+    
+    # Calculate time difference from start time
+    start_datetime = datetime.combine(now.date(), active_schedule.start_time)
+    time_diff_minutes = int((now - start_datetime).total_seconds() / 60)
+    
+    # Determine attendance status based on time
+    status = None
+    meeting_link = None
+    attendance_record = None
+    
+    # if -6 > time_diff_minutes:
+    #     raise Exception('Now too early for class')
+
+    # Check if within class time (allowing 5 minutes before and 10 minutes after)
+    if -5 <= time_diff_minutes <= 10:
+        status = AttendanceStatus.present
+        # Generate Jitsi Meet link using batch name/ID
+        meeting_link = f"https://meet.jit.si/{batch.name.replace(' ', '-').lower()}-{batch.id}"
+    elif 11 <= time_diff_minutes <= 20:
+        status = AttendanceStatus.late
+        # Generate Jitsi Meet link for late students
+        meeting_link = f"https://meet.jit.si/{batch.name.replace(' ', '-').lower()}-{batch.id}"
+    # For absent students (time_diff_minutes > 20 or < -5), no meeting link is generated
+    elif 21 <= time_diff_minutes <= 60:
+        status = AttendanceStatus.absent
+    
+    # Create or update attendance record
+    if status:
+        attendance_record = db.query(Attendance).filter(
+            Attendance.course_schedule_id == active_course_schedule.id,
+            Attendance.user_id == current_user.id,
+            Attendance.is_deleted == False
+        ).first()
+        
+        if attendance_record:
+            # Update existing attendance
+            old_status = attendance_record.status
+            attendance_record.status = status
+            attendance_record.attendance_date = now.date()
+            attendance_record.updated_at = now
+        else:
+            # Create new attendance record
+            user_type = ModelUserType.student if current_user.role == "student" else ModelUserType.tutor
+            attendance_record = Attendance(
+                course_schedule_id=active_course_schedule.id,
+                user_id=current_user.id,
+                user_type=user_type,
+                status=status,
+                attendance_date=now.date()
+            )
+            db.add(attendance_record)
+            old_status = None
+        
+        db.commit()
+        db.refresh(attendance_record)
+        
+        # Send notification based on attendance status
+        if status == AttendanceStatus.present and old_status != AttendanceStatus.present:
+            send_notification(
+                user_id=current_user.id,
+                title="Attendance Recorded - Present",
+                content=f"You have been marked present for the {active_schedule.day_of_week.value} class at {active_schedule.start_time.strftime('%H:%M')}. Meeting link: {meeting_link}",
+                db=db
+            )
+        elif status == AttendanceStatus.late and old_status != AttendanceStatus.late:
+            send_notification(
+                user_id=current_user.id,
+                title="Attendance Recorded - Late",
+                content=f"You have been marked late for the {active_schedule.day_of_week.value} class at {active_schedule.start_time.strftime('%H:%M')}. Meeting link: {meeting_link}",
+                db=db
+            )
+        elif status == AttendanceStatus.absent and old_status != AttendanceStatus.absent:
+            send_notification(
+                user_id=current_user.id,
+                title="Attendance Recorded - Absent",
+                content=f"You have been marked absent for the {active_schedule.day_of_week.value} class at {active_schedule.start_time.strftime('%H:%M')}. Please contact your instructor if this is an error.",
+                db=db
+            )
+            
+    return {
+        "attendance": attendance_record,
+        "meetingLink": meeting_link,
+        "remainingTimeMinutes": time_diff_minutes
+    }
 
 
 @mutation.field("deleteAttendance")

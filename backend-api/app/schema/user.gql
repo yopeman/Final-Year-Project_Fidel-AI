@@ -81,6 +81,7 @@ type User {
   # Relationships
   profile: StudentProfile
   batchInstructors: [BatchInstructor!]!
+  batchEnrollments: [BatchEnrollment!]!
   batchCommunities: [BatchCommunity!]!
   communityReactions: [CommunityReactions!]!
   communityComments: [CommunityComment!]!
