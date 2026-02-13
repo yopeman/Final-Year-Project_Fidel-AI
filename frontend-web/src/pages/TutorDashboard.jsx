@@ -22,6 +22,7 @@ import {
 import { GET_CURRENT_USER, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
 import UpdateProfilePopup from '../components/UpdateProfilePopup';
 import NotificationBell from '../components/NotificationBell';
+import TutorCourses from '../components/TutorCourses';
 
 const TutorDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -215,9 +216,8 @@ const TutorDashboard = () => {
             <nav className="-mb-px flex space-x-8 px-6">
               {[
                 { id: 'overview', name: 'Overview', icon: GraduationCap },
-                { id: 'students', name: 'Students', icon: Users },
-                { id: 'schedule', name: 'Schedule', icon: Calendar },
-                { id: 'materials', name: 'Materials', icon: BookOpen }
+                { id: 'courses', name: 'Courses', icon: BookOpen },
+                { id: 'schedule', name: 'Schedule', icon: Calendar }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -237,6 +237,10 @@ const TutorDashboard = () => {
 
           {/* Tab Content */}
           <div className="p-6">
+            {activeTab === 'courses' && (
+              <TutorCourses />
+            )}
+
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 {/* Profile Section */}
@@ -343,87 +347,6 @@ const TutorDashboard = () => {
               </div>
             )}
 
-            {activeTab === 'students' && (
-              <div className="space-y-6">
-                {/* Search and Filter */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Search students..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-
-                {/* Students List */}
-                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900">Students ({filteredStudents.length})</h3>
-                  </div>
-                  <div className="divide-y divide-gray-200">
-                    {filteredStudents.map((student) => (
-                      <div key={student.id} className="p-6 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3">
-                              <h4 className="text-lg font-medium text-gray-900">{student.name}</h4>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                student.status === 'active' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {student.status}
-                              </span>
-                            </div>
-                            <p className="text-gray-600 mt-1">{student.email}</p>
-                            <div className="flex items-center space-x-4 mt-2">
-                              <span className="text-sm text-gray-500">Level: {student.level}</span>
-                              <div className="flex-1 max-w-xs">
-                                <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
-                                  <span>Progress</span>
-                                  <span>{student.progress}%</span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                  <div 
-                                    className="bg-indigo-600 h-2 rounded-full" 
-                                    style={{ width: `${student.progress}%` }}
-                                  ></div>
-                                </div>
-                              </div>
-                              <span className="text-sm text-gray-500">Last active: {student.lastActive}</span>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button className="flex items-center space-x-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200">
-                              <Eye className="w-4 h-4" />
-                              <span>View</span>
-                            </button>
-                            <button className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-                              <Edit className="w-4 h-4" />
-                              <span>Edit</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
             {activeTab === 'schedule' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
@@ -469,67 +392,6 @@ const TutorDashboard = () => {
               </div>
             )}
 
-            {activeTab === 'materials' && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium text-gray-900">Learning Materials</h3>
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                    <Plus className="w-4 h-4" />
-                    <span>Add Material</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-medium text-gray-900">Conversation Practice</h4>
-                      <span className="text-sm text-gray-500">PDF</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-4">Practice conversations for everyday situations</p>
-                    <div className="flex space-x-2">
-                      <button className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700">
-                        Download
-                      </button>
-                      <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                        Edit
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-medium text-gray-900">Grammar Exercises</h4>
-                      <span className="text-sm text-gray-500">Worksheet</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-4">Comprehensive grammar exercises with answers</p>
-                    <div className="flex space-x-2">
-                      <button className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700">
-                        Download
-                      </button>
-                      <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                        Edit
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-medium text-gray-900">Vocabulary Builder</h4>
-                      <span className="text-sm text-gray-500">Interactive</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-4">Interactive vocabulary exercises</p>
-                    <div className="flex space-x-2">
-                      <button className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700">
-                        Open
-                      </button>
-                      <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-                        Edit
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
