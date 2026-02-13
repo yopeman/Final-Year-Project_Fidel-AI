@@ -12,6 +12,7 @@ from ..config.settings import settings
 from ..model.attendance import Attendance
 from ..model.batch_community import BatchCommunity
 from ..model.batch_instructor import BatchInstructor
+from ..model.batch_enrollment import BatchEnrollment
 from ..model.comment_reactions import CommentReactions
 from ..model.community_comment import CommunityComment
 from ..model.community_reactions import CommunityReactions
@@ -490,6 +491,16 @@ def resolve_batch_instructors(user_obj, info):
         db.query(BatchInstructor).filter(BatchInstructor.user_id == user_obj.id).all()
     )
     return batch_instructors
+
+
+@user.field("batchEnrollments")
+def resolve_batch_instructors(user_obj, info):
+    db: Session = info.context["db"]
+    profile = db.query(StudentProfile).filter(StudentProfile.user_id == user_obj.id).first()
+    batch_enrollments = (
+        db.query(BatchEnrollment).filter(BatchEnrollment.profile_id == profile.id).all()
+    )
+    return batch_enrollments
 
 
 @user.field("batchCommunities")
