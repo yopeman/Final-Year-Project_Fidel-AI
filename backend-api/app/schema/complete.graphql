@@ -135,8 +135,9 @@ type Attendance {
 }
 
 type MeetingLinkResponse {
-  attendance: Attendance!
+  attendance: Attendance
   meetingLink: String
+  remainingTimeMinutes: String
 }
 
 extend type Query {
@@ -145,7 +146,8 @@ extend type Query {
 }
 
 extend type Mutation {
-  getMeetingLink(courseScheduleId: ID!): MeetingLinkResponse!
+  getCourseMeetingLink(courseScheduleId: ID!): MeetingLinkResponse!
+  getBatchMeetingLink(batchId: ID!): MeetingLinkResponse!
   deleteAttendance(id: ID!): Boolean!
 }
 
