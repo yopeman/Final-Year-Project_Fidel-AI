@@ -6,9 +6,9 @@ export default function Index() {
 
     if (isLoading) return null;
 
-    if (!isAuthenticated) return <Redirect href="/(auth)/Welcome" />;
-    if (!hasProfile) return <Redirect href="/(onboarding)/CreateProfile" />;
-    if (!hasPlan) return <Redirect href="/(onboarding)/GeneratePlan" />;
+    // if (!isAuthenticated) return <Redirect href="/(auth)/Welcome" />;
+    // if (!hasProfile) return <Redirect href="/(onboarding)/CreateProfile" />;
+    // if (!hasPlan) return <Redirect href="/(onboarding)/GeneratePlan" />;
 
     return <Redirect href="/(tabs)/Home" />;
 }
