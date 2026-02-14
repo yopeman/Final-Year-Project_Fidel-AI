@@ -21,7 +21,7 @@ export default function Layout() {
 
         if (!isAuthenticated) {
             // Not Logged In → Welcome
-            if (!inAuthGroup || segments[1] !== 'Welcome') {
+            if (!inAuthGroup) {
                 router.replace('/(auth)/Welcome');
             }
         } else if (!hasProfile) {
