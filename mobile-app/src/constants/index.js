@@ -1,34 +1,32 @@
 export const API_BASE_URL = 'https://brittny-reprehensible-joel.ngrok-free.dev/graphql'; // Update with your actual API URL
 
 export const COLORS = {
-    // Primary Colors
-    primary: '#4F46E5', // Indigo
-    primaryDark: '#4338CA',
-    primaryLight: '#818CF8',
-
-    // Secondary Colors
-    secondary: '#F59E0B', // Amber
-    secondaryDark: '#D97706',
-    secondaryLight: '#FCD34D',
-
+    // Primary Colors - Updated for new Gold Theme
+    primary: '#F59E0B', // Golden Yellow from design
+    primaryDark: '#D97706',
+    secondary: '#111827', // Dark Blue/Black for Backgrounds
     // UI Colors
-    background: '#F9FAFB',
+    background: '#FFFFFF', // Light background for Auth
+    darkBackground: '#111827', // Dark background for Course Selection
     surface: '#FFFFFF',
+    surfaceDark: '#1F2937', // Dark card background
     text: '#111827',
+    textLight: '#F3F4F6', // Text on dark background
     textSecondary: '#6B7280',
     border: '#E5E7EB',
+    borderDark: '#374151',
 
     // Status Colors
-    success: '#10B981',
+    success: '#10B981', // Green for checkmarks
     error: '#EF4444',
     warning: '#F59E0B',
     info: '#3B82F6',
 
     // Learning Progress Colors
     locked: '#9CA3AF',
-    unlocked: '#4F46E5',
+    unlocked: '#F59E0B',
     completed: '#10B981',
-    inProgress: '#F59E0B',
+    inProgress: '#3B82F6',
 };
 
 export const FONTS = {
@@ -61,4 +59,26 @@ export const BORDER_RADIUS = {
     lg: 12,
     xl: 16,
     full: 9999,
+};
+
+export const AGE_RANGES = {
+    UNDER_18: 'Under 18',
+    _18_25: '18 - 25',
+    _26_35: '26 - 35',
+    _36_45: '36 - 45',
+    _45_PLUS: '45+',
+};
+
+export const PROFICIENCY_LEVELS = {
+    BEGINNER: 'Beginner',
+    BASIC: 'Basic',
+    INTERMEDIATE: 'Intermediate',
+    ADVANCED: 'Advanced',
+};
+
+export const DURATION_UNITS = {
+    DAYS: 'Days',
+    WEEKS: 'Weeks',
+    MONTHS: 'Months',
+    YEARS: 'Years',
 };

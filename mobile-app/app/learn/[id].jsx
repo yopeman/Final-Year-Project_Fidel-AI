@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, SafeAreaView, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, SafeAreaView, TextInput, Image, Linking, Modal } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useLearningStore } from '../../src/stores/learningStore';
 import { useChatStore } from '../../src/stores/chatStore';
@@ -11,6 +12,21 @@ export default function LessonScreen() {
     const router = useRouter();
     const { currentLesson, getLesson, completeLesson, isLoading } = useLearningStore();
     const [activeTab, setActiveTab] = useState('vocab');
+    const [selectedVideo, setSelectedVideo] = useState(null);
+
+    // Helper to extract YouTube ID and return embed URL
+    const getEmbedUrl = (url) => {
+        if (!url) return null;
+        let videoId = '';
+        if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1].split('?')[0];
+        } else if (url.includes('watch?v=')) {
+            videoId = url.split('watch?v=')[1].split('&')[0];
+        } else if (url.includes('youtube.com/embed/')) {
+            return url;
+        }
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    };
 
     // AI Chat State
     const [chatMessages, setChatMessages] = useState([]);
@@ -85,18 +101,88 @@ export default function LessonScreen() {
                         <Text style={styles.articleText}>
                             {currentLesson.content || "Lesson content goes here. This would be a rich text article explaining the concepts."}
                         </Text>
+
+                        {currentLesson.articles?.length > 0 && (
+                            <View style={styles.relatedArticles}>
+                                <Text style={styles.sectionHeaderSmall}>Related Articles</Text>
+                                {currentLesson.articles.map((article, index) => (
+                                    <TouchableOpacity
+                                        key={article.id || index}
+                                        style={styles.articleLink}
+                                        onPress={() => Linking.openURL(article.url)}
+                                    >
+                                        <Ionicons name="link" size={16} color="#FFD700" />
+                                        <Text style={styles.articleLinkText}>{article.title}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
                     </ScrollView>
                 );
             case 'video':
                 return (
-                    <View style={styles.tabContent}>
-                        <View style={styles.videoPlaceholder}>
-                            <Ionicons name="play-circle" size={64} color="#ccc" />
-                            <Text style={styles.videoText}>Video Player would go here</Text>
-                            {/* <WebView source={{ uri: currentLesson.videoUrl }} /> */}
-                        </View>
-                        <Text style={styles.videoTitle}>{currentLesson.title} - Video Lesson</Text>
-                    </View>
+                    <ScrollView style={styles.tabContent}>
+                        <Text style={styles.sectionHeader}>Related Videos</Text>
+                        {currentLesson.videos?.length > 0 ? (
+                            currentLesson.videos.map((video, index) => (
+                                <View key={video.id || index} style={styles.videoCard}>
+                                    <TouchableOpacity
+                                        style={styles.thumbnailContainer}
+                                        onPress={() => setSelectedVideo(video)}
+                                    >
+                                        {video.thumbnailUrl ? (
+                                            <Image source={{ uri: video.thumbnailUrl }} style={styles.videoThumbnail} />
+                                        ) : (
+                                            <View style={styles.videoPlaceholderSmall}>
+                                                <Ionicons name="play-circle" size={40} color="#ccc" />
+                                            </View>
+                                        )}
+                                        <View style={styles.playOverlay}>
+                                            <Ionicons name="play" size={30} color="#fff" />
+                                        </View>
+                                    </TouchableOpacity>
+                                    <View style={styles.videoInfo}>
+                                        <Text style={styles.videoTitle}>{video.title}</Text>
+                                        <Text style={styles.videoDescription} numberOfLines={2}>{video.description}</Text>
+                                        <TouchableOpacity
+                                            style={styles.watchButton}
+                                            onPress={() => setSelectedVideo(video)}
+                                        >
+                                            <Text style={styles.watchButtonText}>Watch Now</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            ))
+                        ) : (
+                            <View style={styles.emptyState}>
+                                <Ionicons name="videocam-outline" size={64} color="#ccc" />
+                                <Text style={styles.emptyText}>No videos available for this lesson.</Text>
+                            </View>
+                        )}
+
+                        {/* Video Modal */}
+                        <Modal
+                            visible={!!selectedVideo}
+                            animationType="slide"
+                            transparent={false}
+                            onRequestClose={() => setSelectedVideo(null)}
+                        >
+                            <SafeAreaView style={styles.modalContainer}>
+                                <View style={styles.modalHeader}>
+                                    <TouchableOpacity onPress={() => setSelectedVideo(null)} style={styles.closeButton}>
+                                        <Ionicons name="close" size={28} color="#fff" />
+                                    </TouchableOpacity>
+                                    <Text style={styles.modalTitle} numberOfLines={1}>{selectedVideo?.title}</Text>
+                                </View>
+                                <WebView
+                                    style={styles.webview}
+                                    javaScriptEnabled={true}
+                                    domStorageEnabled={true}
+                                    source={{ uri: getEmbedUrl(selectedVideo?.url || selectedVideo?.videoUrl) }}
+                                />
+                            </SafeAreaView>
+                        </Modal>
+                    </ScrollView>
                 );
             case 'ai':
                 return (
@@ -286,22 +372,118 @@ const styles = StyleSheet.create({
         lineHeight: 26,
         color: '#444',
     },
-    videoPlaceholder: {
+    videoCard: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        marginBottom: 15,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
+    },
+    videoThumbnail: {
         width: '100%',
-        height: 200,
+        height: 180,
+    },
+    videoPlaceholderSmall: {
+        width: '100%',
+        height: 180,
         backgroundColor: '#eee',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 10,
-        marginBottom: 15,
     },
-    videoText: {
-        color: '#888',
-        marginTop: 10,
+    videoInfo: {
+        padding: 12,
     },
     videoTitle: {
-        fontSize: 18,
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 4,
+    },
+    videoDescription: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 10,
+    },
+    watchButton: {
+        backgroundColor: '#000',
+        paddingVertical: 8,
+        paddingHorizontal: 15,
+        borderRadius: 20,
+        alignSelf: 'flex-start',
+    },
+    watchButtonText: {
+        color: '#FFD700',
+        fontSize: 14,
         fontWeight: '600',
+    },
+    relatedArticles: {
+        marginTop: 20,
+        paddingTop: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#f0f0f0',
+    },
+    sectionHeaderSmall: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 10,
+    },
+    articleLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingVertical: 8,
+    },
+    articleLinkText: {
+        fontSize: 14,
+        color: '#333',
+        textDecorationLine: 'underline',
+    },
+    emptyState: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 50,
+    },
+    thumbnailContainer: {
+        position: 'relative',
+    },
+    playOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 15,
+        backgroundColor: '#000',
+    },
+    closeButton: {
+        marginRight: 15,
+    },
+    modalTitle: {
+        flex: 1,
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    webview: {
+        flex: 1,
+    },
+    emptyText: {
+        color: '#888',
+        marginTop: 10,
+        fontSize: 16,
     },
     chatContainer: {
         flex: 1,
