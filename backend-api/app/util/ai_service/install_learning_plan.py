@@ -315,7 +315,7 @@ def _generate_content(
     )
 
     response: str = (
-        ChatOllama(model="gemma3:4b").invoke([HumanMessage(content=prompts)]).content
+        ChatOllama(model="smollm2:135m").invoke([HumanMessage(content=prompts)]).content
     )
 
     return response

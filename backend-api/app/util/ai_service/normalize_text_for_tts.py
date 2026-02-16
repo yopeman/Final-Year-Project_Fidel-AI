@@ -8,7 +8,7 @@ def normalize_text_for_tts(text: str) -> str:
     into clean, natural, spoken text for TTS systems.
     """
 
-    llm = ChatOllama(model="gemma3:4b")
+    llm = ChatOllama(model="smollm2:135m")
 
     prompt = ChatPromptTemplate.from_messages(
         [

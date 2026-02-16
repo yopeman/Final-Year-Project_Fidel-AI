@@ -7,11 +7,12 @@ from broadcaster import Broadcast
 from fastapi import FastAPI, Request, Depends, WebSocket, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 from typing import List
 from .model.material_files import MaterialFiles
 
 from . import model  # Import all models to register them with SQLAlchemy
-from .config.database import create_table, get_db
+from .config.database import create_table, get_db, SessionLocal
 from .resolver.attendance import attendance, mutation as a_mutation, query as a_query
 from .resolver.batch import batch, mutation as b_mutation, query as b_query
 from .resolver.batch_course import batch_course, mutation as bc_mutation, query as bc_query
@@ -74,6 +75,21 @@ app = FastAPI(
     debug=True
 )
 
+# Database session middleware to ensure proper session cleanup
+class DBSessionMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        db = SessionLocal()
+        request.state.db = db
+        try:
+            response = await call_next(request)
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+        return response
+
 # Add CORS middleware to allow all origins
 app.add_middleware(
     CORSMiddleware,
@@ -82,6 +98,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add DB session middleware (processed after CORS)
+app.add_middleware(DBSessionMiddleware)
 
 create_table()
 create_default_admin()
@@ -198,11 +217,8 @@ os.makedirs("static", exist_ok=True)
 
 
 def get_context_value(request: Request):
-    print(
-        request._body
-    )
-
-    db = next(get_db())
+    # Use the session from middleware (properly managed lifecycle)
+    db = request.state.db
     context = {"db": db, "pubsub": broadcast}
     context["base_url"] = request.base_url
     auth_header = request.headers.get("authorization")
@@ -247,11 +263,11 @@ def payment_webhook(status: str = None, trx_ref: str = None, db = Depends(get_db
     p_webhook(status=status, trx_ref=trx_ref, db=db)
 
 @app.post("/api/upload/material/{materialId}/files", response_model=None)
-async def upload_course_material(materialId: str, files: List[UploadFile]):
-    context = {"db": next(get_db()), "pubsub": broadcast}
+async def upload_course_material(materialId: str, files: List[UploadFile], request: Request):
+    context = {"db": request.state.db, "pubsub": broadcast}
     return await upload_mf(context, materialId, files)
 
 @app.post("/api/upload/community/{communityId}/files", response_model=None)
-async def upload_community_attachments(communityId: str, files: List[UploadFile]):
-    context = {"db": next(get_db()), "pubsub": broadcast}
+async def upload_community_attachments(communityId: str, files: List[UploadFile], request: Request):
+    context = {"db": request.state.db, "pubsub": broadcast}
     return await upload_ca(context, communityId, files)
