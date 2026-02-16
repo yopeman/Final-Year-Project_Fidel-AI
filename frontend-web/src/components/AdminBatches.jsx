@@ -495,13 +495,18 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
         variables: { batchId: batchId }
       });
       
-      // Filter attendance data by the selected date
-      const filteredAttendance = data.attendances.filter(attendance => {
-        const attendanceDate = new Date(attendance.attendanceDate).toISOString().split('T')[0];
-        console.log("Attendance Date:", attendanceDate);
-        console.log("Selecte Date:", date);
-        return attendanceDate === date;
-      });
+      // Show all students by default, filter by date only after a specific date is selected
+      let filteredAttendance = data.attendances;
+      
+      // Only filter by date if a specific date is selected (not the default current date)
+      if (date && date !== new Date().toISOString().split('T')[0]) {
+        filteredAttendance = data.attendances.filter(attendance => {
+          const attendanceDate = new Date(attendance.attendanceDate).toISOString().split('T')[0];
+          console.log("Attendance Date:", attendanceDate);
+          console.log("Selected Date:", date);
+          return attendanceDate === date;
+        });
+      }
       
       setAttendanceData(filteredAttendance);
     } catch (err) {
@@ -1210,6 +1215,7 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
           onMarkAbsent={handleMarkAbsent}
           onMarkLate={handleMarkLate}
           isFetching={isFetchingAttendance}
+          onOpen={() => handleFetchAttendance(selectedBatchForAttendance.id, selectedDate)}
         />
       )}
     </div>
@@ -2708,8 +2714,15 @@ const AttendanceModal = ({
   onMarkPresent, 
   onMarkAbsent, 
   onMarkLate, 
-  isFetching 
+  isFetching,
+  onOpen
 }) => {
+  useEffect(() => {
+    if (isOpen && onOpen) {
+      onOpen();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
