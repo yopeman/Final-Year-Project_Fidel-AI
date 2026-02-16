@@ -150,8 +150,8 @@ def resolve_update_enrollment(_, info, id, input):
         raise Exception("Not authenticated")
 
     # Check if user has admin role for status updates
-    if "status" in input and current_user.role.value != "admin":
-        raise Exception("Unauthorized: Admin access required to update enrollment status")
+    if "status" in input and current_user.role.value.lower() not in ["admin", "tutor"]:
+        raise Exception("Unauthorized: Admin and Tutor access required to update enrollment status")
 
     db: Session = info.context["db"]
     enrollment = db.query(BatchEnrollment).filter(
