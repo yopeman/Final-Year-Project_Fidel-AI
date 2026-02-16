@@ -23,6 +23,7 @@ import { GET_CURRENT_USER, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../gra
 import UpdateProfilePopup from '../components/UpdateProfilePopup';
 import NotificationBell from '../components/NotificationBell';
 import TutorCourses from '../components/TutorCourses';
+import TutorBatches from '../components/TutorBatches';
 
 const TutorDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -216,7 +217,8 @@ const TutorDashboard = () => {
             <nav className="-mb-px flex space-x-8 px-6">
               {[
                 { id: 'overview', name: 'Overview', icon: GraduationCap },
-                { id: 'courses', name: 'Courses', icon: BookOpen }
+                { id: 'courses', name: 'Courses', icon: BookOpen },
+                { id: 'batches', name: 'Batches', icon: Users }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -238,6 +240,10 @@ const TutorDashboard = () => {
           <div className="p-6">
             {activeTab === 'courses' && (
               <TutorCourses />
+            )}
+
+            {activeTab === 'batches' && (
+              <TutorBatches />
             )}
 
             {activeTab === 'overview' && (
