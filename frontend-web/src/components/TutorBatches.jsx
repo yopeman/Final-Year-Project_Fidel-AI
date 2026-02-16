@@ -35,9 +35,10 @@ import {
   Check,
   X as XIcon,
   Clock as ClockIcon,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Calendar as CalendarLucide
 } from 'lucide-react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useQuery, useMutation, useApolloClient } from '@apollo/client';
 import { GET_TUTOR_BATCHES, GET_BATCH_ENROLLMENTS, GET_BATCH_ATTENDANCE, UPDATE_ENROLLMENT_STATUS, GET_BATCH_MEETING_LINK } from '../graphql/tutorBatch';
 
 const TutorBatches = () => {
@@ -49,6 +50,14 @@ const TutorBatches = () => {
   const [selectedEnrollment, setSelectedEnrollment] = useState(null);
   const [enrollmentAction, setEnrollmentAction] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Attendance state
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [selectedBatchForAttendance, setSelectedBatchForAttendance] = useState(null);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isFetchingAttendance, setIsFetchingAttendance] = useState(false);
+  const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
 
   // Get tutor's associated batches using the ME query
   const { data: meData, loading: meLoading } = useQuery(GET_TUTOR_BATCHES);
@@ -63,7 +72,7 @@ const TutorBatches = () => {
   );
 
   // Get attendance data for the selected batch
-  const { data: attendanceData, loading: attendanceLoading, refetch: refetchAttendance } = useQuery(
+  const { data: batchAttendanceData, loading: attendanceLoading, refetch: refetchAttendance } = useQuery(
     GET_BATCH_ATTENDANCE,
     {
       variables: { batchId: selectedBatch?.id },
@@ -240,6 +249,66 @@ const TutorBatches = () => {
 
     stats.attendanceRate = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
     return stats;
+  };
+
+  // Attendance Functions
+  const handleFetchAttendance = async (batchId, date) => {
+    setIsFetchingAttendance(true);
+    try {
+      // Use the batchAttendanceData from the GraphQL query
+      let filteredAttendance = batchAttendanceData?.attendances || [];
+      
+      // Only filter by date if a specific date is selected (not the default current date)
+      if (date && date !== new Date().toISOString().split('T')[0]) {
+        filteredAttendance = filteredAttendance.filter(attendance => {
+          const attendanceDate = new Date(attendance.attendanceDate).toISOString().split('T')[0];
+          return attendanceDate === date;
+        });
+      }
+      
+      setAttendanceData(filteredAttendance);
+    } catch (err) {
+      console.error('Error fetching attendance:', err);
+      setAttendanceData([]);
+    } finally {
+      setIsFetchingAttendance(false);
+    }
+  };
+
+  const handleMarkAttendance = async (studentId, status) => {
+    setIsMarkingAttendance(true);
+    try {
+      // Find the student in the current attendance data
+      const studentIndex = attendanceData.findIndex(s => s.id === studentId);
+      if (studentIndex !== -1) {
+        const updatedAttendance = [...attendanceData];
+        updatedAttendance[studentIndex] = {
+          ...updatedAttendance[studentIndex],
+          status: status,
+          attendanceDate: selectedDate
+        };
+        setAttendanceData(updatedAttendance);
+
+        // In a real implementation, this would be a GraphQL mutation
+        console.log(`Marked student ${studentId} as ${status} for date ${selectedDate}`);
+      }
+    } catch (err) {
+      console.error('Error marking attendance:', err);
+    } finally {
+      setIsMarkingAttendance(false);
+    }
+  };
+
+  const handleMarkPresent = (studentId) => {
+    handleMarkAttendance(studentId, 'PRESENT');
+  };
+
+  const handleMarkAbsent = (studentId) => {
+    handleMarkAttendance(studentId, 'ABSENT');
+  };
+
+  const handleMarkLate = (studentId) => {
+    handleMarkAttendance(studentId, 'LATE');
   };
 
   if (meLoading) {
@@ -658,6 +727,16 @@ const TutorBatches = () => {
                 Close
               </button>
               <button
+                onClick={() => {
+                  setSelectedBatchForAttendance(selectedBatch);
+                  setShowAttendanceModal(true);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+              >
+                <CalendarLucide className="w-4 h-4" />
+                <span>Attendance</span>
+              </button>
+              <button
                 onClick={async () => {
                   try {
                     const result = await getMeetingLink({
@@ -786,6 +865,190 @@ const TutorBatches = () => {
           </div>
         </div>
       )}
+
+      {/* Attendance Modal */}
+      {showAttendanceModal && selectedBatchForAttendance && (
+        <AttendanceModal
+          isOpen={showAttendanceModal}
+          onClose={() => {
+            setShowAttendanceModal(false);
+            setSelectedBatchForAttendance(null);
+          }}
+          batch={selectedBatchForAttendance}
+          selectedDate={selectedDate}
+          onDateChange={(date) => {
+            setSelectedDate(date);
+            handleFetchAttendance(selectedBatchForAttendance.id, date);
+          }}
+          attendanceData={attendanceData}
+          onMarkPresent={handleMarkPresent}
+          onMarkAbsent={handleMarkAbsent}
+          onMarkLate={handleMarkLate}
+          isFetching={isFetchingAttendance}
+          isMarking={isMarkingAttendance}
+          onOpen={() => handleFetchAttendance(selectedBatchForAttendance.id, selectedDate)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Attendance Modal Component
+const AttendanceModal = ({ 
+  isOpen, 
+  onClose, 
+  batch, 
+  selectedDate, 
+  onDateChange, 
+  attendanceData, 
+  onMarkPresent, 
+  onMarkAbsent, 
+  onMarkLate, 
+  isFetching,
+  isMarking,
+  onOpen
+}) => {
+  useEffect(() => {
+    if (isOpen && onOpen) {
+      onOpen();
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+              <CalendarLucide className="w-8 h-8 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-semibold text-gray-900">Attendance for {batch?.name}</h3>
+              <p className="text-gray-600">Date: {new Date(selectedDate).toLocaleDateString()}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Date Selector */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => onDateChange(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Attendance Table */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {isFetching ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                      Loading attendance data...
+                    </td>
+                  </tr>
+                ) : attendanceData.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                      No students enrolled in this batch for the selected date.
+                    </td>
+                  </tr>
+                ) : (
+                  attendanceData.map((attendance) => (
+                    <tr key={attendance.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {attendance.user?.firstName} {attendance.user?.lastName}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{attendance.user?.role}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{attendance.user?.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          attendance.status === 'PRESENT' ? 'bg-green-100 text-green-800' :
+                          attendance.status === 'ABSENT' ? 'bg-red-100 text-red-800' :
+                          attendance.status === 'LATE' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {attendance.status || 'NOT_MARKED'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => onMarkPresent(attendance.id)}
+                            disabled={isMarking}
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              attendance.status === 'PRESENT' 
+                                ? 'bg-green-200 text-green-800' 
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            } ${isMarking ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          >
+                            Present
+                          </button>
+                          <button
+                            onClick={() => onMarkAbsent(attendance.id)}
+                            disabled={isMarking}
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              attendance.status === 'ABSENT' 
+                                ? 'bg-red-200 text-red-800' 
+                                : 'bg-red-100 text-red-700 hover:bg-red-200'
+                            } ${isMarking ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          >
+                            Absent
+                          </button>
+                          <button
+                            onClick={() => onMarkLate(attendance.id)}
+                            disabled={isMarking}
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              attendance.status === 'LATE' 
+                                ? 'bg-yellow-200 text-yellow-800' 
+                                : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                            } ${isMarking ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          >
+                            Late
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-6 flex space-x-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
