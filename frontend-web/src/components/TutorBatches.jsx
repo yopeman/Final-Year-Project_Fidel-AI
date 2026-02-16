@@ -501,15 +501,27 @@ const TutorBatches = () => {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => {
-                  setShowBatchDetails(false);
-                  setSelectedBatch(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => {
+                    setSelectedBatchForAttendance(selectedBatch);
+                    setShowAttendanceModal(true);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                >
+                  <CalendarLucide className="w-4 h-4" />
+                  <span>Attendance</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowBatchDetails(false);
+                    setSelectedBatch(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -725,16 +737,6 @@ const TutorBatches = () => {
                 className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
               >
                 Close
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedBatchForAttendance(selectedBatch);
-                  setShowAttendanceModal(true);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-              >
-                <CalendarLucide className="w-4 h-4" />
-                <span>Attendance</span>
               </button>
               <button
                 onClick={async () => {
@@ -955,19 +957,18 @@ const AttendanceModal = ({
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {isFetching ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
                       Loading attendance data...
                     </td>
                   </tr>
                 ) : attendanceData.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
                       No students enrolled in this batch for the selected date.
                     </td>
                   </tr>
@@ -994,43 +995,6 @@ const AttendanceModal = ({
                         }`}>
                           {attendance.status || 'NOT_MARKED'}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => onMarkPresent(attendance.id)}
-                            disabled={isMarking}
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              attendance.status === 'PRESENT' 
-                                ? 'bg-green-200 text-green-800' 
-                                : 'bg-green-100 text-green-700 hover:bg-green-200'
-                            } ${isMarking ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                          >
-                            Present
-                          </button>
-                          <button
-                            onClick={() => onMarkAbsent(attendance.id)}
-                            disabled={isMarking}
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              attendance.status === 'ABSENT' 
-                                ? 'bg-red-200 text-red-800' 
-                                : 'bg-red-100 text-red-700 hover:bg-red-200'
-                            } ${isMarking ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                          >
-                            Absent
-                          </button>
-                          <button
-                            onClick={() => onMarkLate(attendance.id)}
-                            disabled={isMarking}
-                            className={`px-2 py-1 rounded text-xs font-medium ${
-                              attendance.status === 'LATE' 
-                                ? 'bg-yellow-200 text-yellow-800' 
-                                : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                            } ${isMarking ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                          >
-                            Late
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   ))
