@@ -75,7 +75,7 @@ def resolve_comments(community_obj, info):
 @batch_community.field("attachments")
 def resolve_attachments(community_obj, info):
     db: Session = info.context["db"]
-    attachments = db.query(CommunityAttachmentFiles).filter(CommunityAttachmentFiles.community_id == community_obj.id).all()
+    attachments = db.query(CommunityAttachmentFiles).filter(CommunityAttachmentFiles.community_id == community_obj.id, CommunityAttachmentFiles.is_deleted == False).all()
     return attachments
 
 # Query resolvers
