@@ -6,9 +6,13 @@ import {
     TouchableOpacity,
     StyleSheet,
     ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
+import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants';
 
 const LoginScreen = () => {
     const router = useRouter();
@@ -21,101 +25,167 @@ const LoginScreen = () => {
         clearError();
         const res = await login({ email, password });
         if (res.success) {
-            router.replace('/(tabs)/Home'); // Explicitly go to Home tab
+            router.replace('/(tabs)/Home');
         }
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Welcome Back</Text>
+        <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                <View style={styles.card}>
+                    <Text style={styles.title}>Welcome Back!</Text>
+                    <Text style={styles.subtitle}>Log in to continue learning</Text>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-            />
+                    <View style={styles.form}>
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Email</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="your@email.com"
+                                value={email}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                placeholderTextColor="#9CA3AF"
+                            />
+                        </View>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Password</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter your password"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                                placeholderTextColor="#9CA3AF"
+                            />
+                        </View>
 
-            {error && <Text style={styles.error}>{error}</Text>}
+                        {error && <Text style={styles.error}>{error}</Text>}
 
-            <TouchableOpacity
-                style={styles.button}
-                onPress={handleLogin}
-                disabled={isLoading}
-            >
-                {isLoading ? (
-                    <ActivityIndicator color="#fff" />
-                ) : (
-                    <Text style={styles.buttonText}>Login</Text>
-                )}
-            </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.button}
+                            onPress={handleLogin}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.buttonText}>Log In</Text>
+                            )}
+                        </TouchableOpacity>
 
-            <TouchableOpacity
-                style={styles.linkButton}
-                onPress={() => router.push('/(auth)/Register')}
-            >
-                <Text style={styles.linkText}>Create New Account</Text>
-            </TouchableOpacity>
-        </View>
+                        <TouchableOpacity
+                            style={styles.linkButton}
+                            onPress={() => router.push('/(auth)/Register')}
+                        >
+                            <Text style={styles.linkText}>
+                                Don't have an account? <Text style={styles.linkHighlight}>Sign up</Text>
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.background, // Should be white or light
+    },
+    scrollContent: {
+        flexGrow: 1,
         justifyContent: 'center',
-        padding: 20,
+        padding: SPACING.lg,
+    },
+    card: {
+        backgroundColor: COLORS.surface,
+        borderRadius: BORDER_RADIUS.xl,
+        padding: SPACING.xl,
+        // Add shadow for card effect if background is not white, 
+        // but design seems potentially flat or light bg. 
+        // Adding subtle shadow just in case.
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 5,
     },
     title: {
-        fontSize: 32,
+        fontSize: 28,
         fontWeight: 'bold',
-        marginBottom: 40,
+        color: COLORS.primary, // Gold/Yellow
         textAlign: 'center',
+        marginBottom: SPACING.xs,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: COLORS.textSecondary,
+        textAlign: 'center',
+        marginBottom: SPACING.xl,
+    },
+    form: {
+        width: '100%',
+    },
+    inputGroup: {
+        marginBottom: SPACING.lg,
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.text,
+        marginBottom: SPACING.xs,
     },
     input: {
         borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        padding: 16,
-        marginBottom: 15,
+        borderColor: COLORS.border,
+        borderRadius: BORDER_RADIUS.lg,
+        padding: SPACING.md,
         fontSize: 16,
+        backgroundColor: '#FAFAFA',
+    },
+    error: {
+        color: COLORS.error,
+        textAlign: 'center',
+        marginBottom: SPACING.md,
     },
     button: {
-        backgroundColor: '#4F46E5',
-        padding: 16,
-        borderRadius: 8,
+        backgroundColor: COLORS.primary,
+        padding: SPACING.md,
+        borderRadius: BORDER_RADIUS.lg,
         alignItems: 'center',
-        marginTop: 10,
+        marginTop: SPACING.sm,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
     buttonText: {
-        color: '#fff',
+        color: '#fff', // Or dark text if yellow is too bright? Design shows dark text on yellow usually or white. Let's stick to Design image - looks like dark text on yellow button in "Create Account" image or white. 
+        // Actually, "Create Account" button has Black/Dark text on Yellow. "Log In" likely same.
+        // Let's use darker text for better contrast on yellow.
+        color: COLORS.secondary,
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: 'bold',
     },
     linkButton: {
-        marginTop: 20,
+        marginTop: SPACING.xl,
         alignItems: 'center',
     },
     linkText: {
-        color: '#4F46E5',
-        fontSize: 16,
-        fontWeight: '500',
+        color: COLORS.textSecondary,
+        fontSize: 14,
     },
-    error: {
-        color: 'red',
-        textAlign: 'center',
-        marginBottom: 10,
+    linkHighlight: {
+        color: COLORS.primary,
+        fontWeight: 'bfold',
     },
 });
 

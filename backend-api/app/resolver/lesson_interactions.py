@@ -147,6 +147,9 @@ def resolve_create_lesson_interaction(_, info, input):
         input["question"], profile, module, lesson, prev_lesson_interactions
     )
 
+    if not answer:
+        answer = "I'm sorry, I couldn't generate an answer right now. Please try again later."
+
     # Create interaction
     interaction = LessonInteractions(
         lesson_id=input["lessonId"],

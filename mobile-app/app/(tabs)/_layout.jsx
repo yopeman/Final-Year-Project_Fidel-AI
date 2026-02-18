@@ -50,9 +50,9 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="Progress"
+                name="Batch"
                 options={{
-                    title: 'Progress',
+                    title: 'Batch',
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="stats-chart" size={size} color={color} />
                     ),

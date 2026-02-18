@@ -110,6 +110,17 @@ export const useLearningStore = create((set, get) => ({
         }
     },
 
+    getQuiz: async (lessonId) => {
+        try {
+            set({ isLoading: true, error: null });
+            const { data } = await learningAPI.getQuiz(lessonId);
+            set({ isLoading: false });
+            return { success: true, quiz: data.quiz };
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+            return { success: false, error: error.message };
+        }
+    },
     getLesson: async (lessonId) => {
         try {
             set({ isLoading: true, error: null });
@@ -152,6 +163,43 @@ export const useLearningStore = create((set, get) => ({
             return { success: true, progress: response.data.progress };
         } catch (error) {
             return { success: false };
+        }
+    },
+
+    // Video Management
+    getVideos: async (lessonId) => {
+        try {
+            set({ isLoading: true, error: null });
+            const response = await lessonsAPI.getVideos(lessonId);
+            set({ isLoading: false });
+            return { success: true, videos: response.data.videos };
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+            return { success: false, error: error.message };
+        }
+    },
+
+    updateVideo: async (id, input) => {
+        try {
+            set({ isLoading: true, error: null });
+            const response = await lessonsAPI.updateVideo(id, input);
+            set({ isLoading: false });
+            return { success: true, video: response.data.updateVideo };
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+            return { success: false, error: error.message };
+        }
+    },
+
+    deleteVideo: async (id) => {
+        try {
+            set({ isLoading: true, error: null });
+            await lessonsAPI.deleteVideo(id);
+            set({ isLoading: false });
+            return { success: true };
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+            return { success: false, error: error.message };
         }
     },
 

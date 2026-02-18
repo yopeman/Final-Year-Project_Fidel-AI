@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useLearningStore } from '../../src/stores/learningStore';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -8,9 +8,11 @@ export default function ModulesScreen() {
     const router = useRouter();
     const { modules, getModules, isLoading } = useLearningStore();
 
-    useEffect(() => {
-        getModules();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            getModules();
+        }, [])
+    );
 
     const renderLesson = (lesson, index, moduleIndex) => {
         const isCompleted = lesson.isCompleted;
@@ -20,7 +22,15 @@ export default function ModulesScreen() {
             <TouchableOpacity
                 key={lesson.id}
                 style={[styles.lessonItem, isLocked && styles.lockedLesson]}
-                onPress={() => !isLocked && router.push(`/learn/${lesson.id}`)}
+                onPress={() => {
+                    if (!isLocked) {
+                        if (lesson.type === 'QUIZ') {
+                            router.push(`/learn/quiz/${lesson.id}`);
+                        } else {
+                            router.push(`/learn/${lesson.id}`);
+                        }
+                    }
+                }}
                 disabled={isLocked}
             >
                 <View style={styles.lessonRow}>
@@ -29,6 +39,8 @@ export default function ModulesScreen() {
                             <Ionicons name="checkmark" size={16} color="#fff" />
                         ) : isLocked ? (
                             <Ionicons name="lock-closed" size={16} color="#999" />
+                        ) : lesson.type === 'QUIZ' ? (
+                            <Ionicons name="help" size={16} color="#000" />
                         ) : (
                             <Ionicons name="play" size={16} color="#000" />
                         )}

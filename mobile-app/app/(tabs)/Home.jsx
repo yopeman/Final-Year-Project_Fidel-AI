@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useLearningStore } from '../../src/stores/learningStore';
+import { useBatchStore } from '../../src/stores/batchStore';
 import { Ionicons } from '@expo/vector-icons';
-
+import { COLORS, BORDER_RADIUS, SPACING } from '../../src/constants';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function HomeScreen() {
     const router = useRouter();
@@ -18,159 +20,191 @@ export default function HomeScreen() {
         isLoading
     } = useLearningStore();
 
+    const { batches, enrollments, getBatches, isLoading: batchLoading } = useBatchStore();
+
     useEffect(() => {
         getModules();
         getProgress();
+        getBatches();
     }, []);
 
     const onRefresh = React.useCallback(() => {
         getModules();
         getProgress();
+        getBatches();
     }, []);
+
+    const myBatches = batches.filter(b =>
+        enrollments.some(e => e.batch?.id === b.id && e.status === 'ENROLLED') || b.status === "ENROLLED_MOCK"
+    );
 
     const currentPosition = getCurrentPosition();
     const overallProgress = progress?.completionPercentage || 0;
 
     return (
-        <ScrollView
-            style={styles.container}
-            refreshControl={
-                <RefreshControl refreshing={isLoading} onRefresh={onRefresh} tintColor="#FFD700" />
-            }
-            contentContainerStyle={styles.scrollContent}
-        >
-            {/* Header Greeting */}
-            <View style={styles.header}>
-                <View>
-                    <Text style={styles.greeting}>Hi, {user?.firstName || 'Learner'} 👋</Text>
-                    <Text style={styles.subGreeting}>Ready to continue your journey?</Text>
-                </View>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/Profile')}>
-                    <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>
-                            {user?.firstName?.[0] || 'U'}
-                        </Text>
+        <View style={styles.container}>
+            <LinearGradient
+                colors={[COLORS.secondary || '#111827', '#000']}
+                style={styles.background}
+            />
+            <StatusBar barStyle="light-content" />
+
+            <ScrollView
+                style={styles.scrollView}
+                refreshControl={
+                    <RefreshControl refreshing={isLoading || batchLoading} onRefresh={onRefresh} tintColor={COLORS.primary} />
+                }
+                contentContainerStyle={styles.scrollContent}
+            >
+                {/* Header Greeting */}
+                <View style={styles.header}>
+                    <View>
+                        <Text style={styles.greeting}>Hi, {user?.firstName || 'Learner'} 👋</Text>
+                        <Text style={styles.subGreeting}>Ready to continue your journey?</Text>
                     </View>
-                </TouchableOpacity>
-            </View>
-
-            {/* Progress Card */}
-            <View style={styles.progressSection}>
-                <View style={styles.progressInfo}>
-                    <Text style={styles.progressLabel}>Daily Progress</Text>
-                    <Text style={styles.progressPercentage}>{Math.round(overallProgress)}%</Text>
-                </View>
-                <View style={styles.progressBarBg}>
-                    <View style={[styles.progressBarFill, { width: `${overallProgress}%` }]} />
-                </View>
-                <View style={styles.statsRow}>
-                    <Text style={styles.statText}>
-                        {progress?.completedLessons || 0} lessons completed
-                    </Text>
-                    <Text style={styles.statText}>
-                        {progress?.streakDays || 0} day streak 🔥
-                    </Text>
-                </View>
-            </View>
-
-            {/* Quick Actions */}
-            <View style={styles.quickActions}>
-                <Text style={styles.sectionTitle}>Main Actions</Text>
-
-                <TouchableOpacity
-                    style={styles.actionCard}
-                    onPress={() => {
-                        if (currentPosition?.lessonId) {
-                            router.push(`/learn/${currentPosition.lessonId}`);
-                        } else {
-                            router.push('/(tabs)/Modules');
-                        }
-                    }}
-                >
-                    <View
-                        style={[styles.actionGradient, { backgroundColor: '#000' }]}
-                    >
-                        <View style={styles.actionIconContainer}>
-                            <Ionicons name="rocket" size={26} color="#FFD700" />
-                        </View>
-                        <View style={styles.actionTextContainer}>
-                            <Text style={styles.actionTitle}>Continue Learning</Text>
-                            <Text style={styles.actionSubtitle} numberOfLines={1}>
-                                {currentPosition?.lessonTitle || 'Start your first lesson'}
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/Profile')}>
+                        <View style={styles.avatar}>
+                            <Text style={styles.avatarText}>
+                                {user?.firstName?.[0] || 'U'}
                             </Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color="#666" />
-                    </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.actionCard, styles.secondaryActionCard]}
-                    onPress={() => router.push('/(tabs)/AIConversation')}
-                >
-                    <View style={styles.actionGradient}>
-                        <View style={[styles.actionIconContainer, { backgroundColor: '#f0f0f0' }]}>
-                            <Ionicons name="chatbubbles" size={26} color="#000" />
-                        </View>
-                        <View style={styles.actionTextContainer}>
-                            <Text style={[styles.actionTitle, { color: '#000' }]}>Talk with AI</Text>
-                            <Text style={styles.actionSubtitle}>Practice your fluency naturally</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color="#ccc" />
-                    </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.actionCard, styles.secondaryActionCard]}
-                    onPress={() => router.push('/(tabs)/Modules')}
-                >
-                    <View style={styles.actionGradient}>
-                        <View style={[styles.actionIconContainer, { backgroundColor: '#f0f0f0' }]}>
-                            <Ionicons name="library" size={26} color="#000" />
-                        </View>
-                        <View style={styles.actionTextContainer}>
-                            <Text style={[styles.actionTitle, { color: '#000' }]}>All Modules</Text>
-                            <Text style={styles.actionSubtitle}>Browse the full curriculum</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color="#ccc" />
-                    </View>
-                </TouchableOpacity>
-            </View>
-
-            {/* Upcoming Lesson Info */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Up Next</Text>
-                <View style={styles.nextLessonCard}>
-                    <Text style={styles.moduleName}>{currentPosition?.moduleTitle || 'Foundation'}</Text>
-                    <Text style={styles.lessonName}>{currentPosition?.lessonTitle || 'Ready to start!'}</Text>
-                    <TouchableOpacity
-                        style={styles.startButton}
-                        onPress={() => {
-                            if (currentPosition?.lessonId) {
-                                router.push(`/learn/${currentPosition.lessonId}`);
-                            } else {
-                                router.push('/(tabs)/Modules');
-                            }
-                        }}
-                    >
-                        <Text style={styles.startButtonText}>Start Now</Text>
-                        <Ionicons name="arrow-forward" size={16} color="#000" />
                     </TouchableOpacity>
                 </View>
-            </View>
-        </ScrollView>
+
+                {/* Progress Card */}
+                <View style={styles.progressSection}>
+                    <View style={styles.progressInfo}>
+                        <Text style={styles.progressLabel}>Daily Progress</Text>
+                        <Text style={styles.progressPercentage}>{Math.round(overallProgress)}%</Text>
+                    </View>
+                    <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarFill, { width: `${overallProgress}%` }]} />
+                    </View>
+                    <View style={styles.statsRow}>
+                        <Text style={styles.statText}>
+                            {progress?.completedLessons || 0} lessons completed
+                        </Text>
+                        <Text style={styles.statText}>
+                            {progress?.streakDays || 0} day streak 🔥
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Upcoming Lesson Info */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Up Next</Text>
+                    <View style={styles.nextLessonCard}>
+                        <View style={styles.nextLessonHeader}>
+                            <Text style={styles.moduleName}>{currentPosition?.moduleTitle || 'Foundation'}</Text>
+                            <Ionicons name="time-outline" size={16} color={COLORS.textSecondary} />
+                        </View>
+                        <Text style={styles.lessonName}>{currentPosition?.lessonTitle || 'Ready to start!'}</Text>
+
+                        <TouchableOpacity
+                            style={styles.startButton}
+                            onPress={() => {
+                                if (currentPosition?.lessonId) {
+                                    router.push(`/learn/${currentPosition.lessonId}`);
+                                } else {
+                                    router.push('/(tabs)/Modules');
+                                }
+                            }}
+                        >
+                            <Text style={styles.startButtonText}>Start Now</Text>
+                            <Ionicons name="arrow-forward" size={18} color={COLORS.secondary} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Quick Actions */}
+                <View style={styles.quickActions}>
+                    <Text style={styles.sectionTitle}>Quick Actions</Text>
+                    <View style={styles.actionsGrid}>
+                        <TouchableOpacity
+                            style={styles.actionCard}
+                            onPress={() => router.push('/(tabs)/AIConversation')}
+                        >
+                            <View style={[styles.actionIcon, { backgroundColor: 'rgba(59, 130, 246, 0.2)' }]}>
+                                <Ionicons name="chatbubbles" size={24} color="#3B82F6" />
+                            </View>
+                            <Text style={styles.actionTitle}>AI Tutor</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.actionCard}
+                            onPress={() => router.push('/(tabs)/Modules')}
+                        >
+                            <View style={[styles.actionIcon, { backgroundColor: 'rgba(16, 185, 129, 0.2)' }]}>
+                                <Ionicons name="library" size={24} color="#10B981" />
+                            </View>
+                            <Text style={styles.actionTitle}>Library</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.actionCard}
+                            onPress={() => router.push('/(tabs)/Batch')}
+                        >
+                            <View style={[styles.actionIcon, { backgroundColor: 'rgba(245, 158, 11, 0.2)' }]}>
+                                <Ionicons name="people" size={24} color="#F59E0B" />
+                            </View>
+                            <Text style={styles.actionTitle}>Batches</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* My Batches Section */}
+                {myBatches.length > 0 && (
+                    <View style={[styles.section, { marginBottom: 30 }]}>
+                        <View style={styles.sectionHeaderRow}>
+                            <Text style={styles.sectionTitle}>My Batches</Text>
+                            <TouchableOpacity onPress={() => router.push('/(tabs)/Batch')}>
+                                <Text style={styles.seeAllText}>See All</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                            {myBatches.map((batch, index) => (
+                                <TouchableOpacity
+                                    key={batch.id || index}
+                                    style={styles.batchCardMini}
+                                    onPress={() => router.push(`batch/${batch.id}`)}
+                                >
+                                    <View style={styles.batchIconMini}>
+                                        <Ionicons name="school" size={20} color={COLORS.primary} />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.batchNameMini} numberOfLines={1}>{batch.name}</Text>
+                                        <Text style={styles.batchLevelMini}>{batch.level}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+            </ScrollView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.secondary || '#111827',
+    },
+    background: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+    },
+    scrollView: {
+        flex: 1,
     },
     scrollContent: {
         paddingBottom: 40,
     },
     header: {
-        paddingHorizontal: 20,
+        paddingHorizontal: SPACING.lg,
         paddingTop: 60,
         paddingBottom: 25,
         flexDirection: 'row',
@@ -180,39 +214,36 @@ const styles = StyleSheet.create({
     greeting: {
         fontSize: 26,
         fontWeight: 'bold',
-        color: '#000',
+        color: '#fff',
     },
     subGreeting: {
         fontSize: 16,
-        color: '#666',
+        color: '#9CA3AF',
         marginTop: 4,
     },
     avatar: {
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: '#000',
+        backgroundColor: COLORS.surfaceDark || '#1F2937',
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 2,
-        borderColor: '#FFD700',
+        borderColor: COLORS.primary,
     },
     avatarText: {
-        color: '#FFD700',
+        color: COLORS.primary,
         fontSize: 20,
         fontWeight: 'bold',
     },
     progressSection: {
-        marginHorizontal: 20,
+        marginHorizontal: SPACING.lg,
         padding: 24,
-        backgroundColor: '#000',
-        borderRadius: 25,
+        backgroundColor: COLORS.surfaceDark || '#1F2937',
+        borderRadius: BORDER_RADIUS.xl,
         marginBottom: 30,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.15,
-        shadowRadius: 15,
-        elevation: 8,
+        borderWidth: 1,
+        borderColor: '#374151',
     },
     progressInfo: {
         flexDirection: 'row',
@@ -223,122 +254,155 @@ const styles = StyleSheet.create({
     progressLabel: {
         fontSize: 15,
         fontWeight: '600',
-        color: '#888',
+        color: '#D1D5DB',
     },
     progressPercentage: {
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: 'bold',
-        color: '#FFD700',
+        color: COLORS.primary,
     },
     progressBarBg: {
-        height: 10,
-        backgroundColor: '#333',
-        borderRadius: 5,
-        marginBottom: 15,
+        height: 8,
+        backgroundColor: '#374151',
+        borderRadius: 4,
+        marginBottom: 16,
         overflow: 'hidden',
     },
     progressBarFill: {
         height: '100%',
-        backgroundColor: '#FFD700',
-        borderRadius: 5,
+        backgroundColor: COLORS.primary,
+        borderRadius: 4,
     },
     statsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
     statText: {
-        color: '#ccc',
+        color: '#9CA3AF',
         fontSize: 13,
     },
-    quickActions: {
-        paddingHorizontal: 20,
-        marginBottom: 30,
-    },
     section: {
-        paddingHorizontal: 20,
+        paddingHorizontal: SPACING.lg,
+        marginBottom: 30,
     },
     sectionTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#000',
-        marginBottom: 15,
-    },
-    actionCard: {
-        borderRadius: 20,
-        marginBottom: 12,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: '#eee',
-    },
-    secondaryActionCard: {
-        backgroundColor: '#fff',
-    },
-    actionGradient: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 18,
-    },
-    actionIconContainer: {
-        width: 52,
-        height: 52,
-        borderRadius: 16,
-        backgroundColor: 'rgba(255, 215, 0, 0.15)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 16,
-    },
-    actionTextContainer: {
-        flex: 1,
-    },
-    actionTitle: {
-        fontSize: 17,
-        fontWeight: 'bold',
         color: '#fff',
-        marginBottom: 2,
-    },
-    actionSubtitle: {
-        fontSize: 13,
-        color: '#888',
+        marginBottom: 16,
     },
     nextLessonCard: {
-        padding: 24,
-        backgroundColor: '#f9f9f9',
-        borderRadius: 25,
+        padding: 20,
+        backgroundColor: COLORS.surfaceDark || '#1F2937',
+        borderRadius: BORDER_RADIUS.xl,
         borderWidth: 1,
-        borderColor: '#f0f0f0',
+        borderColor: '#374151',
+    },
+    nextLessonHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
     },
     moduleName: {
         fontSize: 12,
         fontWeight: 'bold',
-        color: '#FFD700',
-        backgroundColor: '#000',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
-        alignSelf: 'flex-start',
-        marginBottom: 12,
+        color: COLORS.primary,
         textTransform: 'uppercase',
+        letterSpacing: 1,
     },
     lessonName: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 20,
+        color: '#fff',
+        marginBottom: 24,
     },
     startButton: {
-        backgroundColor: '#FFD700',
-        paddingVertical: 12,
+        backgroundColor: COLORS.primary,
+        paddingVertical: 14,
         paddingHorizontal: 20,
-        borderRadius: 15,
+        borderRadius: BORDER_RADIUS.lg,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        alignSelf: 'flex-start',
     },
     startButtonText: {
-        color: '#000',
+        color: COLORS.secondary,
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    quickActions: {
+        paddingHorizontal: SPACING.lg,
+        marginBottom: 30,
+    },
+    actionsGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    actionCard: {
+        flex: 1,
+        backgroundColor: COLORS.surfaceDark || '#1F2937',
+        padding: 16,
+        borderRadius: BORDER_RADIUS.lg,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#374151',
+    },
+    actionIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+    },
+    actionTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#fff',
+    },
+    sectionHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    seeAllText: {
+        color: COLORS.primary,
+        fontWeight: '600',
+    },
+    horizontalScroll: {
+        marginHorizontal: -20,
+        paddingHorizontal: 20,
+    },
+    batchCardMini: {
+        backgroundColor: COLORS.surfaceDark || '#1F2937',
+        borderRadius: BORDER_RADIUS.lg,
+        padding: 16,
+        marginRight: 12,
+        width: 150,
+        borderWidth: 1,
+        borderColor: '#374151',
+    },
+    batchIconMini: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
+    },
+    batchNameMini: {
+        fontWeight: 'bold',
+        color: '#fff',
+        fontSize: 14,
+        marginBottom: 4,
+    },
+    batchLevelMini: {
+        color: '#9CA3AF',
+        fontSize: 12,
     },
 });

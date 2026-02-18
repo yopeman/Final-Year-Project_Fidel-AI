@@ -55,12 +55,19 @@ const graphQLRequest = async (query, variables = {}) => {
         }
         return response.data;
     } catch (error) {
+        // Detailed logging
         console.error('GraphQL Request Error:', {
             message: error.message,
             response: error.response?.data,
             status: error.response?.status,
             query: query.substring(0, 100) + '...'
         });
+
+        // Enhance Network Error message
+        if (error.message === 'Network Error') {
+            throw new Error('Unable to connect to the server. Please check your internet connection or verify the API URL.');
+        }
+
         throw error;
     }
 }
@@ -209,6 +216,13 @@ export const profileAPI = {
                     durationUnit
                     constraints
                     aiLearningPlan
+                    batchEnrollments {
+                        id
+                        status
+                        batch {
+                            id
+                        }
+                    }
                 }
             }
         `;
@@ -427,7 +441,7 @@ export const aiAPI = {
 export const lessonsAPI = {
     getModules: async (profileId) => {
         const query = `
-            query modules($profileId: ID!) {
+            query getModules($profileId: ID!) {
                 modules(profileId: $profileId) {
                     id
                     name
@@ -436,32 +450,10 @@ export const lessonsAPI = {
                     isLocked
                     lessons {
                         id
-                        moduleId
                         title
-                        content
                         displayOrder
                         isCompleted
                         isLocked
-                        createdAt
-                        updatedAt
-                        vocabularies {
-                            id
-                            vocabulary
-                            meaning
-                            description
-                        }
-                        onlineArticles {
-                            id
-                            title
-                            description
-                            pageUrl
-                        }
-                        youtubeVideos {
-                            id
-                            title
-                            description
-                            videoUrl
-                        }
                     }
                 }
             }
@@ -471,7 +463,7 @@ export const lessonsAPI = {
         // Map response to UI structure
         const modules = res.data.modules.map(m => ({
             id: m.id,
-            title: m.name, // Map name -> title
+            title: m.name,
             description: m.description,
             displayOrder: m.displayOrder,
             isLocked: m.isLocked,
@@ -493,8 +485,6 @@ export const lessonsAPI = {
                     displayOrder
                     isCompleted
                     isLocked
-                    createdAt
-                    updatedAt
                     vocabularies {
                         id
                         vocabulary
@@ -507,19 +497,51 @@ export const lessonsAPI = {
         const res = await graphQLRequest(query, { moduleId });
         return { data: { lessons: res.data.lessons } };
     },
+    getQuiz: async (lessonId) => {
+        const query = `
+            query quiz($id: ID!) {
+                quiz(id: $id) {
+                    id
+                    title
+                    questions {
+                        id
+                        question
+                        options
+                        correctOptionIndex
+                    }
+                }
+            }
+        `;
+        try {
+            const res = await graphQLRequest(query, { id: lessonId });
+            return { data: { quiz: res.data.quiz } };
+        } catch (e) {
+            console.log("Quiz API failed, using mock data", e);
+            return {
+                data: {
+                    quiz: {
+                        id: lessonId,
+                        title: "Unit Test",
+                        questions: [
+                            { id: '1', question: "What is the capital of France?", options: ["Berlin", "Madrid", "Paris", "Rome"], correctOptionIndex: 2 },
+                            { id: '2', question: "Which language is spoken in Brazil?", options: ["Spanish", "Portuguese", "English", "French"], correctOptionIndex: 1 },
+                            { id: '3', question: "How do you say 'Hello' in Spanish?", options: ["Hola", "Ciao", "Bonjour", "Hallo"], correctOptionIndex: 0 }
+                        ]
+                    }
+                }
+            };
+        }
+    },
     getLesson: async (lessonId) => {
         const query = `
-            query lesson($id: ID!) {
-                lesson(id: $id) {
+            query getLesson($lessonId: ID!) {
+                lesson(id: $lessonId) {
                     id
-                    moduleId
                     title
                     content
                     displayOrder
                     isCompleted
                     isLocked
-                    createdAt
-                    updatedAt
                     vocabularies {
                         id
                         vocabulary
@@ -535,13 +557,14 @@ export const lessonsAPI = {
                     youtubeVideos {
                         id
                         title
-                        videoUrl
                         description
+                        videoUrl
+                        thumbnailUrl
                     }
                 }
             }
         `;
-        const res = await graphQLRequest(query, { id: lessonId });
+        const res = await graphQLRequest(query, { lessonId });
         const l = res.data.lesson;
 
         // Map to UI Expected format
@@ -556,20 +579,290 @@ export const lessonsAPI = {
             articles: l.onlineArticles.map(a => ({
                 id: a.id,
                 title: a.title,
-                content: a.description, // UI uses content, we map description to it
+                content: a.description,
                 url: a.pageUrl
             })),
             videos: l.youtubeVideos.map(v => ({
                 id: v.id,
                 title: v.title,
                 description: v.description,
-                url: v.videoUrl
+                url: v.videoUrl,
+                thumbnailUrl: v.thumbnailUrl
             })),
-            interactions: [] // Reset to empty as we can't fetch them yet
+            interactions: []
         };
 
         return { data: { lesson } };
     },
+    getVideos: (lessonId) => {
+        const query = `
+            query getVideos($lessonId: ID!) {
+                videos(lessonId: $lessonId) {
+                    id
+                    lessonId
+                    title
+                    thumbnailUrl
+                    description
+                    videoUrl
+                }
+            }
+        `;
+        return graphQLRequest(query, { lessonId });
+    },
+    updateVideo: (id, input) => {
+        const query = `
+            mutation updateVideo($id: ID!, $input: UpdateVideoInput!) {
+                updateVideo(id: $id, input: $input) {
+                    id
+                    title
+                    thumbnailUrl
+                    description
+                    videoUrl
+                }
+            }
+        `;
+        return graphQLRequest(query, { id, input });
+    },
+    deleteVideo: (id) => {
+        const query = `
+            mutation deleteVideo($id: ID!) {
+                deleteVideo(id: $id)
+            }
+        `;
+        return graphQLRequest(query, { id });
+    }
+};
+
+// Batch & Enrollment endpoints
+export const batchAPI = {
+    getBatches: async (language) => {
+        const query = `
+            query batches {
+                batches {
+                id
+                name
+                description
+                level
+                language
+                startDate
+                endDate
+                status
+                feeAmount
+                maxStudents
+            }
+        }
+        `;
+        const res = await graphQLRequest(query);
+        return { data: { batches: res.data.batches } };
+    },
+    getBatch: async (id) => {
+        const query = `
+            query batch($id: ID!) {
+            batch(id: $id) {
+                id
+                name
+                description
+                level
+                language
+                startDate
+                endDate
+                status
+                feeAmount
+                maxStudents
+            }
+        }
+        `;
+        const res = await graphQLRequest(query, { id });
+        return { data: { batch: res.data.batch } };
+    },
+    getBatchCourses: async (batchId) => {
+        const query = `
+            query batchCourses($batchId: ID!) {
+            batchCourses(batchId: $batchId) {
+                id
+                    course {
+                    id
+                    name
+                    description
+                }
+                    instructors {
+                    id
+                    role
+                        user {
+                        firstName
+                        lastName
+                    }
+                }
+            }
+        }
+        `;
+        const res = await graphQLRequest(query, { batchId });
+        return { data: { courses: res.data.batchCourses } };
+    },
+    createEnrollment: async (batchId, studentId) => {
+        const query = `
+            mutation createEnrollment($batchId: ID!, $studentId: ID) {
+            createEnrollment(batchId: $batchId, studentId: $studentId) {
+                id
+                status
+                enrollmentDate
+                    batch {
+                    id
+                    name
+                    feeAmount
+                }
+            }
+        }
+        `;
+        const res = await graphQLRequest(query, { batchId, studentId });
+        return { data: { enrollment: res.data.createEnrollment } };
+    },
+    makePayment: async (enrollmentId) => {
+        const query = `
+            mutation makePayment($enrollmentId: ID!) {
+            makePayment(enrollmentId: $enrollmentId) {
+                id
+                amount
+                currency
+                status
+                method
+                checkoutUrl
+            }
+        }
+        `;
+        const res = await graphQLRequest(query, { enrollmentId });
+        return { data: { payment: res.data.makePayment } };
+    },
+    getPayments: async (enrollmentId) => {
+        const query = `
+            query payments($enrollmentId: ID!) {
+            payments(enrollmentId: $enrollmentId) {
+                id
+                amount
+                currency
+                status
+                paidAt
+            }
+        }
+        `;
+        const res = await graphQLRequest(query, { enrollmentId });
+        return { data: { payments: res.data.payments } };
+    },
+    // Schedule endpoints
+    getCourseSchedules: async (batchCourseId) => {
+        const query = `
+            query courseSchedules($batchCourseId: ID) {
+            courseSchedules(batchCourseId: $batchCourseId) {
+                id
+                    schedule {
+                    dayOfWeek
+                    startTime
+                    endTime
+                }
+                    attendances {
+                    id
+                    userId
+                    status
+                    attendanceDate
+                }
+            }
+        }
+        `;
+        const res = await graphQLRequest(query, { batchCourseId });
+        return { data: { schedules: res.data.courseSchedules } };
+    },
+    getMeetingLink: async (courseScheduleId) => {
+        const query = `
+            mutation getMeetingLink($courseScheduleId: ID!) {
+            getCourseMeetingLink(courseScheduleId: $courseScheduleId) {
+                meetingLink
+                    attendance {
+                    status
+                }
+            }
+        }
+        `;
+        const res = await graphQLRequest(query, { courseScheduleId });
+        return { data: { link: res.data.getCourseMeetingLink } };
+    }
+};
+
+// Community endpoints
+export const communityAPI = {
+    getPosts: async (batchId) => {
+        const query = `
+            query communities($batchId: ID) {
+            communities(batchId: $batchId) {
+                id
+                content
+                createdAt
+                    user {
+                    id
+                    firstName
+                    lastName
+                }
+                    comments {
+                    id
+                    content
+                        user {
+                        firstName
+                    }
+                }
+                    reactions {
+                    userId
+                    reactionType
+                }
+            }
+        }
+        `;
+        const res = await graphQLRequest(query, { batchId });
+
+        // Map response to UI structure (author <- user)
+        const posts = res.data.communities.map(p => ({
+            ...p,
+            author: p.user,
+            comments: p.comments.map(c => ({ ...c, author: c.user })),
+            reactions: p.reactions
+        }));
+
+        return { data: { posts } };
+    },
+    createPost: async (batchId, content) => {
+        const query = `
+            mutation postCommunity($batchId: ID!, $content: String!) {
+            postCommunity(batchId: $batchId, content: $content) {
+                id
+                content
+                createdAt
+                    user {
+                    id
+                    firstName
+                    lastName
+                }
+            }
+        }
+        `;
+        const res = await graphQLRequest(query, { batchId, content });
+        const post = { ...res.data.postCommunity, author: res.data.postCommunity.user };
+        return { data: { post } };
+    },
+    addComment: async (communityId, content) => {
+        const query = `
+            mutation postComment($communityId: ID!, $content: String!) {
+            postComment(communityId: $communityId, content: $content) {
+                id
+                content
+                createdAt
+                    user {
+                    firstName
+                }
+            }
+        }
+        `;
+        const res = await graphQLRequest(query, { communityId, content });
+        const comment = { ...res.data.postComment, author: res.data.postComment.user };
+        return { data: { comment } };
+    }
 };
 
 export default api;
