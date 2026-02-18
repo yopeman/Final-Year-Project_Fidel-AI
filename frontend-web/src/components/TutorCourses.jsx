@@ -26,6 +26,7 @@ import {
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_COURSES } from '../graphql/course';
 import { ME_QUERY } from '../graphql/instructor';
+import { BASE_URL } from '../lib/apollo-client';
 
 const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -513,7 +514,7 @@ const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
                           {material.files.map((file) => (
                             <a 
                               key={file.id}
-                              href={`http://localhost:8000/${file.filePath}`}
+                              href={`${BASE_URL}/${file.filePath}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center justify-between text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded hover:bg-gray-100 transition-colors"
@@ -645,7 +646,7 @@ const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
                   {selectedMaterial.files.map((file) => (
                     <a 
                       key={file.id}
-                      href={`http://localhost:8000/${file.filePath}`}
+                      href={`${BASE_URL}/${file.filePath}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-between bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"

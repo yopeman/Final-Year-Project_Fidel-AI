@@ -12,6 +12,7 @@ import TestVerification from './pages/TestVerification';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import TutorDashboard from './pages/TutorDashboard'
+import CommunityPage from './pages/CommunityPage';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -46,6 +47,14 @@ const App = () => {
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/community/:batchId" 
+            element={
+              <ProtectedRoute>
+                <CommunityPage />
               </ProtectedRoute>
             } 
           />

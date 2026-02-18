@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   Calendar, 
@@ -36,12 +37,20 @@ import {
   X as XIcon,
   Clock as ClockIcon,
   Calendar as CalendarIcon,
-  Calendar as CalendarLucide
+  Calendar as CalendarLucide,
+  MessageCircle,
+  MessageSquare,
+  Send,
+  ThumbsUp,
+  Heart,
+  Paperclip,
+  File as FileIcon
 } from 'lucide-react';
 import { useQuery, useMutation, useApolloClient } from '@apollo/client';
 import { GET_TUTOR_BATCHES, GET_BATCH_ENROLLMENTS, GET_BATCH_ATTENDANCE, UPDATE_ENROLLMENT_STATUS, GET_BATCH_MEETING_LINK } from '../graphql/tutorBatch';
 
 const TutorBatches = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedBatch, setSelectedBatch] = useState(null);
@@ -58,6 +67,7 @@ const TutorBatches = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isFetchingAttendance, setIsFetchingAttendance] = useState(false);
   const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
+  
 
   // Get tutor's associated batches using the ME query
   const { data: meData, loading: meLoading } = useQuery(GET_TUTOR_BATCHES);
@@ -514,6 +524,15 @@ const TutorBatches = () => {
                 </button>
                 <button
                   onClick={() => {
+                    navigate(`/community/${selectedBatch.id}`);
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Community</span>
+                </button>
+                <button
+                  onClick={() => {
                     setShowBatchDetails(false);
                     setSelectedBatch(null);
                   }}
@@ -891,6 +910,7 @@ const TutorBatches = () => {
           onOpen={() => handleFetchAttendance(selectedBatchForAttendance.id, selectedDate)}
         />
       )}
+
     </div>
   );
 };
