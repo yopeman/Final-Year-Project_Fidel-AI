@@ -4,6 +4,7 @@ from typing import Optional
 from ariadne import MutationType, ObjectType, QueryType, SubscriptionType
 from sqlalchemy.orm import Session
 
+from ..model.batch import Batch
 from ..model.batch_community import BatchCommunity
 from ..model.community_attachment_files import CommunityAttachmentFiles
 from ..model.community_comment import CommunityComment
@@ -21,8 +22,8 @@ batch_community = ObjectType("BatchCommunity")
 @batch_community.field("batch")
 def resolve_batch(community_obj, info):
     db: Session = info.context["db"]
-    batch = db.query(BatchCommunity).filter(BatchCommunity.id == community_obj.batch_id).first()
-    return batch.batch if batch else None
+    batch = db.query(Batch).filter(Batch.id == community_obj.batch_id).first()
+    return batch
 
 @batch_community.field("batchId")
 def resolve_batch_id(community_obj, info):
