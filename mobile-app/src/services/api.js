@@ -435,6 +435,29 @@ export const aiAPI = {
         });
         return { data: { message: res.data.createLessonInteraction } };
     },
+    getLessonInteractions: async (lessonId) => {
+        const query = `
+            query lessonInteractions($lessonId: ID!) {
+                lessonInteractions(lessonId: $lessonId) {
+                    id
+                    studentQuestion
+                    aiAnswer
+                    createdAt
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { lessonId });
+        return { data: { interactions: res.data.lessonInteractions } };
+    },
+    deleteLessonInteraction: async (id) => {
+        const query = `
+            mutation deleteLessonInteraction($id: ID!) {
+                deleteLessonInteraction(id: $id)
+            }
+        `;
+        const res = await graphQLRequest(query, { id });
+        return { data: res.data.deleteLessonInteraction };
+    },
 };
 
 // Lessons endpoints
@@ -561,6 +584,12 @@ export const lessonsAPI = {
                         videoUrl
                         thumbnailUrl
                     }
+                    interactions {
+                        id
+                        studentQuestion
+                        aiAnswer
+                        createdAt
+                    }
                 }
             }
         `;
@@ -589,7 +618,7 @@ export const lessonsAPI = {
                 url: v.videoUrl,
                 thumbnailUrl: v.thumbnailUrl
             })),
-            interactions: []
+            interactions: l.interactions || []
         };
 
         return { data: { lesson } };
@@ -862,6 +891,93 @@ export const communityAPI = {
         const res = await graphQLRequest(query, { communityId, content });
         const comment = { ...res.data.postComment, author: res.data.postComment.user };
         return { data: { comment } };
+    }
+};
+
+// Notification endpoints
+export const notificationAPI = {
+    getMyNotifications: async () => {
+        const query = `
+            query myNotifications {
+                myNotifications {
+                    id
+                    title
+                    content
+                    isRead
+                    createdAt
+                }
+            }
+        `;
+        const res = await graphQLRequest(query);
+        return { data: { notifications: res.data.myNotifications } };
+    },
+    markAsRead: async (id) => {
+        const query = `
+            mutation markAsReadNotification($id: ID!) {
+                markAsReadNotification(id: $id) {
+                    id
+                    isRead
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { id });
+        return { data: res.data.markAsReadNotification };
+    },
+    markAllAsRead: async () => {
+        const query = `
+            mutation markAsReadAllNotifications {
+                markAsReadAllNotifications
+            }
+        `;
+        const res = await graphQLRequest(query);
+        return { data: res.data.markAsReadAllNotifications };
+    },
+    deleteNotification: async (id) => {
+        const query = `
+            mutation deleteNotification($id: ID!) {
+                deleteNotification(id: $id)
+            }
+        `;
+        const res = await graphQLRequest(query, { id });
+        return { data: res.data.deleteNotification };
+    }
+};
+
+// Feedback endpoints
+export const feedbackAPI = {
+    submitFeedback: async (content, rate, context = null) => {
+        const query = `
+            mutation submitFeedback($input: SubmitFeedbackInput!) {
+                submitFeedback(input: $input) {
+                    id
+                    content
+                    rate
+                    context
+                    createdAt
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, {
+            input: { content, rate, context }
+        });
+        return { data: { feedback: res.data.submitFeedback } };
+    },
+    submitAnonymously: async (content, rate, context = null) => {
+        const query = `
+            mutation submitFeedbackAnonymously($input: SubmitFeedbackInput!) {
+                submitFeedbackAnonymously(input: $input) {
+                    id
+                    content
+                    rate
+                    context
+                    createdAt
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, {
+            input: { content, rate, context }
+        });
+        return { data: { feedback: res.data.submitFeedbackAnonymously } };
     }
 };
 

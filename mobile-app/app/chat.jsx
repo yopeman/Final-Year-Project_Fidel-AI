@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator, StatusBar } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useChatStore } from '../src/stores/chatStore';
+import { COLORS, BORDER_RADIUS, SPACING } from '../src/constants';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ChatScreen() {
     const { topic } = useLocalSearchParams();
@@ -25,20 +27,29 @@ export default function ChatScreen() {
 
     useEffect(() => {
         const initChat = async () => {
+            // Check if we already have this conversation active
+            if (currentConversation && currentConversation.startingTopic === topic && messages.length > 0) {
+                // Already loaded from persist
+                return;
+            }
+
             clearMessages();
-            // Create a new conversation if one doesn't exist for the topic
             const res = await createConversation(topic || "General practice");
             if (!res.success) {
                 console.error("Failed to start conversation:", res.error);
             }
         };
 
-        initChat();
+        if (topic) {
+            initChat();
+        }
     }, [topic]);
 
     useEffect(() => {
         if (scrollViewRef.current) {
-            scrollViewRef.current.scrollToEnd({ animated: true });
+            setTimeout(() => {
+                scrollViewRef.current.scrollToEnd({ animated: true });
+            }, 100);
         }
     }, [messages, isLoading]);
 
@@ -50,10 +61,7 @@ export default function ChatScreen() {
 
         const res = await talkWithAi(currentConversation.id, messageText);
         if (res.success) {
-            // Fetch new suggestions after each message
             handleGetSuggestions();
-        } else {
-            console.error("Send failed:", res.error);
         }
     };
 
@@ -62,244 +70,330 @@ export default function ChatScreen() {
         setIsGeneratingSuggestions(true);
         const res = await getTopics(currentConversation.id);
         if (res.success && res.topic) {
-            // Split string if it comes back as a list or just take as is
-            setSuggestions(res.topic.split("\n").filter(s => s.trim() !== ""));
+            setSuggestions(res.topic.split("\n").filter(s => s.trim() !== "").slice(0, 3));
         }
         setIsGeneratingSuggestions(false);
     };
 
     const handleUseSuggestion = (suggestion) => {
         setInput(suggestion);
-        // We could also auto-send here if desired
     };
 
-    // Map interactions to UI bubbles
     const renderMessages = () => {
         const uiMessages = [];
 
-        // Initial greeting
-        uiMessages.push({
-            id: 'init',
-            text: topic ? `Let's talk about ${topic}. I'm ready when you are!` : "Hi! I'm your AI tutor. What would you like to talk about today?",
-            sender: 'ai'
-        });
+        // Initial greeting if no messages yet
+        if (messages.length === 0) {
+            uiMessages.push({
+                id: 'init',
+                text: topic ? `Let's talk about ${topic}. I'm ready when you are!` : "Hi! I'm your AI tutor. What would you like to talk about today?",
+                sender: 'ai'
+            });
+        }
 
         messages.forEach((msg) => {
-            // Add student message
             uiMessages.push({
                 id: `${msg.id}-student`,
                 text: msg.studentText,
-                sender: 'user'
+                sender: 'user',
+                time: msg.createdAt
             });
-            // Add AI response
             uiMessages.push({
                 id: `${msg.id}-ai`,
                 text: msg.aiText,
-                sender: 'ai'
+                sender: 'ai',
+                time: msg.createdAt
             });
         });
 
         return uiMessages.map((msg) => (
-            <View key={msg.id} style={[styles.messageBubble, msg.sender === 'user' ? styles.userBubble : styles.aiBubble]}>
-                <Text style={[styles.messageText, msg.sender === 'user' && styles.userMessageText]}>
-                    {msg.text}
-                </Text>
+            <View key={msg.id} style={[styles.messageRow, msg.sender === 'user' ? styles.userRow : styles.aiRow]}>
+                {msg.sender === 'ai' && (
+                    <View style={styles.aiAvatar}>
+                        <Ionicons name="sparkles" size={14} color={COLORS.primary} />
+                    </View>
+                )}
+                <View style={[styles.messageGlassBubble, msg.sender === 'user' ? styles.userGlassBubble : styles.aiGlassBubble]}>
+                    <Text style={[styles.messageText, msg.sender === 'user' && styles.userMessageText]}>
+                        {msg.text}
+                    </Text>
+                </View>
             </View>
         ));
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#333" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{topic || 'Free Talk'}</Text>
-                <View style={{ width: 24 }} />
-            </View>
+        <View style={styles.container}>
+            <LinearGradient
+                colors={[COLORS.secondary || '#111827', '#000']}
+                style={styles.background}
+            />
+            <StatusBar barStyle="light-content" />
 
-            <ScrollView
-                style={styles.chatContainer}
-                contentContainerStyle={styles.chatContent}
-                ref={scrollViewRef}
-            >
-                {renderMessages()}
-
-                {suggestions.length > 0 && !isLoading && (
-                    <View style={styles.suggestionsWrapper}>
-                        <Text style={styles.suggestionsLabel}>Try saying:</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.suggestionsContainer}>
-                            {suggestions.map((s, i) => (
-                                <TouchableOpacity
-                                    key={i}
-                                    style={styles.suggestionBubble}
-                                    onPress={() => handleUseSuggestion(s.replace(/^[0-9.-]+\s*/, ""))}
-                                >
-                                    <Text style={styles.suggestionText}>{s.replace(/^[0-9.-]+\s*/, "")}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
-
-                {isLoading && (
-                    <View style={styles.typingContainer}>
-                        <ActivityIndicator size="small" color="#888" />
-                        <Text style={styles.typingText}>AI is thinking...</Text>
-                    </View>
-                )}
-            </ScrollView>
-
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                <View style={styles.inputContainer}>
-                    <TouchableOpacity style={styles.audioButton}>
-                        <Ionicons name="mic" size={20} color="#666" />
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={28} color="#fff" />
                     </TouchableOpacity>
-                    <TextInput
-                        style={styles.input}
-                        value={input}
-                        onChangeText={setInput}
-                        placeholder="Type in English..."
-                        placeholderTextColor="#999"
-                        editable={!isLoading && !!currentConversation}
-                        multiline
-                    />
-                    <TouchableOpacity
-                        onPress={handleSend}
-                        style={[styles.sendButton, (isLoading || !input.trim()) && styles.disabledButton]}
-                        disabled={isLoading || !input.trim()}
-                    >
-                        <Ionicons name="send" size={20} color="#fff" />
+                    <View style={styles.headerInfo}>
+                        <Text style={styles.headerTitle}>{topic || 'Practice'}</Text>
+                        <View style={styles.statusIndicator}>
+                            <View style={styles.onlineDot} />
+                            <Text style={styles.statusText}>AI Tutor Online</Text>
+                        </View>
+                    </View>
+                    <TouchableOpacity style={styles.menuButton}>
+                        <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
                     </TouchableOpacity>
                 </View>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+
+                <ScrollView
+                    style={styles.chatContainer}
+                    contentContainerStyle={styles.chatContent}
+                    ref={scrollViewRef}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {renderMessages()}
+
+                    {isLoading && (
+                        <View style={styles.typingRow}>
+                            <View style={styles.aiAvatar}>
+                                <ActivityIndicator size="small" color={COLORS.primary} />
+                            </View>
+                            <View style={[styles.messageGlassBubble, styles.aiGlassBubble, { width: 60 }]}>
+                                <Text style={styles.typingDot}>...</Text>
+                            </View>
+                        </View>
+                    )}
+                </ScrollView>
+
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                    <View style={styles.footer}>
+                        {suggestions.length > 0 && !isLoading && (
+                            <View style={styles.suggestionsWrapper}>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                    {suggestions.map((s, i) => (
+                                        <TouchableOpacity
+                                            key={i}
+                                            style={styles.suggestionBubble}
+                                            onPress={() => handleUseSuggestion(s.replace(/^[0-9.-]+\s*/, ""))}
+                                        >
+                                            <Text style={styles.suggestionText}>{s.replace(/^[0-9.-]+\s*/, "")}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        )}
+
+                        <View style={styles.inputContainer}>
+                            <TouchableOpacity style={styles.iconButton}>
+                                <Ionicons name="mic-outline" size={24} color={COLORS.primary} />
+                            </TouchableOpacity>
+                            <TextInput
+                                style={styles.input}
+                                value={input}
+                                onChangeText={setInput}
+                                placeholder="Message AI Tutor..."
+                                placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                                editable={!isLoading}
+                                multiline
+                                maxHeight={100}
+                            />
+                            <TouchableOpacity
+                                onPress={handleSend}
+                                disabled={isLoading || !input.trim()}
+                                style={[styles.sendButton, (isLoading || !input.trim()) && styles.disabledButton]}
+                            >
+                                <LinearGradient
+                                    colors={isLoading || !input.trim() ? ['#333', '#222'] : [COLORS.primary, '#F59E0B']}
+                                    style={styles.sendGradient}
+                                >
+                                    <Ionicons name="arrow-up" size={24} color={COLORS.secondary} />
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#000',
+    },
+    background: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+    },
+    safeArea: {
+        flex: 1,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         padding: 15,
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-        backgroundColor: '#fff',
+        borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    },
+    headerInfo: {
+        flex: 1,
+        marginLeft: 15,
     },
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#fff',
+    },
+    statusIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+    },
+    onlineDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: COLORS.primary,
+        marginRight: 6,
+    },
+    statusText: {
+        fontSize: 12,
+        color: 'rgba(255, 255, 255, 0.5)',
+    },
+    menuButton: {
+        padding: 5,
     },
     chatContainer: {
         flex: 1,
-        backgroundColor: '#f9f9f9',
     },
     chatContent: {
-        padding: 20,
-    },
-    messageBubble: {
-        maxWidth: '80%',
         padding: 15,
-        borderRadius: 20,
-        marginBottom: 10,
+        paddingBottom: 30,
     },
-    aiBubble: {
-        alignSelf: 'flex-start',
-        backgroundColor: '#fff',
-        borderBottomLeftRadius: 5,
+    messageRow: {
+        flexDirection: 'row',
+        marginBottom: 20,
+        alignItems: 'flex-end',
+    },
+    userRow: {
+        justifyContent: 'flex-end',
+    },
+    aiRow: {
+        justifyContent: 'flex-start',
+    },
+    aiAvatar: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: 'rgba(52, 211, 153, 0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 8,
         borderWidth: 1,
-        borderColor: '#eee',
+        borderColor: 'rgba(52, 211, 153, 0.2)',
     },
-    userBubble: {
-        alignSelf: 'flex-end',
-        backgroundColor: '#000',
-        borderBottomRightRadius: 5,
+    messageGlassBubble: {
+        padding: 14,
+        borderRadius: 22,
+        maxWidth: '80%',
+        borderWidth: 1,
+    },
+    aiGlassBubble: {
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderBottomLeftRadius: 4,
+    },
+    userGlassBubble: {
+        backgroundColor: 'rgba(52, 211, 153, 0.15)',
+        borderColor: 'rgba(52, 211, 153, 0.3)',
+        borderBottomRightRadius: 4,
     },
     messageText: {
         fontSize: 16,
-        color: '#333',
+        color: '#fff',
+        lineHeight: 22,
     },
     userMessageText: {
-        color: '#FFD700',
+        color: COLORS.primary,
     },
-    typingContainer: {
+    typingRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginLeft: 20,
-        marginBottom: 10,
+        marginBottom: 20,
     },
-    typingText: {
-        color: '#888',
-        fontSize: 12,
-        fontStyle: 'italic',
-        marginLeft: 8,
+    typingDot: {
+        color: COLORS.primary,
+        fontSize: 20,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        lineHeight: 14,
+    },
+    footer: {
+        padding: 15,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255, 255, 255, 0.05)',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    },
+    suggestionsWrapper: {
+        marginBottom: 15,
+    },
+    suggestionBubble: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    suggestionText: {
+        color: '#D1D5DB',
+        fontSize: 14,
     },
     inputContainer: {
         flexDirection: 'row',
-        padding: 15,
-        borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
-        backgroundColor: '#fff',
         alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 28,
+        padding: 6,
+        paddingLeft: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    iconButton: {
+        padding: 8,
     },
     input: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
-        borderRadius: 25,
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        marginRight: 10,
+        color: '#fff',
         fontSize: 16,
-        color: '#333',
+        paddingHorizontal: 10,
+        paddingVertical: 8,
     },
     sendButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#000',
+        overflow: 'hidden',
+    },
+    sendGradient: {
+        width: '100%',
+        height: '100%',
         alignItems: 'center',
         justifyContent: 'center',
     },
     disabledButton: {
-        backgroundColor: '#ccc',
-    },
-    audioButton: {
-        width: 40,
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 5,
-    },
-    suggestionsWrapper: {
-        marginTop: 10,
-        marginBottom: 20,
-    },
-    suggestionsLabel: {
-        fontSize: 12,
-        color: '#999',
-        marginBottom: 8,
-        marginLeft: 5,
-    },
-    suggestionsContainer: {
-        flexDirection: 'row',
-    },
-    suggestionBubble: {
-        backgroundColor: '#f0f0f0',
-        paddingHorizontal: 15,
-        paddingVertical: 8,
-        borderRadius: 18,
-        marginRight: 10,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-    },
-    suggestionText: {
-        fontSize: 14,
-        color: '#555',
+        opacity: 0.5,
     },
 });

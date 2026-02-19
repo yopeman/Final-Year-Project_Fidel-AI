@@ -30,6 +30,8 @@ export default function BatchDetails() {
     const [myEnrollmentId, setMyEnrollmentId] = useState(null);
     const appState = useRef(AppState.currentState);
     const [selectedVideo, setSelectedVideo] = useState(null);
+    const [generating, setGenerating] = useState(false);
+    const { generatedVideos, generateAiVideos } = useBatchStore();
 
     // Helper to extract YouTube ID and return embed URL
     const getEmbedUrl = (url) => {
@@ -222,11 +224,6 @@ export default function BatchDetails() {
 
     const renderOverview = () => (
         <View>
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>About this Batch</Text>
-                <Text style={styles.description}>{currentBatch.description}</Text>
-            </View>
-
             {currentBatch.courses && currentBatch.courses.length > 0 && (
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Included Courses</Text>
@@ -260,6 +257,11 @@ export default function BatchDetails() {
                     )}
                 </View>
                 <Text style={styles.priceNote}>Includes full access to all lessons, quizzes, and live sessions.</Text>
+            </View>
+
+            <View style={[styles.section, { marginTop: SPACING.lg }]}>
+                <Text style={styles.sectionTitle}>About this Batch</Text>
+                <Text style={styles.description}>{currentBatch.description}</Text>
             </View>
         </View>
     );
@@ -305,8 +307,6 @@ export default function BatchDetails() {
         </View>
     );
 
-    const [generating, setGenerating] = useState(false);
-    const { generatedVideos, generateAiVideos } = useBatchStore();
 
     const handleGenerateVideos = async () => {
         setGenerating(true);
@@ -359,12 +359,24 @@ export default function BatchDetails() {
                                 </TouchableOpacity>
                                 <Text style={styles.modalTitle} numberOfLines={1}>{selectedVideo?.title}</Text>
                             </View>
-                            <WebView
-                                style={styles.webview}
-                                javaScriptEnabled={true}
-                                domStorageEnabled={true}
-                                source={{ uri: getEmbedUrl(selectedVideo?.url || selectedVideo?.videoUrl) }}
-                            />
+                            {Platform.OS === 'web' ? (
+                                <iframe
+                                    src={getEmbedUrl(selectedVideo?.url || selectedVideo?.videoUrl)}
+                                    width="100%"
+                                    height="100%"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    style={{ border: 'none', borderRadius: 8 }}
+                                />
+                            ) : (
+                                <WebView
+                                    style={styles.webview}
+                                    javaScriptEnabled={true}
+                                    domStorageEnabled={true}
+                                    source={{ uri: getEmbedUrl(selectedVideo?.url || selectedVideo?.videoUrl) }}
+                                />
+                            )}
                         </SafeAreaView>
                     </Modal>
                 </View>

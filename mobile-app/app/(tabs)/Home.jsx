@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useLearningStore } from '../../src/stores/learningStore';
 import { useBatchStore } from '../../src/stores/batchStore';
+import { useNotificationStore } from '../../src/stores/notificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, BORDER_RADIUS, SPACING } from '../../src/constants';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,12 +21,15 @@ export default function HomeScreen() {
         isLoading
     } = useLearningStore();
 
+    const { unreadCount, getNotifications } = useNotificationStore();
+
     const { batches, enrollments, getBatches, isLoading: batchLoading } = useBatchStore();
 
     useEffect(() => {
         getModules();
         getProgress();
         getBatches();
+        getNotifications();
     }, []);
 
     const onRefresh = React.useCallback(() => {
@@ -62,13 +66,26 @@ export default function HomeScreen() {
                         <Text style={styles.greeting}>Hi, {user?.firstName || 'Learner'} 👋</Text>
                         <Text style={styles.subGreeting}>Ready to continue your journey?</Text>
                     </View>
-                    <TouchableOpacity onPress={() => router.push('/(tabs)/Profile')}>
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarText}>
-                                {user?.firstName?.[0] || 'U'}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
+                    <View style={styles.headerRight}>
+                        <TouchableOpacity
+                            style={styles.notificationBtn}
+                            onPress={() => router.push('/notifications')}
+                        >
+                            <Ionicons name="notifications" size={24} color={COLORS.primary} />
+                            {unreadCount > 0 && (
+                                <View style={styles.badge}>
+                                    <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => router.push('/(tabs)/Profile')}>
+                            <View style={styles.avatar}>
+                                <Text style={styles.avatarText}>
+                                    {user?.firstName?.[0] || 'U'}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Progress Card */}
@@ -234,6 +251,40 @@ const styles = StyleSheet.create({
     avatarText: {
         color: COLORS.primary,
         fontSize: 20,
+        fontWeight: 'bold',
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 15,
+    },
+    notificationBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(31, 41, 55, 0.5)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#374151',
+    },
+    badge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: COLORS.primary,
+        minWidth: 16,
+        height: 16,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 4,
+        borderWidth: 1.5,
+        borderColor: COLORS.secondary || '#111827',
+    },
+    badgeText: {
+        color: COLORS.secondary || '#111827',
+        fontSize: 9,
         fontWeight: 'bold',
     },
     progressSection: {

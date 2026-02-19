@@ -44,6 +44,9 @@ from .resolver.lesson_online_articles import query as loa_query
 from .resolver.lesson_vocabularies import lesson_vocabularies as lv_type
 from .resolver.lesson_vocabularies import mutation as lv_mutation
 from .resolver.lesson_vocabularies import query as lv_query
+from .resolver.lesson_interactions import lesson_interactions as li_type
+from .resolver.lesson_interactions import mutation as li_mutation
+from .resolver.lesson_interactions import query as li_query
 from .resolver.lesson_youtube_videos import lesson_youtube_videos as lyv_type
 from .resolver.lesson_youtube_videos import mutation as lyv_mutation
 from .resolver.lesson_youtube_videos import query as lyv_query
@@ -188,6 +191,9 @@ bindables = [
     ci_query,
     ci_mutation,
     ci_type,
+    li_query,
+    li_mutation,
+    li_type,
     datetime_scalar,
     date_scalar,
     upload_scalar
