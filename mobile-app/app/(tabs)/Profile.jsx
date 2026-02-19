@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, TextInput, Modal, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useProfileStore } from '../../src/stores/profileStore';
+import { useFeedbackStore } from '../../src/stores/feedbackStore';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, AGE_RANGES, PROFICIENCY_LEVELS, DURATION_UNITS } from '../../src/constants';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,6 +22,14 @@ export default function ProfileScreen() {
         targetDuration: '30',
         durationUnit: 'DAYS',
         constraints: ''
+    });
+
+    const { submitFeedback, submitAnonymously, isLoading: isSubmittingFeedback } = useFeedbackStore();
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+    const [feedbackForm, setFeedbackForm] = useState({
+        content: '',
+        rate: 5,
+        isAnonymous: false
     });
 
     useEffect(() => {
@@ -181,6 +190,94 @@ export default function ProfileScreen() {
         </View>
     );
 
+    const handleFeedbackSubmit = async () => {
+        if (!feedbackForm.content.trim()) {
+            Alert.alert('Missing Content', 'Please provide your feedback.');
+            return;
+        }
+
+        const result = feedbackForm.isAnonymous
+            ? await submitAnonymously(feedbackForm.content, feedbackForm.rate)
+            : await submitFeedback(feedbackForm.content, feedbackForm.rate);
+
+        if (result.success) {
+            setShowFeedbackModal(false);
+            setFeedbackForm({ content: '', rate: 5, isAnonymous: false });
+            Alert.alert('Thank You!', 'Your feedback has been submitted successfully.');
+        } else {
+            Alert.alert('Error', result.error || 'Failed to submit feedback.');
+        }
+    };
+
+    const renderFeedbackModal = () => (
+        <Modal
+            visible={showFeedbackModal}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setShowFeedbackModal(false)}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Platform Feedback</Text>
+                        <TouchableOpacity onPress={() => setShowFeedbackModal(false)}>
+                            <Ionicons name="close" size={24} color="#9CA3AF" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text style={styles.modalLabel}>How would you rate your experience?</Text>
+                    <View style={styles.ratingContainer}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <TouchableOpacity
+                                key={star}
+                                onPress={() => setFeedbackForm({ ...feedbackForm, rate: star })}
+                            >
+                                <Ionicons
+                                    name={feedbackForm.rate >= star ? "star" : "star-outline"}
+                                    size={32}
+                                    color={feedbackForm.rate >= star ? COLORS.primary : "#4B5563"}
+                                />
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    <Text style={styles.modalLabel}>Your Feedback</Text>
+                    <TextInput
+                        style={[styles.pillInput, styles.textArea]}
+                        multiline
+                        numberOfLines={4}
+                        placeholder="Tell us what you think..."
+                        placeholderTextColor="#6B7280"
+                        value={feedbackForm.content}
+                        onChangeText={(text) => setFeedbackForm({ ...feedbackForm, content: text })}
+                    />
+
+                    <View style={styles.anonymousRow}>
+                        <Text style={styles.modalLabel}>Submit Anonymously</Text>
+                        <Switch
+                            value={feedbackForm.isAnonymous}
+                            onValueChange={(val) => setFeedbackForm({ ...feedbackForm, isAnonymous: val })}
+                            trackColor={{ false: '#374151', true: COLORS.primary }}
+                            thumbColor="#fff"
+                        />
+                    </View>
+
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.saveButton]}
+                        onPress={handleFeedbackSubmit}
+                        disabled={isSubmittingFeedback}
+                    >
+                        {isSubmittingFeedback ? (
+                            <ActivityIndicator color={COLORS.secondary} />
+                        ) : (
+                            <Text style={styles.saveButtonText}>Submit Feedback</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+    );
+
     const renderProfileDetails = () => (
         <View style={styles.detailsCard}>
             <View style={styles.detailRow}>
@@ -223,12 +320,21 @@ export default function ProfileScreen() {
 
                     {profile && !isEditing && (
                         <View style={styles.section}>
-                            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                            <TouchableOpacity style={styles.menuItem} onPress={() => setShowFeedbackModal(true)}>
+                                <Ionicons name="chatbox-ellipses-outline" size={22} color={COLORS.primary} style={{ marginRight: 10 }} />
+                                <Text style={styles.menuLabel}>Platform Feedback</Text>
+                            </TouchableOpacity>
+
+                            <View style={{ height: SPACING.md }} />
+
+                            <TouchableOpacity style={[styles.menuItem, { borderColor: 'rgba(239, 68, 68, 0.2)' }]} onPress={handleLogout}>
                                 <Ionicons name="log-out-outline" size={22} color="#EF4444" style={{ marginRight: 10 }} />
                                 <Text style={[styles.menuLabel, { color: '#EF4444' }]}>Log Out</Text>
                             </TouchableOpacity>
                         </View>
                     )}
+
+                    {renderFeedbackModal()}
                 </View>
             </ScrollView>
         </View>
@@ -412,10 +518,56 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surfaceDark || '#1F2937',
         borderRadius: BORDER_RADIUS.md,
         borderWidth: 1,
-        borderColor: 'rgba(239, 68, 68, 0.2)',
+        borderColor: '#374151',
     },
     menuLabel: {
         fontSize: 16,
         color: '#fff',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        padding: SPACING.lg,
+    },
+    modalContent: {
+        backgroundColor: COLORS.surfaceDark || '#1F2937',
+        borderRadius: BORDER_RADIUS.xl,
+        padding: SPACING.xl,
+        borderWidth: 1,
+        borderColor: '#374151',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: SPACING.lg,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    modalLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#D1D5DB',
+        marginBottom: SPACING.sm,
+    },
+    ratingContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 15,
+        marginBottom: SPACING.lg,
+    },
+    textArea: {
+        height: 100,
+        textAlignVertical: 'top',
+    },
+    anonymousRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginVertical: SPACING.lg,
     },
 });

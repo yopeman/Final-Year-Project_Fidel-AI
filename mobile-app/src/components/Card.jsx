@@ -1,16 +1,29 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 
-export default function Card({ children, variant = 'default', style }) {
+export default function Card({
+    children,
+    variant = 'default', // default, outlined, elevated
+    style,
+    onPress,
+    padding = true
+}) {
+    const Container = onPress ? TouchableOpacity : View;
+
     return (
-        <View style={[
-            styles.card,
-            variant === 'elevated' && styles.elevated,
-            style,
-        ]}>
+        <Container
+            style={[
+                styles.card,
+                styles[variant],
+                padding && styles.padding,
+                style,
+            ]}
+            onPress={onPress}
+            activeOpacity={onPress ? 0.7 : 1}
+        >
             {children}
-        </View>
+        </Container>
     );
 }
 
@@ -18,15 +31,21 @@ const styles = StyleSheet.create({
     card: {
         backgroundColor: COLORS.surface,
         borderRadius: BORDER_RADIUS.lg,
+        overflow: 'hidden',
+    },
+    padding: {
         padding: SPACING.md,
+    },
+    default: {
+        // Just background
+    },
+    outlined: {
         borderWidth: 1,
         borderColor: COLORS.border,
+        backgroundColor: 'transparent',
     },
     elevated: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
+        ...SHADOWS.md,
+        backgroundColor: COLORS.surface, // Ensure bg is set for shadow
     },
 });
