@@ -123,6 +123,15 @@ def serialize_date(value):
         return None
     return value.isoformat()
 
+time_scalar = ScalarType("Time")
+@time_scalar.serializer
+def serialize_time(value):
+    if value is None:
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
 
 bindables = [
     query,
@@ -215,6 +224,7 @@ bindables = [
     li_type,
     datetime_scalar,
     date_scalar,
+    time_scalar,
     upload_scalar
 ]
 

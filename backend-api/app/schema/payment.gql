@@ -31,6 +31,7 @@ extend type Query {
 
 extend type Mutation {
   makePayment(enrollmentId: ID!): Payment!
+  verifyPayment(enrollmentId: ID!): Payment!
   cancelPayment(id: ID!): Payment!
   deletePayment(id: ID!): Boolean!
 }

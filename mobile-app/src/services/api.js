@@ -813,6 +813,18 @@ export const batchAPI = {
         `;
         const res = await graphQLRequest(query, { courseScheduleId });
         return { data: { link: res.data.getCourseMeetingLink } };
+    },
+    getBatchMeetingLink: async (batchId) => {
+        const query = `
+            mutation getBatchMeetingLink($batchId: ID!) {
+                getBatchMeetingLink(batchId: $batchId) {
+                    meetingLink
+                    status
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { batchId });
+        return { data: { link: res.data.getBatchMeetingLink } };
     }
 };
 
@@ -850,11 +862,56 @@ export const communityAPI = {
         const posts = res.data.communities.map(p => ({
             ...p,
             author: p.user,
-            comments: p.comments.map(c => ({ ...c, author: c.user })),
-            reactions: p.reactions
+            comments: p.comments?.map(c => ({ ...c, author: c.user })) || [],
+            reactions: p.reactions || [],
+            attachments: p.attachments || []
         }));
 
         return { data: { posts } };
+    },
+    getPost: async (id) => {
+        const query = `
+            query community($id: ID!) {
+                community(id: $id) {
+                    id
+                    content
+                    createdAt
+                    isEdited
+                    user {
+                        id
+                        firstName
+                        lastName
+                    }
+                    reactions {
+                        id
+                        reactionType
+                        userId
+                    }
+                    comments {
+                        id
+                        content
+                        user {
+                            firstName
+                            lastName
+                        }
+                        createdAt
+                    }
+                    attachments {
+                        id
+                        fileName
+                        filePath
+                        fileExtension
+                    }
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { id });
+        const post = {
+            ...res.data.community,
+            author: res.data.community.user,
+            comments: res.data.community.comments.map(c => ({ ...c, author: c.user }))
+        };
+        return { data: { post } };
     },
     createPost: async (batchId, content) => {
         const query = `
@@ -875,6 +932,29 @@ export const communityAPI = {
         const post = { ...res.data.postCommunity, author: res.data.postCommunity.user };
         return { data: { post } };
     },
+    updatePost: async (id, content) => {
+        const query = `
+            mutation updateCommunity($id: ID!, $content: String!) {
+                updateCommunity(id: $id, content: $content) {
+                    id
+                    content
+                    isEdited
+                    updatedAt
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { id, content });
+        return { data: { post: res.data.updateCommunity } };
+    },
+    deletePost: async (id) => {
+        const query = `
+            mutation deleteCommunity($id: ID!) {
+                deleteCommunity(id: $id)
+            }
+        `;
+        const res = await graphQLRequest(query, { id });
+        return { data: res.data.deleteCommunity };
+    },
     addComment: async (communityId, content) => {
         const query = `
             mutation postComment($communityId: ID!, $content: String!) {
@@ -883,7 +963,9 @@ export const communityAPI = {
                 content
                 createdAt
                     user {
+                    id
                     firstName
+                    lastName
                 }
             }
         }
@@ -891,6 +973,102 @@ export const communityAPI = {
         const res = await graphQLRequest(query, { communityId, content });
         const comment = { ...res.data.postComment, author: res.data.postComment.user };
         return { data: { comment } };
+    },
+    getComments: async (communityId) => {
+        const query = `
+            query comments($communityId: ID) {
+                comments(communityId: $communityId) {
+                    id
+                    content
+                    createdAt
+                    isEdited
+                    user {
+                        id
+                        firstName
+                        lastName
+                    }
+                    reactions {
+                        id
+                        reactionType
+                        userId
+                    }
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { communityId });
+        const comments = res.data.comments.map(c => ({ ...c, author: c.user }));
+        return { data: { comments } };
+    },
+    deleteComment: async (id) => {
+        const query = `
+            mutation deleteComment($id: ID!) {
+                deleteComment(id: $id)
+            }
+        `;
+        const res = await graphQLRequest(query, { id });
+        return { data: res.data.deleteComment };
+    },
+    postReaction: async (communityId, reactionType) => {
+        const query = `
+            mutation postCommunityReaction($communityId: ID!, $reactionType: ReactionType!) {
+                postCommunityReaction(communityId: $communityId, reactionType: $reactionType) {
+                    id
+                    reactionType
+                    userId
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { communityId, reactionType });
+        return { data: { reaction: res.data.postCommunityReaction } };
+    },
+    deleteReaction: async (id) => {
+        const query = `
+            mutation deleteCommunityReaction($id: ID!) {
+                deleteCommunityReaction(id: $id)
+            }
+        `;
+        const res = await graphQLRequest(query, { id });
+        return { data: res.data.deleteCommunityReaction };
+    },
+    uploadAttachments: async (communityId, files) => {
+        const query = `
+            mutation uploadAttachments($communityId: ID!, $files: [Upload!]!) {
+                uploadAttachments(communityId: $communityId, files: $files) {
+                    id
+                    fileName
+                    filePath
+                    fileExtension
+                    fileSize
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { communityId, files });
+        return { data: { attachments: res.data.uploadAttachments } };
+    },
+    deleteAttachment: async (id) => {
+        const query = `
+            mutation deleteAttachment($id: ID!) {
+                deleteAttachment(id: $id)
+            }
+        `;
+        const res = await graphQLRequest(query, { id });
+        return { data: res.data.deleteAttachment };
+    },
+    getMaterialFiles: async (materialId) => {
+        const query = `
+            query materialFiles($materialId: ID!) {
+                materialFiles(materialId: $materialId) {
+                    id
+                    fileName
+                    filePath
+                    fileExtension
+                    fileSize
+                    createdAt
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { materialId });
+        return { data: { files: res.data.materialFiles } };
     }
 };
 
@@ -979,6 +1157,113 @@ export const feedbackAPI = {
         });
         return { data: { feedback: res.data.submitFeedbackAnonymously } };
     }
+};
+
+// ── Courses ────────────────────────────────────────────────────────────────────
+export const coursesAPI = {
+    getCourses: async () => {
+        const query = `
+            query {
+                courses {
+                    id
+                    name
+                    description
+                    createdAt
+                    updatedAt
+                    materials {
+                        id
+                        name
+                        description
+                        createdAt
+                        files {
+                            id
+                        }
+                    }
+                    batchCourses {
+                        id
+                    }
+                }
+            }
+        `;
+        const res = await graphQLRequest(query);
+        return { data: { courses: res.data.courses } };
+    },
+
+    getCourse: async (id) => {
+        const query = `
+            query course($id: ID!) {
+                course(id: $id) {
+                    id
+                    name
+                    description
+                    createdAt
+                    updatedAt
+                    materials {
+                        id
+                        name
+                        description
+                        createdAt
+                        files {
+                            id
+                        }
+                    }
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { id });
+        return { data: { course: res.data.course } };
+    },
+};
+
+// ── Materials ──────────────────────────────────────────────────────────────────
+export const materialsAPI = {
+    getMaterials: async (courseId) => {
+        const query = `
+            query materials($courseId: ID) {
+                materials(courseId: $courseId) {
+                    id
+                    courseId
+                    name
+                    description
+                    createdAt
+                    updatedAt
+                    files {
+                        id
+                    }
+                    course {
+                        id
+                        name
+                    }
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, courseId ? { courseId } : {});
+        return { data: { materials: res.data.materials } };
+    },
+
+    getMaterial: async (id) => {
+        const query = `
+            query material($id: ID!) {
+                material(id: $id) {
+                    id
+                    courseId
+                    name
+                    description
+                    createdAt
+                    updatedAt
+                    files {
+                        id
+                    }
+                    course {
+                        id
+                        name
+                    }
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { id });
+        return { data: { material: res.data.material } };
+    },
 };
 
 export default api;

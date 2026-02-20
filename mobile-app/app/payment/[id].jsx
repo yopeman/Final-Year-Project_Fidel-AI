@@ -1,187 +1,512 @@
-import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import {
+    View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity,
+    Modal, Animated, Easing, Linking, ScrollView, Platform
+} from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useBatchStore } from '../../src/stores/batchStore';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants';
 import { Ionicons } from '@expo/vector-icons';
-import Button from '../../src/components/Button';
-// import { WebView } from 'react-native-webview'; // Assuming usage for Chapa payment page, or mock
+import { LinearGradient } from 'expo-linear-gradient';
+import { AppState } from 'react-native';
 
+// ─────────────────────────────────────────────
+// Premium Success Modal
+// ─────────────────────────────────────────────
+function PremiumSuccessModal({ visible, onContinue }) {
+    const scale = useRef(new Animated.Value(0)).current;
+    const opacity = useRef(new Animated.Value(0)).current;
+    const ring1 = useRef(new Animated.Value(0)).current;
+    const ring2 = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (visible) {
+            Animated.sequence([
+                Animated.parallel([
+                    Animated.spring(scale, { toValue: 1, useNativeDriver: true, damping: 12 }),
+                    Animated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+                ]),
+                Animated.parallel([
+                    Animated.timing(ring1, { toValue: 1, duration: 600, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+                    Animated.timing(ring2, { toValue: 1, duration: 900, easing: Easing.out(Easing.ease), delay: 200, useNativeDriver: true }),
+                ])
+            ]).start();
+        } else {
+            scale.setValue(0);
+            opacity.setValue(0);
+            ring1.setValue(0);
+            ring2.setValue(0);
+        }
+    }, [visible]);
+
+    const FEATURES = [
+        { icon: 'book-outline', label: 'Premium Learning Resources', color: '#F59E0B', desc: 'AI-curated lessons and vocabulary' },
+        { icon: 'calendar-outline', label: 'Live Classes', color: '#3B82F6', desc: 'Join real-time sessions with instructors' },
+        { icon: 'chatbubbles-outline', label: 'Community Chat', color: '#10B981', desc: 'Discuss and learn with classmates' },
+    ];
+
+    const ring1Scale = ring1.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1.6] });
+    const ring2Scale = ring2.interpolate({ inputRange: [0, 1], outputRange: [0.7, 2] });
+    const ring1Opacity = ring1.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.6, 0.3, 0] });
+    const ring2Opacity = ring2.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.4, 0.2, 0] });
+
+    return (
+        <Modal visible={visible} transparent animationType="fade">
+            <View style={modal.backdrop}>
+                <Animated.View style={[modal.card, { transform: [{ scale }], opacity }]}>
+                    <LinearGradient
+                        colors={['#0A1628', '#0D2137', '#0A1628']}
+                        style={modal.gradientBg}
+                    />
+
+                    {/* Animated check icon with ripple rings */}
+                    <View style={modal.iconWrap}>
+                        <Animated.View style={[modal.ring, { transform: [{ scale: ring2Scale }], opacity: ring2Opacity }]} />
+                        <Animated.View style={[modal.ring, { transform: [{ scale: ring1Scale }], opacity: ring1Opacity, borderColor: '#F59E0B50' }]} />
+                        <LinearGradient colors={['#F59E0B', '#F97316']} style={modal.checkCircle}>
+                            <Ionicons name="checkmark-sharp" size={36} color="#fff" />
+                        </LinearGradient>
+                    </View>
+
+                    <Text style={modal.headline}>You're Premium! 🎉</Text>
+                    <Text style={modal.subtitle}>Your payment was confirmed. All premium features are now unlocked.</Text>
+
+                    {/* Feature Cards */}
+                    <View style={modal.features}>
+                        {FEATURES.map((f, i) => (
+                            <View key={i} style={modal.featureRow}>
+                                <View style={[modal.featureIconWrap, { backgroundColor: f.color + '22' }]}>
+                                    <Ionicons name={f.icon} size={22} color={f.color} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={modal.featureName}>{f.label}</Text>
+                                    <Text style={modal.featureDesc}>{f.desc}</Text>
+                                </View>
+                                <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                            </View>
+                        ))}
+                    </View>
+
+                    {/* CTA */}
+                    <TouchableOpacity style={modal.cta} onPress={onContinue} activeOpacity={0.85}>
+                        <LinearGradient colors={['#F59E0B', '#F97316']} style={modal.ctaGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                            <Text style={modal.ctaText}>Start Learning</Text>
+                            <Ionicons name="arrow-forward" size={18} color="#1A1A2E" />
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </Animated.View>
+            </View>
+        </Modal>
+    );
+}
+
+// ─────────────────────────────────────────────
+// Payment Screen
+// ─────────────────────────────────────────────
 export default function PaymentScreen() {
     const { id } = useLocalSearchParams(); // Enrollment ID
     const router = useRouter();
-    const { initiatePayment, checkPaymentStatus, isLoading, error } = useBatchStore();
+    const { initiatePayment, unlockPremium, isLoading, error } = useBatchStore();
     const [paymentData, setPaymentData] = useState(null);
     const [verifying, setVerifying] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
+    const shimmer = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        if (id) {
-            startPayment();
-        }
+        if (id) startPayment();
     }, [id]);
+
+    // Shimmer animation for the secure badge
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(shimmer, { toValue: 1, duration: 1200, useNativeDriver: true }),
+                Animated.timing(shimmer, { toValue: 0, duration: 1200, useNativeDriver: true }),
+            ])
+        ).start();
+    }, []);
 
     const startPayment = async () => {
         const result = await initiatePayment(id);
         if (result.success) {
             setPaymentData(result.payment);
+            // If payment has a checkoutUrl, open it in browser
+            if (result.payment?.checkoutUrl) {
+                Linking.openURL(result.payment.checkoutUrl).catch(() => { });
+            }
         } else {
-            Alert.alert("Payment Error", result.error || "Failed to initiate payment.");
+            Alert.alert('Payment Error', result.error || 'Failed to initiate payment.');
         }
     };
+
+    // Auto-verify when user returns to app from Chapa browser
+    const appState = useRef(AppState.currentState);
+    useEffect(() => {
+        const sub = AppState.addEventListener('change', async (nextState) => {
+            if (appState.current.match(/inactive|background/) && nextState === 'active') {
+                if (paymentData && !showSuccess) {
+                    setVerifying(true);
+                    const result = await unlockPremium(id);
+                    setVerifying(false);
+                    if (result.success) {
+                        setPaymentData(prev => ({ ...prev, status: 'COMPLETED' }));
+                        setShowSuccess(true);
+                    }
+                }
+            }
+            appState.current = nextState;
+        });
+        return () => sub.remove();
+    }, [paymentData, showSuccess]);
 
     const verifyPayment = async () => {
         setVerifying(true);
-        const result = await checkPaymentStatus(id);
+        const result = await unlockPremium(id);
         setVerifying(false);
 
-        if (result.success && result.status === 'COMPLETED') {
-            Alert.alert("Success", "Payment confirmed! Access granted.", [
-                { text: "Go to Learning", onPress: () => router.push('/(tabs)/Modules') }
-            ]);
+        if (result.success) {
+            setPaymentData(prev => ({ ...prev, status: 'COMPLETED' }));
+            setShowSuccess(true);
         } else {
-            Alert.alert("Pending", "Payment is not yet confirmed. Please complete the payment.");
+            Alert.alert(
+                'Payment Not Confirmed',
+                'Chapa has not confirmed your payment yet. Complete the payment and try again.'
+            );
         }
     };
 
+    // Dev-only: bypass Chapa verification for testing
+    const forceUnlockDev = () => {
+        useBatchStore.setState({
+            premiumUnlocked: true,
+            enrollmentStatusGlobal: 'ENROLLED',
+        });
+        setPaymentData(prev => ({ ...prev, status: 'COMPLETED' }));
+        setShowSuccess(true);
+    };
+
+    const handleContinue = () => {
+        setShowSuccess(false);
+        router.replace('/(tabs)/Modules');
+    };
+
+    // ── Loading state
     if (isLoading && !paymentData) {
         return (
             <View style={styles.centerContainer}>
+                <LinearGradient colors={['#0A1628', '#0D2137', '#0A1628']} style={StyleSheet.absoluteFillObject} />
                 <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={styles.loadingText}>Initiating Payment...</Text>
+                <Text style={styles.loadingText}>Setting up your payment...</Text>
             </View>
         );
     }
 
+    // ── Error state
     if (error && !paymentData) {
         return (
             <View style={styles.centerContainer}>
-                <Ionicons name="alert-circle-outline" size={48} color={COLORS.error} />
-                <Text style={styles.errorText}>{error}</Text>
-                <Button title="Retry" onPress={startPayment} style={{ marginTop: 20 }} />
-            </View>
-        );
-    }
-
-    // Assuming Chapa returns a checkoutUrl
-    if (paymentData?.checkoutUrl) {
-        // For real implementation would use WebView or redirect
-        // For now, let's mock the "Simulate Payment" view
-        return (
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>Complete Payment</Text>
-                    <Text style={styles.subtitle}>Secure payment via Chapa</Text>
-                </View>
-
-                <View style={styles.summaryCard}>
-                    <Text style={styles.amountLabel}>Total Amount</Text>
-                    <Text style={styles.amountValue}>{paymentData.amount} {paymentData.currency}</Text>
-                    <Text style={styles.status}>Status: {paymentData.status}</Text>
-                </View>
-
-                <View style={styles.webviewPlaceholder}>
-                    <Ionicons name="card-outline" size={64} color={COLORS.textSecondary} />
-                    <Text style={styles.placeholderText}>Redirecting to Payment Gateway...</Text>
-                    {/* In real app: <WebView source={{ uri: paymentData.checkoutUrl }} /> */}
-                </View>
-
-                <View style={styles.footer}>
-                    <Button
-                        title={verifying ? "Verifying..." : "I have completed payment"}
-                        onPress={verifyPayment}
-                        isLoading={verifying}
-                    />
-                    <TouchableOpacity onPress={() => router.back()} style={styles.cancelButton}>
-                        <Text style={styles.cancelText}>Cancel</Text>
+                <LinearGradient colors={['#0A1628', '#0D2137', '#0A1628']} style={StyleSheet.absoluteFillObject} />
+                <View style={styles.errorCard}>
+                    <Ionicons name="alert-circle" size={52} color="#EF4444" />
+                    <Text style={styles.errorTitle}>Payment Failed</Text>
+                    <Text style={styles.errorSub}>{error}</Text>
+                    <TouchableOpacity style={styles.retryBtn} onPress={startPayment}>
+                        <Text style={styles.retryText}>Retry</Text>
                     </TouchableOpacity>
                 </View>
             </View>
         );
     }
 
-    return null;
+    const shimmerOpacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] });
+
+    return (
+        <View style={styles.container}>
+            <LinearGradient colors={['#0A1628', '#0D2137', '#0A1628']} style={StyleSheet.absoluteFillObject} />
+
+            <PremiumSuccessModal visible={showSuccess} onContinue={handleContinue} />
+
+            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+                {/* Header */}
+                <View style={styles.header}>
+                    <LinearGradient colors={['#F59E0B22', '#F5972200']} style={styles.headerGlow} />
+                    <View style={styles.headerIcon}>
+                        <Ionicons name="shield-checkmark" size={32} color="#F59E0B" />
+                    </View>
+                    <Text style={styles.title}>Complete Payment</Text>
+                    <Text style={styles.subtitle}>Secure checkout powered by Chapa</Text>
+                </View>
+
+                {/* Amount Card */}
+                {paymentData && (
+                    <View style={styles.amountCard}>
+                        <LinearGradient colors={['#1A2744', '#0F1B33']} style={styles.amountCardGrad} />
+                        <Text style={styles.amountLabel}>Total Amount</Text>
+                        <Text style={styles.amountValue}>
+                            {paymentData.amount ?? '--'} <Text style={styles.amountCurrency}>{paymentData.currency ?? 'ETB'}</Text>
+                        </Text>
+                        <View style={styles.statusRow}>
+                            <View style={[styles.statusDot, { backgroundColor: paymentData.status === 'COMPLETED' ? '#10B981' : '#F59E0B' }]} />
+                            <Text style={styles.statusText}>{paymentData.status ?? 'PENDING'}</Text>
+                        </View>
+                    </View>
+                )}
+
+                {/* What you unlock */}
+                <View style={styles.unlockBox}>
+                    <Text style={styles.unlockTitle}>What you unlock</Text>
+                    {[
+                        { icon: 'book-outline', label: 'Premium Learning Resources', color: '#F59E0B' },
+                        { icon: 'videocam-outline', label: 'Live Class Schedules', color: '#3B82F6' },
+                        { icon: 'chatbubbles-outline', label: 'Community Chat Access', color: '#10B981' },
+                        { icon: 'sparkles-outline', label: 'AI Vocabulary & Stories', color: '#8B5CF6' },
+                    ].map((f, i) => (
+                        <View key={i} style={styles.unlockRow}>
+                            <View style={[styles.unlockIcon, { backgroundColor: f.color + '22' }]}>
+                                <Ionicons name={f.icon} size={18} color={f.color} />
+                            </View>
+                            <Text style={styles.unlockLabel}>{f.label}</Text>
+                            <Ionicons name="lock-closed-outline" size={14} color="#6B7280" />
+                        </View>
+                    ))}
+                </View>
+
+                {/* Gateway & Re-open */}
+                <View style={styles.gatewayBox}>
+                    <Ionicons name="card-outline" size={36} color="#6B7280" />
+                    <Text style={styles.gatewayText}>Payment page opened in browser</Text>
+                    <Text style={styles.gatewayHint}>Complete your payment on the Chapa page and return here. Premium access will activate automatically.</Text>
+                    {paymentData?.checkoutUrl && (
+                        <TouchableOpacity
+                            style={styles.reopenBtn}
+                            onPress={() => Linking.openURL(paymentData.checkoutUrl).catch(() => { })}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="open-outline" size={15} color="#F59E0B" />
+                            <Text style={styles.reopenBtnText}>Re-open Payment Page</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {/* Secure badge */}
+                <Animated.View style={[styles.secureBadge, { opacity: shimmerOpacity }]}>
+                    <Ionicons name="lock-closed" size={13} color="#6B7280" />
+                    <Text style={styles.secureText}>256-bit SSL encrypted · Powered by Chapa</Text>
+                </Animated.View>
+            </ScrollView>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+                <TouchableOpacity
+                    style={[styles.verifyBtn, verifying && styles.verifyBtnDisabled]}
+                    onPress={verifyPayment}
+                    disabled={verifying}
+                    activeOpacity={0.85}
+                >
+                    {verifying ? (
+                        <ActivityIndicator color="#1A1A2E" />
+                    ) : (
+                        <>
+                            <Ionicons name="checkmark-circle-outline" size={20} color="#1A1A2E" />
+                            <Text style={styles.verifyText}>I've Completed Payment</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+
+                {/* DEV-ONLY test button — remove before production */}
+                <TouchableOpacity
+                    style={styles.devTestBtn}
+                    onPress={forceUnlockDev}
+                    activeOpacity={0.75}
+                >
+                    <Ionicons name="flask-outline" size={14} color="#6B7280" />
+                    <Text style={styles.devTestText}>🧪 Dev: Skip Verification</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => router.back()} style={styles.cancelBtn}>
+                    <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
 }
 
+// ─────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: COLORS.background,
-        padding: SPACING.lg,
-    },
-    centerContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+    container: { flex: 1 },
+    centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    scroll: { padding: SPACING.lg, paddingBottom: 140 },
+
+    loadingText: { marginTop: SPACING.md, color: '#9CA3AF', fontSize: 15 },
+
+    errorCard: {
+        backgroundColor: '#1A1A2E',
+        borderRadius: BORDER_RADIUS.xl,
         padding: SPACING.xl,
-    },
-    loadingText: {
-        marginTop: SPACING.md,
-        color: COLORS.textSecondary,
-    },
-    errorText: {
-        marginTop: SPACING.md,
-        color: COLORS.error,
-        textAlign: 'center',
-    },
-    header: {
-        marginBottom: SPACING.xl,
         alignItems: 'center',
+        gap: SPACING.sm,
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: COLORS.textPrimary,
-    },
-    subtitle: {
-        color: COLORS.textSecondary,
-        marginTop: 4,
-    },
-    summaryCard: {
-        backgroundColor: COLORS.surface,
-        padding: SPACING.lg,
-        borderRadius: BORDER_RADIUS.lg,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: COLORS.border,
-        marginBottom: SPACING.xl,
-    },
-    amountLabel: {
-        fontSize: 14,
-        color: COLORS.textSecondary,
-    },
-    amountValue: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: COLORS.primary,
-        marginVertical: SPACING.sm,
-    },
-    status: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: COLORS.textPrimary,
-    },
-    webviewPlaceholder: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-        borderRadius: BORDER_RADIUS.lg,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: SPACING.xl,
-    },
-    placeholderText: {
-        marginTop: SPACING.md,
-        color: COLORS.textSecondary,
-    },
-    footer: {
-        marginTop: 'auto',
-    },
-    cancelButton: {
-        padding: SPACING.md,
-        alignItems: 'center',
+    errorTitle: { color: '#EF4444', fontSize: 20, fontWeight: 'bold' },
+    errorSub: { color: '#9CA3AF', textAlign: 'center', lineHeight: 20 },
+    retryBtn: {
+        backgroundColor: '#F59E0B',
+        paddingHorizontal: SPACING.xl,
+        paddingVertical: SPACING.sm,
+        borderRadius: BORDER_RADIUS.full,
         marginTop: SPACING.sm,
     },
-    cancelText: {
-        color: COLORS.error,
-        fontWeight: '600',
+    retryText: { color: '#1A1A2E', fontWeight: 'bold' },
+
+    header: { alignItems: 'center', marginBottom: SPACING.xl, position: 'relative' },
+    headerGlow: {
+        position: 'absolute', top: -20, width: 260, height: 120,
+        borderRadius: 130,
     },
+    headerIcon: {
+        width: 72, height: 72, borderRadius: 36,
+        backgroundColor: '#F59E0B22',
+        alignItems: 'center', justifyContent: 'center',
+        marginBottom: SPACING.md,
+        borderWidth: 1, borderColor: '#F59E0B44',
+    },
+    title: { fontSize: 26, fontWeight: 'bold', color: '#fff', marginBottom: 6 },
+    subtitle: { fontSize: 14, color: '#9CA3AF' },
+
+    amountCard: {
+        borderRadius: BORDER_RADIUS.xl,
+        padding: SPACING.xl,
+        alignItems: 'center',
+        marginBottom: SPACING.lg,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#F59E0B33',
+    },
+    amountCardGrad: { ...StyleSheet.absoluteFillObject },
+    amountLabel: { fontSize: 13, color: '#9CA3AF', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 },
+    amountValue: { fontSize: 42, fontWeight: 'bold', color: '#F59E0B' },
+    amountCurrency: { fontSize: 20, fontWeight: '600', color: '#F59E0BAA' },
+    statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: SPACING.sm },
+    statusDot: { width: 8, height: 8, borderRadius: 4 },
+    statusText: { color: '#D1D5DB', fontSize: 13, fontWeight: '600' },
+
+    unlockBox: {
+        backgroundColor: '#0F1B33',
+        borderRadius: BORDER_RADIUS.xl,
+        padding: SPACING.lg,
+        marginBottom: SPACING.lg,
+        borderWidth: 1,
+        borderColor: '#1E3A5F',
+    },
+    unlockTitle: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginBottom: SPACING.md },
+    unlockRow: {
+        flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+        paddingVertical: 10,
+        borderBottomWidth: 1, borderBottomColor: '#1E2D44',
+    },
+    unlockIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    unlockLabel: { flex: 1, color: '#D1D5DB', fontSize: 14 },
+
+    gatewayBox: {
+        backgroundColor: '#0D1626',
+        borderRadius: BORDER_RADIUS.xl,
+        padding: SPACING.xl,
+        alignItems: 'center',
+        marginBottom: SPACING.md,
+        borderWidth: 1,
+        borderColor: '#1E2D44',
+        gap: SPACING.sm,
+    },
+    gatewayText: { color: '#9CA3AF', fontSize: 14, fontWeight: '600' },
+    gatewayHint: { color: '#6B7280', fontSize: 12, textAlign: 'center', lineHeight: 18 },
+    reopenBtn: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        marginTop: SPACING.sm,
+        borderWidth: 1, borderColor: '#F59E0B55',
+        borderRadius: BORDER_RADIUS.full,
+        paddingHorizontal: SPACING.md, paddingVertical: 8,
+        backgroundColor: '#F59E0B11',
+    },
+    reopenBtnText: { color: '#F59E0B', fontSize: 13, fontWeight: '600' },
+
+    secureBadge: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 5, marginBottom: SPACING.sm,
+    },
+    secureText: { color: '#4B5563', fontSize: 12 },
+
+    footer: {
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        backgroundColor: '#0A1628',
+        padding: SPACING.lg,
+        paddingBottom: Platform.OS === 'ios' ? 36 : SPACING.lg,
+        borderTopWidth: 1, borderTopColor: '#1E2D44',
+    },
+    verifyBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 8, backgroundColor: '#F59E0B',
+        paddingVertical: 16, borderRadius: BORDER_RADIUS.lg,
+        shadowColor: '#F59E0B', shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+        elevation: 6,
+    },
+    verifyBtnDisabled: { opacity: 0.6, shadowOpacity: 0 },
+    verifyText: { color: '#1A1A2E', fontWeight: 'bold', fontSize: 16 },
+    devTestBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 5, paddingVertical: 8, marginTop: 6,
+        borderWidth: 1, borderColor: '#2D3748', borderRadius: BORDER_RADIUS.md,
+        borderStyle: 'dashed',
+    },
+    devTestText: { color: '#4B5563', fontSize: 12 },
+    cancelBtn: { alignItems: 'center', paddingVertical: SPACING.sm, marginTop: SPACING.xs },
+    cancelText: { color: '#6B7280', fontWeight: '600' },
+});
+
+// ─────────────────────────────────────────────
+// Modal Styles
+// ─────────────────────────────────────────────
+const modal = StyleSheet.create({
+    backdrop: {
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center', alignItems: 'center', padding: SPACING.lg,
+    },
+    card: {
+        width: '100%', borderRadius: BORDER_RADIUS.xl * 1.5,
+        padding: SPACING.xl, alignItems: 'center',
+        overflow: 'hidden',
+        borderWidth: 1, borderColor: '#F59E0B33',
+    },
+    gradientBg: { ...StyleSheet.absoluteFillObject },
+
+    iconWrap: { alignItems: 'center', justifyContent: 'center', width: 100, height: 100, marginBottom: SPACING.lg },
+    ring: {
+        position: 'absolute', width: 90, height: 90, borderRadius: 45,
+        borderWidth: 2, borderColor: '#F59E0B66',
+    },
+    checkCircle: {
+        width: 72, height: 72, borderRadius: 36,
+        alignItems: 'center', justifyContent: 'center',
+    },
+
+    headline: { fontSize: 26, fontWeight: 'bold', color: '#fff', marginBottom: 8 },
+    subtitle: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 20, marginBottom: SPACING.xl },
+
+    features: { width: '100%', gap: SPACING.sm, marginBottom: SPACING.xl },
+    featureRow: {
+        flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+        backgroundColor: '#0F1B33', borderRadius: BORDER_RADIUS.lg,
+        padding: SPACING.md, borderWidth: 1, borderColor: '#1E2D44',
+    },
+    featureIconWrap: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    featureName: { color: '#fff', fontWeight: '600', fontSize: 13 },
+    featureDesc: { color: '#9CA3AF', fontSize: 11, marginTop: 2 },
+
+    cta: { width: '100%', borderRadius: BORDER_RADIUS.lg, overflow: 'hidden' },
+    ctaGradient: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 8, paddingVertical: 16,
+    },
+    ctaText: { color: '#1A1A2E', fontWeight: 'bold', fontSize: 17 },
 });

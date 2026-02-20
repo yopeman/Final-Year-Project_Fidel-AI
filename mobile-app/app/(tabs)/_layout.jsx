@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../src/constants';
+import { COLORS } from '../../src/constants/theme';
+import { Platform } from 'react-native';
 
 export default function TabLayout() {
     return (
@@ -12,9 +13,10 @@ export default function TabLayout() {
                 tabBarStyle: {
                     borderTopWidth: 1,
                     borderTopColor: COLORS.border,
-                    height: 60,
-                    paddingBottom: 5,
-                    paddingTop: 5,
+                    backgroundColor: COLORS.surface,
+                    height: Platform.OS === 'ios' ? 85 : 65,
+                    paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+                    paddingTop: 10,
                 },
                 tabBarLabelStyle: {
                     fontSize: 12,
@@ -55,6 +57,38 @@ export default function TabLayout() {
                     title: 'Batch',
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="stats-chart" size={size} color={color} />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="Resources"
+                options={{
+                    href: null,
+                    title: 'Resources',
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="book-outline" size={size} color={color} />
+                    ),
+                }}
+            />
+
+            <Tabs.Screen
+                name="Community"
+                options={{
+                    href: null,
+                    title: 'Community',
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="people-outline" size={size} color={color} />
+                    ),
+                }}
+            />
+
+            <Tabs.Screen
+                name="LiveClasses"
+                options={{
+                    href: null,
+                    title: 'Live Classes',
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="videocam-outline" size={size} color={color} />
                     ),
                 }}
             />

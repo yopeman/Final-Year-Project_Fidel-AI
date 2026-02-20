@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import {
     View,
     Text,
-    TextInput,
     TouchableOpacity,
     StyleSheet,
-    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants';
+import { COLORS, SPACING, FONTS } from '../../src/constants/theme';
+import ScreenContainer from '../../src/components/ScreenContainer';
+import Input from '../../src/components/Input';
+import Button from '../../src/components/Button';
+import Card from '../../src/components/Card';
 
 const RegisterScreen = () => {
     const router = useRouter();
@@ -54,111 +56,85 @@ const RegisterScreen = () => {
     };
 
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.card}>
-                    <Text style={styles.title}>Create Account</Text>
-                    <Text style={styles.subtitle}>Start your English learning journey</Text>
+        <ScreenContainer>
+            <KeyboardAvoidingView
+                style={styles.keyboardView}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    <Card style={styles.card}>
+                        <Text style={styles.title}>Create Account</Text>
+                        <Text style={styles.subtitle}>Start your English learning journey</Text>
 
-                    <View style={styles.form}>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>First Name</Text>
-                            <TextInput
-                                style={styles.input}
+                        <View style={styles.form}>
+                            <Input
+                                label="First Name"
                                 placeholder="Enter your first name"
                                 value={formData.firstName}
                                 onChangeText={(v) => handleInputChange('firstName', v)}
-                                placeholderTextColor="#9CA3AF"
                             />
-                        </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Last Name</Text>
-                            <TextInput
-                                style={styles.input}
+                            <Input
+                                label="Last Name"
                                 placeholder="Enter your last name"
                                 value={formData.lastName}
                                 onChangeText={(v) => handleInputChange('lastName', v)}
-                                placeholderTextColor="#9CA3AF"
                             />
-                        </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Email</Text>
-                            <TextInput
-                                style={styles.input}
+                            <Input
+                                label="Email"
                                 placeholder="your@email.com"
                                 value={formData.email}
                                 onChangeText={(v) => handleInputChange('email', v)}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
-                                placeholderTextColor="#9CA3AF"
                             />
-                        </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Password</Text>
-                            <TextInput
-                                style={styles.input}
+                            <Input
+                                label="Password"
                                 placeholder="Create a password"
                                 value={formData.password}
                                 onChangeText={(v) => handleInputChange('password', v)}
                                 secureTextEntry
-                                placeholderTextColor="#9CA3AF"
                             />
+
+                            {error && <Text style={styles.error}>{error}</Text>}
+
+                            <Button
+                                title="Create Account"
+                                onPress={handleRegister}
+                                loading={isLoading}
+                                size="large"
+                                style={styles.button}
+                            />
+
+                            <TouchableOpacity
+                                style={styles.linkButton}
+                                onPress={() => router.push('/(auth)/Login')}
+                            >
+                                <Text style={styles.linkText}>
+                                    Already have an account? <Text style={styles.linkHighlight}>Log in</Text>
+                                </Text>
+                            </TouchableOpacity>
                         </View>
-
-                        {error && <Text style={styles.error}>{error}</Text>}
-
-                        <TouchableOpacity
-                            style={styles.button}
-                            onPress={handleRegister}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <ActivityIndicator color={COLORS.secondary} />
-                            ) : (
-                                <Text style={styles.buttonText}>Create Account</Text>
-                            )}
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.linkButton}
-                            onPress={() => router.push('/(auth)/Login')}
-                        >
-                            <Text style={styles.linkText}>
-                                Already have an account? <Text style={styles.linkHighlight}>Log in</Text>
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                    </Card>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </ScreenContainer>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    keyboardView: {
         flex: 1,
-        backgroundColor: COLORS.background,
     },
     scrollContent: {
         flexGrow: 1,
         justifyContent: 'center',
-        padding: SPACING.lg,
+        padding: SPACING.md,
     },
     card: {
-        backgroundColor: COLORS.surface,
-        borderRadius: BORDER_RADIUS.xl,
         padding: SPACING.xl,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        elevation: 5,
     },
     title: {
         fontSize: 28,
@@ -168,7 +144,7 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.xs,
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: FONTS.sizes.md,
         color: COLORS.textSecondary,
         textAlign: 'center',
         marginBottom: SPACING.xl,
@@ -176,44 +152,14 @@ const styles = StyleSheet.create({
     form: {
         width: '100%',
     },
-    inputGroup: {
-        marginBottom: SPACING.lg,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: COLORS.text,
-        marginBottom: SPACING.xs,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: COLORS.border,
-        borderRadius: BORDER_RADIUS.lg, // Rounded pill-like but standard input shape
-        padding: SPACING.md,
-        fontSize: 16,
-        backgroundColor: '#FAFAFA',
-    },
     error: {
         color: COLORS.error,
         textAlign: 'center',
         marginBottom: SPACING.md,
+        fontSize: FONTS.sizes.sm,
     },
     button: {
-        backgroundColor: COLORS.primary,
-        padding: SPACING.md,
-        borderRadius: BORDER_RADIUS.lg,
-        alignItems: 'center',
         marginTop: SPACING.sm,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    buttonText: {
-        color: COLORS.secondary, // Dark text on yellow
-        fontSize: 16,
-        fontWeight: 'bold',
     },
     linkButton: {
         marginTop: SPACING.xl,
@@ -221,7 +167,7 @@ const styles = StyleSheet.create({
     },
     linkText: {
         color: COLORS.textSecondary,
-        fontSize: 14,
+        fontSize: FONTS.sizes.sm,
     },
     linkHighlight: {
         color: COLORS.primary,

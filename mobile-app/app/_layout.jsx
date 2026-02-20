@@ -1,7 +1,8 @@
 import { Stack, useSegments, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { useAuthStore } from '../src/stores/authStore';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StatusBar } from 'react-native';
+import { COLORS } from '../src/constants/theme';
 
 export default function Layout() {
     const { initAuth, isAuthenticated, hasProfile, hasPlan, isLoading } = useAuthStore();
@@ -45,20 +46,23 @@ export default function Layout() {
 
     if (isLoading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#0000ff" />
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
         );
     }
 
     return (
-        <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="(onboarding)" />
-            <Stack.Screen name="learn" />
-            <Stack.Screen name="chat" />
-        </Stack>
+        <>
+            <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS.background } }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="(onboarding)" />
+                <Stack.Screen name="learn" />
+                <Stack.Screen name="chat" />
+            </Stack>
+        </>
     );
 }
