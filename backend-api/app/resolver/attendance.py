@@ -5,7 +5,7 @@ from typing import Optional
 from ariadne import MutationType, ObjectType, QueryType
 from sqlalchemy.orm import Session
 
-from ..model.attendance import Attendance, AttendanceStatus, UserType as ModelUserType
+from ..model.attendance import Attendance, AttendanceStatus, UserType as ModelUserType, CourseScheduleStatus
 from ..model.course_schedule import CourseSchedule
 from ..model.schedule import Schedule
 from ..model.batch_course import BatchCourse
@@ -18,6 +18,7 @@ from ..util.email_service import send_notification
 query = QueryType()
 mutation = MutationType()
 attendance = ObjectType("Attendance")
+course_schedule = ObjectType("CourseSchedule")
 
 @query.field("attendances")
 def resolve_attendances(_, info, batchId: str):
@@ -203,10 +204,21 @@ def resolve_get_course_meeting_link(_, info, courseScheduleId: str):
                 db=db
             )
     
+    # Update CourseSchedule status
+    if meeting_link:
+        course_schedule.status = CourseScheduleStatus.live
+        db.commit()
+    
+    # Check if we should mark as completed (after class time)
+    if time_diff_minutes > 60: # More than an hour after start
+        course_schedule.status = CourseScheduleStatus.completed
+        db.commit()
+
     return {
         "attendance": attendance_record,
         "meetingLink": meeting_link,
-        "remainingTimeMinutes": time_diff_minutes
+        "remainingTimeMinutes": time_diff_minutes,
+        "status": str(course_schedule.status.value).upper()
     }
 
 
@@ -377,10 +389,21 @@ def resolve_get_batch_meeting_link(_, info, batchId: str):
                 db=db
             )
             
+    # Update CourseSchedule status
+    if meeting_link:
+        active_course_schedule.status = CourseScheduleStatus.live
+        db.commit()
+    
+    # Check if we should mark as completed
+    if time_diff_minutes > 60:
+        active_course_schedule.status = CourseScheduleStatus.completed
+        db.commit()
+            
     return {
         "attendance": attendance_record,
         "meetingLink": meeting_link,
-        "remainingTimeMinutes": time_diff_minutes
+        "remainingTimeMinutes": time_diff_minutes,
+        "status": str(active_course_schedule.status.value).upper()
     }
 
 
@@ -462,3 +485,56 @@ def resolve_is_deleted(attendance_obj, info):
 @attendance.field("deletedAt")
 def resolve_deleted_at(attendance_obj, info):
     return attendance_obj.deleted_at
+
+# Field resolvers for CourseSchedule type
+@course_schedule.field("scheduleId")
+def resolve_cs_schedule_id(cs_obj, info):
+    return cs_obj.schedule_id
+
+@course_schedule.field("batchCourseId")
+def resolve_cs_batch_course_id(cs_obj, info):
+    return cs_obj.batch_course_id
+
+@course_schedule.field("status")
+def resolve_cs_status(cs_obj, info):
+    return str(cs_obj.status.value).upper()
+
+@course_schedule.field("schedule")
+def resolve_cs_schedule(cs_obj, info):
+    db: Session = info.context["db"]
+    return db.query(Schedule).filter(
+        Schedule.id == cs_obj.schedule_id,
+        Schedule.is_deleted == False
+    ).first()
+
+@course_schedule.field("batchCourse")
+def resolve_cs_batch_course(cs_obj, info):
+    db: Session = info.context["db"]
+    return db.query(BatchCourse).filter(
+        BatchCourse.id == cs_obj.batch_course_id,
+        BatchCourse.is_deleted == False
+    ).first()
+
+@course_schedule.field("attendances")
+def resolve_cs_attendances(cs_obj, info):
+    db: Session = info.context["db"]
+    return db.query(Attendance).filter(
+        Attendance.course_schedule_id == cs_obj.id,
+        Attendance.is_deleted == False
+    ).all()
+
+@course_schedule.field("createdAt")
+def resolve_cs_created_at(cs_obj, info):
+    return cs_obj.created_at
+
+@course_schedule.field("updatedAt")
+def resolve_cs_updated_at(cs_obj, info):
+    return cs_obj.updated_at
+
+@course_schedule.field("isDeleted")
+def resolve_cs_is_deleted(cs_obj, info):
+    return cs_obj.is_deleted
+
+@course_schedule.field("deletedAt")
+def resolve_cs_deleted_at(cs_obj, info):
+    return cs_obj.deleted_at

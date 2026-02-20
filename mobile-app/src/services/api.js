@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import storage from '../utils/storage';
 
 // Create axios instance
 const api = axios.create({
@@ -12,10 +12,24 @@ const api = axios.create({
     },
 });
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
 // Request interceptor to add token
 api.interceptors.request.use(
     async (config) => {
-        const token = await AsyncStorage.getItem('accessToken');
+        const token = await storage.getItem('accessToken', true);
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -26,15 +40,62 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor for error handling
+// Response interceptor for error handling and silent refresh
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        if (error.response?.status === 401) {
-            // Token expired or invalid - clear auth
-            await AsyncStorage.removeItem('accessToken');
-            await AsyncStorage.removeItem('user');
+        const originalRequest = error.config;
+
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                }).then(token => {
+                    originalRequest.headers.Authorization = `Bearer ${token}`;
+                    return api(originalRequest);
+                }).catch(err => {
+                    return Promise.reject(err);
+                });
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+                const refreshToken = await storage.getItem('refreshToken', true);
+                if (!refreshToken) {
+                    throw new Error('No refresh token available');
+                }
+
+                const response = await authAPI.refreshToken(refreshToken);
+                const { accessToken, refreshToken: newRefreshToken } = response.data;
+
+                await storage.setItem('accessToken', accessToken, true);
+                await storage.setItem('refreshToken', newRefreshToken, true);
+
+                // Update the current request header
+                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+                processQueue(null, accessToken);
+                return api(originalRequest);
+            } catch (refreshError) {
+                processQueue(refreshError, null);
+
+                // If refresh fails, clear all auth data
+                await storage.removeItem('accessToken');
+                await storage.removeItem('refreshToken');
+                await storage.removeItem('user');
+
+                // Optional: Provide a way to trigger logout in UI
+                // For instance, by emitting an event or using a store directly
+                // (though importing store here might cause circular deps)
+
+                return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
+            }
         }
+
         return Promise.reject(error);
     }
 );
@@ -49,7 +110,8 @@ const graphQLRequest = async (query, variables = {}) => {
                 response: {
                     data: {
                         message: response.data.errors[0].message
-                    }
+                    },
+                    status: response.data.errors[0].extensions?.code === 'UNAUTHENTICATED' ? 401 : 400
                 }
             };
         }
@@ -122,10 +184,27 @@ export const authAPI = {
         const res = await graphQLRequest(query, { input: data });
         return {
             data: {
-                token: res.data.login.accessToken,
+                accessToken: res.data.login.accessToken,
+                refreshToken: res.data.login.refreshToken,
                 user: res.data.login.user
             }
         };
+    },
+    refreshToken: async (token) => {
+        const query = `
+            mutation refreshToken($token: String!) {
+                refreshToken(token: $token) {
+                    accessToken
+                    refreshToken
+                    user {
+                        id
+                        email
+                    }
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { token });
+        return { data: res.data.refreshToken };
     },
     me: async () => {
         const query = `
@@ -138,6 +217,14 @@ export const authAPI = {
                     role
                     isVerified
                     createdAt
+                    subscription {
+                        id
+                        planType
+                        status
+                        startDate
+                        endDate
+                        features
+                    }
                     profile {
                         id
                         ageRange

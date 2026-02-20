@@ -1,6 +1,7 @@
-from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy import Column, Enum, ForeignKey, String
 from sqlalchemy.orm import relationship
 
+from .attendance import CourseScheduleStatus
 from .base import BaseModel
 
 
@@ -9,6 +10,11 @@ class CourseSchedule(BaseModel):
 
     schedule_id = Column(String(36), ForeignKey("schedules.id"), nullable=False)
     batch_course_id = Column(String(36), ForeignKey("batch_courses.id"), nullable=False)
+    status = Column(
+        Enum(CourseScheduleStatus),
+        nullable=False,
+        default=CourseScheduleStatus.scheduled,
+    )
 
     # Relationships
     schedule = relationship("Schedule", back_populates="course_schedules")

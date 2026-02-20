@@ -11,6 +11,7 @@ import { useNotificationStore } from '../../src/stores/notificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, BORDER_RADIUS, SPACING } from '../../src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle } from 'react-native-svg';
 import PremiumMenu from '../../src/components/PremiumMenu';
 
 const { width } = Dimensions.get('window');
@@ -30,7 +31,7 @@ const PREMIUM_ITEMS = [
 
 export default function HomeScreen() {
     const router = useRouter();
-    const { user } = useAuthStore();
+    const { user, isPremium: hasPremiumSub } = useAuthStore();
     const [menuVisible, setMenuVisible] = useState(false);
     const progressAnim = useRef(new Animated.Value(0)).current;
 
@@ -38,7 +39,7 @@ export default function HomeScreen() {
     const { unreadCount, getNotifications } = useNotificationStore();
     const { batches, enrollments, getBatches, isLoading: batchLoading, premiumUnlocked } = useBatchStore();
 
-    const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
+    const isPremium = hasPremiumSub || premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
     const currentPosition = getCurrentPosition();
     const overallProgress = progress?.completionPercentage || 0;
 
@@ -306,26 +307,41 @@ function getTimeOfDay() {
 
 function CircleProgress({ value }) {
     const size = 72;
-    const radius = 28;
-    const stroke = 5;
+    const strokeWidth = 5;
+    const center = size / 2;
+    const radius = size / 2 - strokeWidth / 2;
     const circumference = 2 * Math.PI * radius;
-    const filled = (value / 100) * circumference;
+    const strokeDashoffset = circumference - (value / 100) * circumference;
 
     return (
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-            {/* Background ring */}
-            <View style={{
-                position: 'absolute', width: size, height: size, borderRadius: size / 2,
-                borderWidth: stroke, borderColor: 'rgba(255,255,255,0.1)',
-            }} />
-            {/* SVG-free approximate fill using a gradient border trick */}
-            <View style={{
-                position: 'absolute', width: size, height: size, borderRadius: size / 2,
-                borderWidth: stroke,
-                borderColor: COLORS.primary,
-                opacity: value > 5 ? 1 : 0,
-            }} />
-            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>{Math.round(value)}%</Text>
+            <Svg width={size} height={size}>
+                {/* Background ring */}
+                <Circle
+                    cx={center}
+                    cy={center}
+                    r={radius}
+                    stroke="rgba(255,255,255,0.1)"
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                />
+                {/* Progress Circle arc */}
+                <Circle
+                    cx={center}
+                    cy={center}
+                    r={radius}
+                    stroke={COLORS.primary}
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${center} ${center})`}
+                />
+            </Svg>
+            <View style={{ position: 'absolute' }}>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>{Math.round(value)}%</Text>
+            </View>
         </View>
     );
 }

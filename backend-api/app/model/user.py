@@ -27,6 +27,7 @@ class User(BaseModel):
 
     # Relationships
     profile = relationship("StudentProfile", back_populates="user", uselist=False)
+    subscription = relationship("Subscription", back_populates="user", uselist=False)
     batch_instructors = relationship("BatchInstructor", back_populates="user")
     batch_communities = relationship("BatchCommunity", back_populates="user")
     community_reactions = relationship("CommunityReactions", back_populates="user")

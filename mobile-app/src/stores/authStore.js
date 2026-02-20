@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import storage from '../utils/storage';
 import { authAPI, profileAPI } from '../services/api';
 
 export const useAuthStore = create((set, get) => ({
@@ -9,23 +9,30 @@ export const useAuthStore = create((set, get) => ({
     isAuthenticated: false,
     hasProfile: false,
     hasPlan: false,
+    subscription: null,
+    isPremium: false,
+    features: [],
     isLoading: true,
     error: null,
 
+    hasFeature: (feature) => {
+        const { features, isPremium } = get();
+        return isPremium && features.includes(feature);
+    },
+
     initAuth: async () => {
         try {
-            const token = await AsyncStorage.getItem('accessToken');
-            const refreshToken = await AsyncStorage.getItem('refreshToken');
+            const token = await storage.getItem('accessToken', true);
+            const refreshToken = await storage.getItem('refreshToken', true);
+            const userStr = await storage.getItem('user');
 
             if (token) {
-                const userStr = await AsyncStorage.getItem('user');
                 let user = null;
-
                 if (userStr) {
                     try {
                         user = JSON.parse(userStr);
                     } catch (e) {
-                        await AsyncStorage.removeItem('user');
+                        await storage.removeItem('user');
                     }
                 }
 
@@ -36,6 +43,9 @@ export const useAuthStore = create((set, get) => ({
                     isAuthenticated: !!user,
                     hasProfile: !!user?.profile,
                     hasPlan: !!user?.profile?.aiLearningPlan,
+                    subscription: user?.subscription || null,
+                    isPremium: user?.subscription?.status === 'active',
+                    features: user?.subscription?.features || [],
                     isLoading: false
                 });
 
@@ -54,23 +64,24 @@ export const useAuthStore = create((set, get) => ({
     refreshUser: async () => {
         try {
             const response = await authAPI.me();
-            const user = response.data; // api.js returns { data: res.data.me }
+            const user = response.data;
 
             if (user) {
-                await AsyncStorage.setItem('user', JSON.stringify(user));
+                await storage.setItem('user', JSON.stringify(user));
                 set({
                     user,
                     isAuthenticated: true,
                     hasProfile: !!user?.profile,
-                    hasPlan: !!user?.profile?.aiLearningPlan
+                    hasPlan: !!user?.profile?.aiLearningPlan,
+                    subscription: user?.subscription || null,
+                    isPremium: user?.subscription?.status === 'active',
+                    features: user?.subscription?.features || []
                 });
                 return { success: true, user };
             }
             return { success: false, error: 'No user data' };
         } catch (error) {
-            if (error.response?.status === 401) {
-                get().logout();
-            }
+            // Error handling in interceptor should handle 401s
             return { success: false, error: error.message };
         }
     },
@@ -78,10 +89,9 @@ export const useAuthStore = create((set, get) => ({
     register: async (input) => {
         try {
             set({ isLoading: true, error: null });
-            // Input: { firstName, lastName, email, password, role }
             const response = await authAPI.register(input);
             set({ isLoading: false });
-            return { success: response.data }; // api.js returns { data: res.data.register } which is Boolean
+            return { success: response.data };
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || 'Registration failed';
             set({ error: errorMsg, isLoading: false });
@@ -92,10 +102,9 @@ export const useAuthStore = create((set, get) => ({
     verify: async (input) => {
         try {
             set({ isLoading: true, error: null });
-            // Input: { email, verificationCode }
             const response = await authAPI.verify(input);
             set({ isLoading: false });
-            return { success: response.data }; // Returns Boolean
+            return { success: response.data };
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || 'Verification failed';
             set({ error: errorMsg, isLoading: false });
@@ -119,24 +128,21 @@ export const useAuthStore = create((set, get) => ({
     login: async (input) => {
         try {
             set({ isLoading: true, error: null });
-            // Input: { email, password }
             const response = await authAPI.login(input);
-            // api.js returns { data: { token, user } }
-            const { token, user } = response.data;
+            const { accessToken, refreshToken, user } = response.data;
 
-            // We assume api.js handles extracting accessToken/refreshToken if needed, 
-            // but looking at api.js, it returns `token: res.data.login.accessToken`.
-            // We might want to store refreshToken if api.js returned it, but currently it returns `token` and `user`.
-            // The `login` mutation in schema returns { accessToken, refreshToken, user }.
-            // Let's rely on what api.js returns for now.
-
-            await AsyncStorage.setItem('accessToken', token);
-            await AsyncStorage.setItem('user', JSON.stringify(user));
+            await storage.setItem('accessToken', accessToken, true);
+            await storage.setItem('refreshToken', refreshToken, true);
+            await storage.setItem('user', JSON.stringify(user));
 
             set({
-                token,
+                token: accessToken,
+                refreshToken,
                 user,
                 isAuthenticated: true,
+                subscription: user?.subscription || null,
+                isPremium: user?.subscription?.status === 'active',
+                features: user?.subscription?.features || [],
                 isLoading: false
             });
 
@@ -146,6 +152,12 @@ export const useAuthStore = create((set, get) => ({
             set({ error: errorMsg, isLoading: false });
             return { success: false, error: errorMsg };
         }
+    },
+
+    setTokens: async (accessToken, refreshToken) => {
+        await storage.setItem('accessToken', accessToken, true);
+        await storage.setItem('refreshToken', refreshToken, true);
+        set({ token: accessToken, refreshToken });
     },
 
     createProfile: async (input) => {
@@ -172,9 +184,9 @@ export const useAuthStore = create((set, get) => ({
             console.warn('Logout failed', e);
         }
 
-        await AsyncStorage.removeItem('accessToken');
-        await AsyncStorage.removeItem('refreshToken');
-        await AsyncStorage.removeItem('user');
+        await storage.removeItem('accessToken');
+        await storage.removeItem('refreshToken');
+        await storage.removeItem('user');
         set({ user: null, token: null, refreshToken: null, isAuthenticated: false, error: null });
     },
 

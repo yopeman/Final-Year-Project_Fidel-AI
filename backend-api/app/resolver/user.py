@@ -301,20 +301,39 @@ def resolve_logout(_, info):
 
 
 @mutation.field("refreshToken")
-def resolve_refresh_token(_, info):
-    current_user = info.context.get("current_user")
-    if not current_user:
-        raise Exception("Not authenticated")
-
+def resolve_refresh_token(_, info, token: str):
     db: Session = info.context["db"]
+    
+    # Verify the refresh token
+    try:
+        from jose import jwt
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        email: str = payload.get("sub")
+        if email is None:
+            raise Exception("Invalid refresh token")
+    except Exception:
+        raise Exception("Invalid or expired refresh token")
+
+    user = db.query(User).filter(User.email == email, User.is_deleted == False).first()
+    if not user or user.refresh_token != token:
+        raise Exception("Invalid refresh token session")
+
+    # Generate new pair of tokens
     access_token = create_access_token(
-        data={"sub": current_user.email},
-        expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS),
+        data={"sub": user.email}, expires_delta=timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     )
-    current_user.access_token = access_token
+    refresh_token = create_refresh_token(data={"sub": user.email})
+
+    user.access_token = access_token
+    user.refresh_token = refresh_token
     db.commit()
-    db.refresh(current_user)
-    return access_token
+    db.refresh(user)
+
+    return {
+        "user": user,
+        "accessToken": access_token,
+        "refreshToken": refresh_token,
+    }
 
 
 @mutation.field("forgetPassword")

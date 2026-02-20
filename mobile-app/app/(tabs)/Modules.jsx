@@ -6,6 +6,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useLearningStore } from '../../src/stores/learningStore';
 import { useBatchStore } from '../../src/stores/batchStore';
+import { useAuthStore } from '../../src/stores/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,9 +28,10 @@ export default function ModulesScreen() {
     const router = useRouter();
     const { modules, getModules, isLoading } = useLearningStore();
     const { enrollments, premiumUnlocked } = useBatchStore();
+    const { hasFeature } = useAuthStore();
     const [menuVisible, setMenuVisible] = React.useState(false);
 
-    const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
+    const isPremium = hasFeature('modules') || premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
 
     useFocusEffect(
         useCallback(() => { getModules(); }, [])

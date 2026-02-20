@@ -90,6 +90,7 @@ type User {
   notifications: [Notification!]!
   attendances: [Attendance!]!
   verificationCodes: [VerificationCode!]!
+  subscription: Subscription
 }
 
 extend type Query {
@@ -104,7 +105,7 @@ extend type Mutation {
   resendVerification(input: ResendVerificationInput!): Boolean!
   login(input: LoginInput!): AuthResponse!
   logout: Boolean!
-  refreshToken: String!
+  refreshToken(token: String!): AuthResponse!
   forgetPassword(input: ForgetPasswordInput!): Boolean!
   passwordRecovery(input: PasswordRecoveryInput!): Boolean!
 

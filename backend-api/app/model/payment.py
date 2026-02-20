@@ -30,3 +30,4 @@ class Payment(BaseModel):
 
     # Relationships
     enrollment = relationship("BatchEnrollment", back_populates="payments")
+    subscription = relationship("Subscription", back_populates="payment", uselist=False)

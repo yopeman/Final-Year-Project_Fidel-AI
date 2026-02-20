@@ -24,13 +24,14 @@ const CommunityScreen = () => {
         selectedFiles, addFiles, removeFile, clearFiles
     } = useCommunityStore();
 
+    const { hasFeature } = useAuthStore();
     const [menuVisible, setMenuVisible] = useState(false);
     const [newPost, setNewPost] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [activePostId, setActivePostId] = useState(null); // For comments
     const [commentText, setCommentText] = useState('');
 
-    const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
+    const isPremium = hasFeature('community') || premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
     const batchId = currentBatch?.id || enrollments.find(e => e.status === 'ENROLLED')?.batch?.id;
 
     useEffect(() => {

@@ -67,9 +67,23 @@ const LiveClassesScreen = () => {
                 <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>
                         <Text style={styles.classTitle}>Live Session</Text>
-                        <View style={styles.liveBadge}>
-                            <View style={styles.liveDot} />
-                            <Text style={styles.liveText}>Upcoming</Text>
+                        <View style={[
+                            styles.liveBadge,
+                            item.status === 'LIVE' && { backgroundColor: 'rgba(239, 68, 68, 0.1)' },
+                            item.status === 'COMPLETED' && { backgroundColor: 'rgba(255, 255, 255, 0.05)' }
+                        ]}>
+                            <View style={[
+                                styles.liveDot,
+                                item.status === 'LIVE' && { backgroundColor: '#ef4444' },
+                                item.status === 'COMPLETED' && { backgroundColor: '#94a3b8' }
+                            ]} />
+                            <Text style={[
+                                styles.liveText,
+                                item.status === 'LIVE' && { color: '#ef4444' },
+                                item.status === 'COMPLETED' && { color: '#94a3b8' }
+                            ]}>
+                                {item.status === 'LIVE' ? 'LIVE NOW' : item.status === 'COMPLETED' ? 'Completed' : 'Upcoming'}
+                            </Text>
                         </View>
                     </View>
 
@@ -80,13 +94,19 @@ const LiveClassesScreen = () => {
                         <Text style={styles.infoText}>{item.schedule?.startTime} - {item.schedule?.endTime}</Text>
                     </View>
 
-                    <TouchableOpacity style={styles.joinBtn} onPress={handleJoinClass}>
+                    <TouchableOpacity
+                        style={[styles.joinBtn, item.status === 'COMPLETED' && styles.disabledBtn]}
+                        onPress={() => item.status !== 'COMPLETED' && handleJoinClass()}
+                        disabled={item.status === 'COMPLETED'}
+                    >
                         <LinearGradient
-                            colors={[COLORS.primary, '#059669']}
+                            colors={item.status === 'COMPLETED' ? ['#475569', '#334155'] : [COLORS.primary, '#059669']}
                             style={styles.joinGradient}
                         >
-                            <Text style={styles.joinBtnText}>Join Class</Text>
-                            <Ionicons name="arrow-forward" size={18} color="#fff" />
+                            <Text style={styles.joinBtnText}>
+                                {item.status === 'COMPLETED' ? 'Class Ended' : 'Join Class'}
+                            </Text>
+                            <Ionicons name={item.status === 'COMPLETED' ? "checkmark-done" : "arrow-forward"} size={18} color="#fff" />
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
@@ -204,6 +224,7 @@ const styles = StyleSheet.create({
 
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
     emptyText: { color: 'rgba(255,255,255,0.3)', marginTop: 12, fontSize: 15 },
+    disabledBtn: { opacity: 0.6 },
 });
 
 export default LiveClassesScreen;

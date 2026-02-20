@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useBatchStore } from '../../src/stores/batchStore';
+import { useAuthStore } from '../../src/stores/authStore';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -247,12 +248,13 @@ function BatchCard({ item, onPress, isLast }) {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function BatchScreen() {
   const router = useRouter();
-  const { batches, isLoading, getBatches, enrollments, premiumUnlocked } = useBatchStore();
+  const { batches, enrollments, getBatches, isLoading, premiumUnlocked } = useBatchStore();
+  const { isPremium: hasPremiumSub } = useAuthStore();
+
+  const isPremium = hasPremiumSub || premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
   const [filter, setFilter] = useState('All');
   const [menuVisible, setMenuVisible] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
-
-  const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
 
   useEffect(() => { getBatches(); }, []);
   const onRefresh = useCallback(() => getBatches(), []);

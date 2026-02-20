@@ -28,6 +28,7 @@ from .resolver.notification import notification, mutation as n_mutation, query a
 from .resolver.schedule import schedule, mutation as s_mutation, query as s_query
 from .resolver.course_schedule import course_schedule, mutation as cs_mutation, query as cs_query
 from .resolver.payment import payment, mutation as p_mutation, query as p_query, payment_webhook as p_webhook
+from .resolver.subscription import subscription as sub_type, query as sub_query
 from .resolver.conversation_interactions import \
     conversation_interactions as ci_type
 from .resolver.conversation_interactions import mutation as ci_mutation
@@ -183,6 +184,8 @@ bindables = [
     p_query,
     p_mutation,
     payment,
+    sub_query,
+    sub_type,
     c_query,
     c_mutation,
     course,

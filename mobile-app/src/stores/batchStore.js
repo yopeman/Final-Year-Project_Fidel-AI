@@ -300,6 +300,7 @@ export const useBatchStore = create((set, get) => ({
                 query courseSchedules($batchCourseId: ID) {
                     courseSchedules(batchCourseId: $batchCourseId) {
                         id
+                        status
                         schedule {
                             dayOfWeek
                             startTime
@@ -331,6 +332,7 @@ export const useBatchStore = create((set, get) => ({
                 mutation getMeetingLink($courseScheduleId: ID!) {
                     getCourseMeetingLink(courseScheduleId: $courseScheduleId) {
                         meetingLink
+                        status
                         attendance {
                             status
                         }

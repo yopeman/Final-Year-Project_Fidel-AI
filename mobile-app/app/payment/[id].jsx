@@ -5,6 +5,7 @@ import {
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useBatchStore } from '../../src/stores/batchStore';
+import { useAuthStore } from '../../src/stores/authStore';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -149,6 +150,8 @@ export default function PaymentScreen() {
                     const result = await unlockPremium(id);
                     setVerifying(false);
                     if (result.success) {
+                        // Refresh user profile to update premium status globally
+                        await useAuthStore.getState().refreshUser();
                         setPaymentData(prev => ({ ...prev, status: 'COMPLETED' }));
                         setShowSuccess(true);
                     }
@@ -157,7 +160,7 @@ export default function PaymentScreen() {
             appState.current = nextState;
         });
         return () => sub.remove();
-    }, [paymentData, showSuccess]);
+    }, [paymentData, id, showSuccess]);
 
     const verifyPayment = async () => {
         setVerifying(true);
@@ -165,6 +168,8 @@ export default function PaymentScreen() {
         setVerifying(false);
 
         if (result.success) {
+            // Refresh user profile to update premium status globally
+            await useAuthStore.getState().refreshUser();
             setPaymentData(prev => ({ ...prev, status: 'COMPLETED' }));
             setShowSuccess(true);
         } else {
@@ -176,11 +181,13 @@ export default function PaymentScreen() {
     };
 
     // Dev-only: bypass Chapa verification for testing
-    const forceUnlockDev = () => {
+    const forceUnlockDev = async () => {
         useBatchStore.setState({
             premiumUnlocked: true,
             enrollmentStatusGlobal: 'ENROLLED',
         });
+        // Also refresh user profile in dev bypass
+        await useAuthStore.getState().refreshUser();
         setPaymentData(prev => ({ ...prev, status: 'COMPLETED' }));
         setShowSuccess(true);
     };

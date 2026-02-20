@@ -44,10 +44,17 @@ type Attendance {
   user: User!
 }
 
+enum CourseScheduleStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+}
+
 type CourseSchedule {
   id: ID!
   scheduleId: ID!
   batchCourseId: ID!
+  status: CourseScheduleStatus!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!

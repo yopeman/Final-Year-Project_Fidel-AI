@@ -17,6 +17,12 @@ class AttendanceStatus(PyEnum):
     late = "late"
 
 
+class CourseScheduleStatus(PyEnum):
+    scheduled = "scheduled"
+    live = "live"
+    completed = "completed"
+
+
 class Attendance(BaseModel):
     __tablename__ = "attendances"
 

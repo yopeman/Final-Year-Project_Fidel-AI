@@ -16,13 +16,13 @@ import PremiumMenu from '../../src/components/PremiumMenu';
 
 export default function ProfileScreen() {
     const router = useRouter();
-    const { user, logout } = useAuthStore();
+    const { user, logout, isPremium: hasPremiumSub } = useAuthStore();
     const { profile, getProfile, createProfile, updateProfile, isLoading } = useProfileStore();
     const { submitFeedback, submitAnonymously, isLoading: isSubmittingFeedback } = useFeedbackStore();
     const { enrollments, premiumUnlocked } = useBatchStore();
     const [menuVisible, setMenuVisible] = useState(false);
 
-    const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
+    const isPremium = hasPremiumSub || premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
 
     const [isEditing, setIsEditing] = useState(false);
     const [showFeedbackModal, setShowFeedbackModal] = useState(false);

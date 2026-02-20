@@ -9,10 +9,12 @@ from ..model.user import User
 from ..model.student_profile import StudentProfile
 from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
 from ..model.batch import Batch
+from ..model.subscription import Subscription, PlanType, SubscriptionStatus
 from ..util.payment_service import PaymentService
 from ..config.settings import settings
 from ..util.email_service import send_notification
 import uuid
+from datetime import timedelta
 
 
 query = QueryType()
@@ -21,6 +23,44 @@ payment = ObjectType("Payment")
 
 
 payment_service = PaymentService(settings.chapa_secret)
+
+def update_subscription_status(user_id: str, payment_id: str, db: Session):
+    now = datetime.now()
+    # Check for existing subscription
+    sub = db.query(Subscription).filter(
+        Subscription.user_id == user_id,
+        Subscription.is_deleted == False
+    ).first()
+    
+    # Premium features to unlock permanently
+    premium_features = ["modules", "community", "ai_learning"]
+    
+    if sub:
+        # Update existing subscription
+        sub.status = SubscriptionStatus.active
+        sub.plan_type = PlanType.premium
+        sub.start_date = now
+        sub.end_date = None # Permanent access
+        sub.payment_id = payment_id
+        
+        # Merge features if any already exist
+        current_features = sub.features if sub.features else []
+        new_features = list(set(current_features + premium_features))
+        sub.features = new_features
+    else:
+        # Create new permanent subscription
+        new_sub = Subscription(
+            user_id=user_id,
+            plan_type=PlanType.premium,
+            status=SubscriptionStatus.active,
+            start_date=now,
+            end_date=None, # Permanent access
+            features=premium_features,
+            payment_id=payment_id
+        )
+        db.add(new_sub)
+    db.commit()
+
 
 # Payment status mapping
 def map_payment_status(status_str: str) -> PaymentStatus:
@@ -160,6 +200,9 @@ def payment_webhook(status: str, trx_ref: str, db: Session):
             ).first()
             enrollment.status = EnrollmentStatus.enrolled
             
+            # Update user subscription
+            update_subscription_status(user_id=profile.user_id, payment_id=payment_obj.id, db=db)
+            
             # Send notification to student about successful payment
             profile = db.query(StudentProfile).filter(
                 StudentProfile.id == enrollment.profile_id,
@@ -249,6 +292,15 @@ def resolve_verify_payment(_, info, enrollmentId: str):
             except Exception:
                 pass
             enrollment.status = EnrollmentStatus.enrolled
+            
+            # Update user subscription
+            profile = db.query(StudentProfile).filter(
+                StudentProfile.id == enrollment.profile_id,
+                StudentProfile.is_deleted == False
+            ).first()
+            if profile:
+                update_subscription_status(user_id=profile.user_id, payment_id=payment_obj.id, db=db)
+
             db.commit()
             db.refresh(payment_obj)
 

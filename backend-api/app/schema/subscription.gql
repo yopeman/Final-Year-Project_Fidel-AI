@@ -1,0 +1,26 @@
+enum PlanType {
+    free
+    premium
+}
+
+enum SubscriptionStatus {
+    active
+    expired
+    cancelled
+}
+
+type Subscription {
+    id: ID!
+    planType: PlanType!
+    status: SubscriptionStatus!
+    startDate: String!
+    endDate: String
+    features: [String!]!
+    paymentId: ID
+    createdAt: String!
+    updatedAt: String!
+}
+
+extend type Query {
+    mySubscription: Subscription
+}

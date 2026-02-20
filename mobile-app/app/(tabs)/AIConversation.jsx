@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useChatStore } from '../../src/stores/chatStore';
 import { useBatchStore } from '../../src/stores/batchStore';
+import { useAuthStore } from '../../src/stores/authStore';
 import { COLORS, BORDER_RADIUS, SPACING } from '../../src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import PremiumMenu from '../../src/components/PremiumMenu';
@@ -50,10 +51,11 @@ export default function AIConversationScreen() {
     const router = useRouter();
     const { conversations, setCurrentConversation } = useChatStore();
     const { enrollments, premiumUnlocked } = useBatchStore();
+    const { isPremium: hasPremiumSub } = useAuthStore();
     const [customTopic, setCustomTopic] = useState('');
     const [menuVisible, setMenuVisible] = useState(false);
 
-    const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
+    const isPremium = hasPremiumSub || premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
 
     const startConversation = (topic) => {
         router.push({ pathname: '/chat', params: { topic: topic.title } });
