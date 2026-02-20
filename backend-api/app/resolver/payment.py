@@ -100,9 +100,12 @@ def resolve_make_payment(_, info, enrollmentId: str):
     ).first()
 
     batch = db.query(Batch).filter(
-        Batch.id == BatchEnrollment.batch_id,
+        Batch.id == enrollment.batch_id,
         Batch.is_deleted == False
     ).first()
+
+    if not batch:
+        raise Exception("Batch not found")
     
     if existing_payment:
         raise Exception("Payment already completed for this enrollment")
@@ -193,6 +196,84 @@ def payment_webhook(status: str, trx_ref: str, db: Session):
 
         db.commit()
         db.refresh(payment_obj)
+
+
+
+@mutation.field("verifyPayment")
+def resolve_verify_payment(_, info, enrollmentId: str):
+    current_user: User = info.context.get("current_user")
+    if not current_user:
+        raise Exception("Not authenticated")
+
+    db: Session = info.context["db"]
+
+    # Validate enrollment exists
+    enrollment = db.query(BatchEnrollment).filter(
+        BatchEnrollment.id == enrollmentId,
+        BatchEnrollment.is_deleted == False
+    ).first()
+
+    if not enrollment:
+        raise Exception("Enrollment not found")
+
+    # If already enrolled, return the completed payment
+    if enrollment.status == EnrollmentStatus.enrolled:
+        payment_obj = db.query(Payment).filter(
+            Payment.enrollment_id == enrollmentId,
+            Payment.status == PaymentStatus.completed,
+            Payment.is_deleted == False
+        ).first()
+        if payment_obj:
+            return payment_obj
+
+    # Find the most recent pending payment
+    payment_obj = db.query(Payment).filter(
+        Payment.enrollment_id == enrollmentId,
+        Payment.status == PaymentStatus.pending,
+        Payment.is_deleted == False
+    ).order_by(Payment.created_at.desc()).first()
+
+    if not payment_obj:
+        raise Exception("No pending payment found for this enrollment")
+
+    # Verify with Chapa
+    try:
+        payment_verify = payment_service.verify_payment(tx_ref=payment_obj.transaction_id)
+        if payment_verify and payment_verify.status == "success":
+            payment_obj.status = PaymentStatus.completed
+            payment_obj.paid_at = datetime.now()
+            try:
+                payment_obj.receipt_url = payment_service.receipt_url(
+                    reference_id=payment_verify.data.reference
+                )
+            except Exception:
+                pass
+            enrollment.status = EnrollmentStatus.enrolled
+            db.commit()
+            db.refresh(payment_obj)
+
+            # Notify student
+            try:
+                profile = db.query(StudentProfile).filter(
+                    StudentProfile.id == enrollment.profile_id,
+                    StudentProfile.is_deleted == False
+                ).first()
+                if profile:
+                    send_notification(
+                        user_id=profile.user_id,
+                        title="Payment Confirmed",
+                        content=f"Your payment of {payment_obj.amount} {payment_obj.currency} has been confirmed. Premium access is now active.",
+                        db=db
+                    )
+            except Exception:
+                pass
+
+            return payment_obj
+        else:
+            raise Exception("Payment not yet confirmed by Chapa. Please complete payment and try again.")
+    except Exception as e:
+        # If Chapa verification call itself fails (e.g., network), raise as-is
+        raise Exception(str(e))
 
 
 @mutation.field("cancelPayment")

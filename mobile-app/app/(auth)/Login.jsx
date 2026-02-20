@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import {
     View,
     Text,
-    TextInput,
     TouchableOpacity,
     StyleSheet,
-    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants';
+import { COLORS, SPACING, FONTS } from '../../src/constants/theme';
+import ScreenContainer from '../../src/components/ScreenContainer';
+import Input from '../../src/components/Input';
+import Button from '../../src/components/Button';
+import Card from '../../src/components/Card';
 
 const LoginScreen = () => {
     const router = useRouter();
@@ -30,102 +32,81 @@ const LoginScreen = () => {
     };
 
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.card}>
-                    <Text style={styles.title}>Welcome Back!</Text>
-                    <Text style={styles.subtitle}>Log in to continue learning</Text>
+        <ScreenContainer>
+            <KeyboardAvoidingView
+                style={styles.keyboardView}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    <Card style={styles.card}>
+                        <Text style={styles.title}>Welcome Back!</Text>
+                        <Text style={styles.subtitle}>Log in to continue learning</Text>
 
-                    <View style={styles.form}>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Email</Text>
-                            <TextInput
-                                style={styles.input}
+                        <View style={styles.form}>
+                            <Input
+                                label="Email"
                                 placeholder="your@email.com"
                                 value={email}
                                 onChangeText={setEmail}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
-                                placeholderTextColor="#9CA3AF"
                             />
-                        </View>
 
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Password</Text>
-                            <TextInput
-                                style={styles.input}
+                            <Input
+                                label="Password"
                                 placeholder="Enter your password"
                                 value={password}
                                 onChangeText={setPassword}
                                 secureTextEntry
-                                placeholderTextColor="#9CA3AF"
                             />
+
+                            {error && <Text style={styles.error}>{error}</Text>}
+
+                            <Button
+                                title="Log In"
+                                onPress={handleLogin}
+                                loading={isLoading}
+                                style={styles.button}
+                                size="large"
+                            />
+
+                            <TouchableOpacity
+                                style={styles.linkButton}
+                                onPress={() => router.push('/(auth)/Register')}
+                            >
+                                <Text style={styles.linkText}>
+                                    Don't have an account? <Text style={styles.linkHighlight}>Sign up</Text>
+                                </Text>
+                            </TouchableOpacity>
                         </View>
-
-                        {error && <Text style={styles.error}>{error}</Text>}
-
-                        <TouchableOpacity
-                            style={styles.button}
-                            onPress={handleLogin}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text style={styles.buttonText}>Log In</Text>
-                            )}
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.linkButton}
-                            onPress={() => router.push('/(auth)/Register')}
-                        >
-                            <Text style={styles.linkText}>
-                                Don't have an account? <Text style={styles.linkHighlight}>Sign up</Text>
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </ScrollView>
-        </KeyboardAvoidingView>
+                    </Card>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </ScreenContainer>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    keyboardView: {
         flex: 1,
-        backgroundColor: COLORS.background, // Should be white or light
     },
     scrollContent: {
         flexGrow: 1,
         justifyContent: 'center',
-        padding: SPACING.lg,
+        padding: SPACING.md,
     },
     card: {
-        backgroundColor: COLORS.surface,
-        borderRadius: BORDER_RADIUS.xl,
         padding: SPACING.xl,
-        // Add shadow for card effect if background is not white, 
-        // but design seems potentially flat or light bg. 
-        // Adding subtle shadow just in case.
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        elevation: 5,
     },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: COLORS.primary, // Gold/Yellow
+        color: COLORS.primary,
         textAlign: 'center',
         marginBottom: SPACING.xs,
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: FONTS.sizes.md,
         color: COLORS.textSecondary,
         textAlign: 'center',
         marginBottom: SPACING.xl,
@@ -133,47 +114,14 @@ const styles = StyleSheet.create({
     form: {
         width: '100%',
     },
-    inputGroup: {
-        marginBottom: SPACING.lg,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: COLORS.text,
-        marginBottom: SPACING.xs,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: COLORS.border,
-        borderRadius: BORDER_RADIUS.lg,
-        padding: SPACING.md,
-        fontSize: 16,
-        backgroundColor: '#FAFAFA',
-    },
     error: {
         color: COLORS.error,
         textAlign: 'center',
         marginBottom: SPACING.md,
+        fontSize: FONTS.sizes.sm,
     },
     button: {
-        backgroundColor: COLORS.primary,
-        padding: SPACING.md,
-        borderRadius: BORDER_RADIUS.lg,
-        alignItems: 'center',
         marginTop: SPACING.sm,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    buttonText: {
-        color: '#fff', // Or dark text if yellow is too bright? Design shows dark text on yellow usually or white. Let's stick to Design image - looks like dark text on yellow button in "Create Account" image or white. 
-        // Actually, "Create Account" button has Black/Dark text on Yellow. "Log In" likely same.
-        // Let's use darker text for better contrast on yellow.
-        color: COLORS.secondary,
-        fontSize: 16,
-        fontWeight: 'bold',
     },
     linkButton: {
         marginTop: SPACING.xl,
@@ -181,11 +129,11 @@ const styles = StyleSheet.create({
     },
     linkText: {
         color: COLORS.textSecondary,
-        fontSize: 14,
+        fontSize: FONTS.sizes.sm,
     },
     linkHighlight: {
         color: COLORS.primary,
-        fontWeight: 'bfold',
+        fontWeight: 'bold',
     },
 });
 

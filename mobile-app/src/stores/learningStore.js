@@ -12,6 +12,28 @@ export const useLearningStore = create((set, get) => ({
     isLoading: false,
     error: null,
 
+    // Recomputes completionPercentage from local modules data
+    // Called immediately after optimistic updates so the bar moves right away
+    _computeProgress: () => {
+        const modules = get().modules;
+        const totalLessons = modules.reduce((sum, m) => sum + (m.lessons?.length || 0), 0);
+        const completedLessons = modules.reduce(
+            (sum, m) => sum + (m.lessons?.filter(l => l.isCompleted).length || 0), 0
+        );
+        const completionPercentage = totalLessons > 0
+            ? Math.round((completedLessons / totalLessons) * 100)
+            : 0;
+        const current = get().progress || {};
+        set({
+            progress: {
+                ...current,
+                completedLessons,
+                totalLessons,
+                completionPercentage,
+            }
+        });
+    },
+
     initLearning: async () => {
         const planStatus = await AsyncStorage.getItem('planStatus');
         set({ isPlanActive: planStatus === 'active' });
@@ -96,13 +118,18 @@ export const useLearningStore = create((set, get) => ({
                 }
                 const newProfileId = userRes.user.profile.id;
                 const response = await lessonsAPI.getModules(newProfileId);
-                set({ modules: response.data.modules, isLoading: false });
-                return { success: true, modules: response.data.modules };
+                const mods = response.data.modules;
+                set({ modules: mods, isLoading: false });
+                get()._computeProgress();
+                return { success: true, modules: mods };
             }
 
             const response = await lessonsAPI.getModules(profileId);
-            set({ modules: response.data.modules, isLoading: false });
-            return { success: true, modules: response.data.modules };
+            const mods = response.data.modules;
+            set({ modules: mods, isLoading: false });
+            // Immediately recompute progress from the returned modules
+            get()._computeProgress();
+            return { success: true, modules: mods };
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch modules';
             set({ error: errorMsg, isLoading: false });
@@ -136,21 +163,23 @@ export const useLearningStore = create((set, get) => ({
 
     completeLesson: async (lessonId) => {
         try {
-            // Optimistic update
+            // Optimistic update — mark lesson completed in local state
             const modules = get().modules.map(m => ({
                 ...m,
                 lessons: m.lessons.map(l => l.id === lessonId ? { ...l, isCompleted: true } : l)
             }));
             set({ modules });
 
+            // Immediately recompute progress from updated modules (0→100% moves instantly)
+            get()._computeProgress();
+
             await progressAPI.completeLesson(lessonId);
 
-            // Refresh progress
+            // Also refresh from server to sync any server-side fields (streak, etc.)
             get().getProgress();
 
             return { success: true };
         } catch (error) {
-            // Revert on failure would be ideal here
             console.error('Complete lesson failed', error);
             return { success: false };
         }
@@ -159,9 +188,22 @@ export const useLearningStore = create((set, get) => ({
     getProgress: async () => {
         try {
             const response = await progressAPI.myProgress();
-            set({ progress: response.data.progress });
-            return { success: true, progress: response.data.progress };
+            const apiProgress = response.data.progress;
+            // Merge API result with local computed values
+            // If the API returns completionPercentage, trust it; otherwise use local computation
+            const localProgress = get().progress || {};
+            const merged = {
+                ...localProgress,
+                ...apiProgress,
+            };
+            // If API returned 0% or no completionPercentage, prefer the locally computed value
+            if (!apiProgress?.completionPercentage && localProgress.completionPercentage) {
+                merged.completionPercentage = localProgress.completionPercentage;
+            }
+            set({ progress: merged });
+            return { success: true, progress: merged };
         } catch (error) {
+            // API failed — keep the locally computed progress, don't reset to null
             return { success: false };
         }
     },

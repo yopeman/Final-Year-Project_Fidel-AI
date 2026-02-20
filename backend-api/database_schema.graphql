@@ -462,7 +462,7 @@ type User {
 
 type Schedule {
   id: ID!
-  dayOfWeek: String!
+  dayOfWeek: DayOfWeek!
   startTime: Time!
   endTime: Time!
   createdAt: DateTime!

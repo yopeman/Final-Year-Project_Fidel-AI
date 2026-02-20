@@ -1,19 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, TextInput, Modal, Switch } from 'react-native';
+import {
+    View, Text, StyleSheet, TouchableOpacity, ScrollView,
+    Alert, ActivityIndicator, TextInput, Modal, Switch, StatusBar
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useProfileStore } from '../../src/stores/profileStore';
 import { useFeedbackStore } from '../../src/stores/feedbackStore';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS, AGE_RANGES, PROFICIENCY_LEVELS, DURATION_UNITS } from '../../src/constants';
+import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { AGE_RANGES, PROFICIENCY_LEVELS } from '../../src/constants/index';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useBatchStore } from '../../src/stores/batchStore';
+import PremiumMenu from '../../src/components/PremiumMenu';
 
 export default function ProfileScreen() {
     const router = useRouter();
     const { user, logout } = useAuthStore();
     const { profile, getProfile, createProfile, updateProfile, isLoading } = useProfileStore();
+    const { submitFeedback, submitAnonymously, isLoading: isSubmittingFeedback } = useFeedbackStore();
+    const { enrollments, premiumUnlocked } = useBatchStore();
+    const [menuVisible, setMenuVisible] = useState(false);
+
+    const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
 
     const [isEditing, setIsEditing] = useState(false);
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
     const [formData, setFormData] = useState({
         ageRange: 'UNDER_18',
         proficiency: 'BEGINNER',
@@ -23,18 +35,9 @@ export default function ProfileScreen() {
         durationUnit: 'DAYS',
         constraints: ''
     });
+    const [feedbackForm, setFeedbackForm] = useState({ content: '', rate: 5, isAnonymous: false });
 
-    const { submitFeedback, submitAnonymously, isLoading: isSubmittingFeedback } = useFeedbackStore();
-    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-    const [feedbackForm, setFeedbackForm] = useState({
-        content: '',
-        rate: 5,
-        isAnonymous: false
-    });
-
-    useEffect(() => {
-        getProfile();
-    }, []);
+    useEffect(() => { getProfile(); }, []);
 
     useEffect(() => {
         if (profile) {
@@ -51,18 +54,10 @@ export default function ProfileScreen() {
     }, [profile]);
 
     const handleLogout = () => {
-        Alert.alert(
-            'Log Out',
-            'Are you sure you want to log out?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Log Out', style: 'destructive', onPress: () => {
-                        logout();
-                    }
-                },
-            ]
-        );
+        Alert.alert('Log Out', 'Are you sure you want to log out?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Log Out', style: 'destructive', onPress: () => logout() },
+        ]);
     };
 
     const handleSaveProfile = async () => {
@@ -70,42 +65,45 @@ export default function ProfileScreen() {
             Alert.alert('Missing Fields', 'Please fill in all required fields.');
             return;
         }
-
-        const payload = {
-            ...formData,
-            targetDuration: parseInt(formData.targetDuration, 10)
-        };
-
-        let result;
-        if (profile) {
-            result = await updateProfile(payload);
-        } else {
-            result = await createProfile(payload);
-        }
-
+        const payload = { ...formData, targetDuration: parseInt(formData.targetDuration, 10) };
+        const result = profile ? await updateProfile(payload) : await createProfile(payload);
         if (result.success) {
             setIsEditing(false);
-            Alert.alert('Success', 'Profile updated successfully!');
+            Alert.alert('Saved!', 'Profile updated successfully.');
         } else {
             Alert.alert('Error', result.error || 'Failed to save profile.');
         }
     };
 
+    const handleFeedbackSubmit = async () => {
+        if (!feedbackForm.content.trim()) { Alert.alert('Missing Content', 'Please write some feedback.'); return; }
+        const result = feedbackForm.isAnonymous
+            ? await submitAnonymously(feedbackForm.content, feedbackForm.rate)
+            : await submitFeedback(feedbackForm.content, feedbackForm.rate);
+        if (result.success) {
+            setShowFeedbackModal(false);
+            setFeedbackForm({ content: '', rate: 5, isAnonymous: false });
+            Alert.alert('Thank You!', 'Feedback submitted.');
+        } else {
+            Alert.alert('Error', result.error || 'Failed to submit feedback.');
+        }
+    };
+
+    /* ── Selection chips ── */
     const SelectionGroup = ({ label, options, value, onChange, mapLabels }) => (
         <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>{label}</Text>
-            <View style={styles.selectionContainer}>
+            <View style={styles.chipRow}>
                 {Object.keys(options).map((key) => {
-                    const isSelected = value === key;
-                    const displayLabel = mapLabels ? options[key] : key;
+                    const active = value === key;
                     return (
                         <TouchableOpacity
                             key={key}
-                            style={[styles.selectionChip, isSelected && styles.selectionChipActive]}
+                            style={[styles.chip, active && styles.chipActive]}
                             onPress={() => onChange(key)}
                         >
-                            <Text style={[styles.selectionText, isSelected && styles.selectionTextActive]}>
-                                {displayLabel}
+                            <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                                {mapLabels ? options[key] : key}
                             </Text>
                         </TouchableOpacity>
                     );
@@ -114,460 +112,361 @@ export default function ProfileScreen() {
         </View>
     );
 
+    /* ── Edit Form ── */
     const renderEditForm = () => (
-        <View style={styles.formContainer}>
-            <Text style={styles.formTitle}>{profile ? 'Edit Profile' : 'Setup Profile'}</Text>
+        <View style={styles.card}>
+            <Text style={styles.cardTitle}>{profile ? 'Edit Preferences' : 'Setup Profile'}</Text>
 
-            <SelectionGroup
-                label="Age Range"
-                options={AGE_RANGES}
-                value={formData.ageRange}
-                onChange={(val) => setFormData({ ...formData, ageRange: val })}
-                mapLabels
-            />
+            <SelectionGroup label="Age Range" options={AGE_RANGES} value={formData.ageRange}
+                onChange={(v) => setFormData({ ...formData, ageRange: v })} mapLabels />
 
-            <SelectionGroup
-                label="Current Proficiency Level"
-                options={PROFICIENCY_LEVELS}
-                value={formData.proficiency}
-                onChange={(val) => setFormData({ ...formData, proficiency: val })}
-                mapLabels
-            />
+            <SelectionGroup label="Proficiency Level" options={PROFICIENCY_LEVELS} value={formData.proficiency}
+                onChange={(v) => setFormData({ ...formData, proficiency: v })} mapLabels />
 
             <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Learning Goal</Text>
-                <TextInput
-                    style={styles.pillInput}
-                    value={formData.learningGoal}
-                    onChangeText={(text) => setFormData({ ...formData, learningGoal: text })}
-                    placeholder="e.g., I want to speak fluently for travel"
-                    placeholderTextColor="#6B7280"
-                />
+                <TextInput style={styles.input} value={formData.learningGoal}
+                    onChangeText={(t) => setFormData({ ...formData, learningGoal: t })}
+                    placeholder="e.g., Speak fluently for travel" placeholderTextColor="#4B5563" />
             </View>
 
             <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Preferred Study Hours per Day</Text>
-                <View style={styles.selectionContainer}>
-                    {['30 min', '1 hour', '2 hours', '3+ hours'].map((label, idx) => {
-                        const val = idx === 0 ? '30' : idx === 1 ? '60' : idx === 2 ? '120' : '180';
-                        const isSelected = formData.targetDuration === val;
-                        return (
-                            <TouchableOpacity
-                                key={label}
-                                style={[styles.selectionChip, isSelected && styles.selectionChipActive]}
-                                onPress={() => setFormData({ ...formData, targetDuration: val })}
-                            >
-                                <Text style={[styles.selectionText, isSelected && styles.selectionTextActive]}>
-                                    {label}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
+                <Text style={styles.inputLabel}>Daily Study Time</Text>
+                <View style={styles.chipRow}>
+                    {[['30 min', '30'], ['1 hour', '60'], ['2 hours', '120'], ['3+ hours', '180']].map(([label, val]) => (
+                        <TouchableOpacity key={val}
+                            style={[styles.chip, formData.targetDuration === val && styles.chipActive]}
+                            onPress={() => setFormData({ ...formData, targetDuration: val })}>
+                            <Text style={[styles.chipText, formData.targetDuration === val && styles.chipTextActive]}>{label}</Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
             </View>
 
             <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Native Language</Text>
-                <TextInput
-                    style={styles.pillInput}
-                    value={formData.nativeLanguage}
-                    onChangeText={(text) => setFormData({ ...formData, nativeLanguage: text })}
-                    placeholder="e.g. Amharic"
-                    placeholderTextColor="#6B7280"
-                />
+                <TextInput style={styles.input} value={formData.nativeLanguage}
+                    onChangeText={(t) => setFormData({ ...formData, nativeLanguage: t })}
+                    placeholder="e.g. Amharic" placeholderTextColor="#4B5563" />
             </View>
 
-            <View style={styles.formActions}>
-                <TouchableOpacity style={[styles.actionButton, styles.saveButton]} onPress={handleSaveProfile} disabled={isLoading}>
-                    {isLoading ? <ActivityIndicator color={COLORS.secondary} /> : <Text style={styles.saveButtonText}>Save Details</Text>}
+            <View style={styles.formBtns}>
+                <TouchableOpacity style={styles.saveBtn} onPress={handleSaveProfile} disabled={isLoading}>
+                    <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.saveBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                        {isLoading
+                            ? <ActivityIndicator color="#fff" />
+                            : <Text style={styles.saveBtnText}>Save Changes</Text>}
+                    </LinearGradient>
                 </TouchableOpacity>
                 {profile && (
-                    <TouchableOpacity style={styles.cancelButton} onPress={() => setIsEditing(false)}>
-                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                    <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditing(false)}>
+                        <Text style={styles.cancelBtnText}>Cancel</Text>
                     </TouchableOpacity>
                 )}
             </View>
         </View>
     );
 
-    const handleFeedbackSubmit = async () => {
-        if (!feedbackForm.content.trim()) {
-            Alert.alert('Missing Content', 'Please provide your feedback.');
-            return;
-        }
+    /* ── Profile Detail Card ── */
+    const renderDetails = () => (
+        <View style={styles.card}>
+            <Text style={styles.cardTitle}>Learning Profile</Text>
+            {[
+                { label: 'Native Language', value: profile?.nativeLanguage },
+                { label: 'Proficiency', value: PROFICIENCY_LEVELS[profile?.proficiency] || profile?.proficiency },
+                { label: 'Goal', value: profile?.learningGoal },
+            ].map(({ label, value }, i, arr) => (
+                <View key={label}>
+                    <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>{label}</Text>
+                        <Text style={styles.detailValue} numberOfLines={2}>{value || '—'}</Text>
+                    </View>
+                    {i < arr.length - 1 && <View style={styles.divider} />}
+                </View>
+            ))}
+            <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditing(true)}>
+                <Ionicons name="create-outline" size={16} color={COLORS.primary} />
+                <Text style={styles.editBtnText}>Edit Preferences</Text>
+            </TouchableOpacity>
+        </View>
+    );
 
-        const result = feedbackForm.isAnonymous
-            ? await submitAnonymously(feedbackForm.content, feedbackForm.rate)
-            : await submitFeedback(feedbackForm.content, feedbackForm.rate);
-
-        if (result.success) {
-            setShowFeedbackModal(false);
-            setFeedbackForm({ content: '', rate: 5, isAnonymous: false });
-            Alert.alert('Thank You!', 'Your feedback has been submitted successfully.');
-        } else {
-            Alert.alert('Error', result.error || 'Failed to submit feedback.');
-        }
-    };
-
+    /* ── Feedback Modal ── */
     const renderFeedbackModal = () => (
-        <Modal
-            visible={showFeedbackModal}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={() => setShowFeedbackModal(false)}
-        >
-            <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
+        <Modal visible={showFeedbackModal} animationType="slide" transparent onRequestClose={() => setShowFeedbackModal(false)}>
+            <View style={styles.overlay}>
+                <View style={styles.modalBox}>
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Platform Feedback</Text>
-                        <TouchableOpacity onPress={() => setShowFeedbackModal(false)}>
-                            <Ionicons name="close" size={24} color="#9CA3AF" />
+                        <TouchableOpacity onPress={() => setShowFeedbackModal(false)} style={styles.modalCloseBtn}>
+                            <Ionicons name="close" size={20} color="#9CA3AF" />
                         </TouchableOpacity>
                     </View>
 
-                    <Text style={styles.modalLabel}>How would you rate your experience?</Text>
-                    <View style={styles.ratingContainer}>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <TouchableOpacity
-                                key={star}
-                                onPress={() => setFeedbackForm({ ...feedbackForm, rate: star })}
-                            >
-                                <Ionicons
-                                    name={feedbackForm.rate >= star ? "star" : "star-outline"}
-                                    size={32}
-                                    color={feedbackForm.rate >= star ? COLORS.primary : "#4B5563"}
-                                />
+                    <Text style={styles.inputLabel}>Rate your experience</Text>
+                    <View style={styles.starsRow}>
+                        {[1, 2, 3, 4, 5].map((s) => (
+                            <TouchableOpacity key={s} onPress={() => setFeedbackForm({ ...feedbackForm, rate: s })}>
+                                <Ionicons name={feedbackForm.rate >= s ? 'star' : 'star-outline'}
+                                    size={30} color={feedbackForm.rate >= s ? '#F59E0B' : '#374151'} />
                             </TouchableOpacity>
                         ))}
                     </View>
 
-                    <Text style={styles.modalLabel}>Your Feedback</Text>
-                    <TextInput
-                        style={[styles.pillInput, styles.textArea]}
-                        multiline
-                        numberOfLines={4}
-                        placeholder="Tell us what you think..."
-                        placeholderTextColor="#6B7280"
+                    <Text style={styles.inputLabel}>Your Feedback</Text>
+                    <TextInput style={[styles.input, styles.textArea]} multiline numberOfLines={4}
+                        placeholder="Tell us what you think..." placeholderTextColor="#4B5563"
                         value={feedbackForm.content}
-                        onChangeText={(text) => setFeedbackForm({ ...feedbackForm, content: text })}
-                    />
+                        onChangeText={(t) => setFeedbackForm({ ...feedbackForm, content: t })} />
 
-                    <View style={styles.anonymousRow}>
-                        <Text style={styles.modalLabel}>Submit Anonymously</Text>
-                        <Switch
-                            value={feedbackForm.isAnonymous}
-                            onValueChange={(val) => setFeedbackForm({ ...feedbackForm, isAnonymous: val })}
-                            trackColor={{ false: '#374151', true: COLORS.primary }}
-                            thumbColor="#fff"
-                        />
+                    <View style={styles.anonRow}>
+                        <Text style={styles.inputLabel}>Submit Anonymously</Text>
+                        <Switch value={feedbackForm.isAnonymous}
+                            onValueChange={(v) => setFeedbackForm({ ...feedbackForm, isAnonymous: v })}
+                            trackColor={{ false: '#374151', true: COLORS.primary }} thumbColor="#fff" />
                     </View>
 
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.saveButton]}
-                        onPress={handleFeedbackSubmit}
-                        disabled={isSubmittingFeedback}
-                    >
-                        {isSubmittingFeedback ? (
-                            <ActivityIndicator color={COLORS.secondary} />
-                        ) : (
-                            <Text style={styles.saveButtonText}>Submit Feedback</Text>
-                        )}
+                    <TouchableOpacity style={styles.saveBtn} onPress={handleFeedbackSubmit} disabled={isSubmittingFeedback}>
+                        <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.saveBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                            {isSubmittingFeedback
+                                ? <ActivityIndicator color="#fff" />
+                                : <Text style={styles.saveBtnText}>Submit Feedback</Text>}
+                        </LinearGradient>
                     </TouchableOpacity>
                 </View>
             </View>
         </Modal>
     );
 
-    const renderProfileDetails = () => (
-        <View style={styles.detailsCard}>
-            <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Native Language</Text>
-                <Text style={styles.detailValue}>{profile?.nativeLanguage}</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Proficiency</Text>
-                <Text style={styles.detailValue}>{PROFICIENCY_LEVELS[profile?.proficiency] || profile?.proficiency}</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Goal</Text>
-                <Text style={styles.detailValue}>{profile?.learningGoal}</Text>
-            </View>
-            <TouchableOpacity style={styles.editProfileBtn} onPress={() => setIsEditing(true)}>
-                <Text style={styles.editProfileBtnText}>Edit Preferences</Text>
-            </TouchableOpacity>
-        </View>
-    );
-
     return (
         <View style={styles.container}>
-            <LinearGradient
-                colors={[COLORS.secondary || '#111827', '#000']}
-                style={styles.background}
-            />
-            <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 50 }}>
-                <View style={styles.header}>
-                    <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{user?.firstName?.[0] || 'U'}</Text>
-                    </View>
-                    <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
-                    <Text style={styles.email}>{user?.email}</Text>
-                </View>
+            <StatusBar barStyle="light-content" />
+            <PremiumMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
 
-                <View style={styles.content}>
-                    {isEditing || !profile ? renderEditForm() : renderProfileDetails()}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+                {/* ── Hero Banner ── */}
+                <LinearGradient
+                    colors={['#0A2540', '#0D1B2A', '#080C14']}
+                    style={styles.heroBanner}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                >
+                    <View style={styles.glowBlob} />
+
+                    {isPremium && (
+                        <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuBtn}>
+                            <Ionicons name="menu" size={26} color="#fff" />
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Avatar */}
+                    <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.avatarRing}>
+                        <View style={styles.avatarInner}>
+                            <Text style={styles.avatarText}>{user?.firstName?.[0]?.toUpperCase() || 'U'}</Text>
+                        </View>
+                    </LinearGradient>
+
+                    <Text style={styles.heroName}>{user?.firstName} {user?.lastName}</Text>
+                    <Text style={styles.heroEmail}>{user?.email}</Text>
+
+                    {/* Stats row */}
+                    <View style={styles.statsRow}>
+                        <View style={styles.statPill}>
+                            <Ionicons name="school-outline" size={14} color={COLORS.primary} />
+                            <Text style={styles.statPillText}>
+                                {PROFICIENCY_LEVELS[profile?.proficiency] || 'Beginner'}
+                            </Text>
+                        </View>
+                        <View style={styles.statPill}>
+                            <Ionicons name="language-outline" size={14} color="#6366F1" />
+                            <Text style={[styles.statPillText, { color: '#6366F1' }]}>
+                                {profile?.nativeLanguage || 'Not set'}
+                            </Text>
+                        </View>
+                    </View>
+                </LinearGradient>
+
+                {/* ── Body ── */}
+                <View style={styles.body}>
+                    {isEditing || !profile ? renderEditForm() : renderDetails()}
 
                     {profile && !isEditing && (
-                        <View style={styles.section}>
-                            <TouchableOpacity style={styles.menuItem} onPress={() => setShowFeedbackModal(true)}>
-                                <Ionicons name="chatbox-ellipses-outline" size={22} color={COLORS.primary} style={{ marginRight: 10 }} />
+                        <View style={styles.menuSection}>
+                            <TouchableOpacity style={styles.menuRow} onPress={() => setShowFeedbackModal(true)}>
+                                <View style={[styles.menuIcon, { backgroundColor: 'rgba(16,185,129,0.12)' }]}>
+                                    <Ionicons name="chatbox-ellipses-outline" size={20} color={COLORS.primary} />
+                                </View>
                                 <Text style={styles.menuLabel}>Platform Feedback</Text>
+                                <Ionicons name="chevron-forward" size={18} color="#4B5563" />
                             </TouchableOpacity>
 
-                            <View style={{ height: SPACING.md }} />
+                            <View style={styles.menuDivider} />
 
-                            <TouchableOpacity style={[styles.menuItem, { borderColor: 'rgba(239, 68, 68, 0.2)' }]} onPress={handleLogout}>
-                                <Ionicons name="log-out-outline" size={22} color="#EF4444" style={{ marginRight: 10 }} />
+                            <TouchableOpacity style={styles.menuRow} onPress={handleLogout}>
+                                <View style={[styles.menuIcon, { backgroundColor: 'rgba(239,68,68,0.12)' }]}>
+                                    <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+                                </View>
                                 <Text style={[styles.menuLabel, { color: '#EF4444' }]}>Log Out</Text>
+                                <Ionicons name="chevron-forward" size={18} color="#4B5563" />
                             </TouchableOpacity>
                         </View>
                     )}
-
-                    {renderFeedbackModal()}
                 </View>
             </ScrollView>
+
+            {renderFeedbackModal()}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: COLORS.secondary || '#111827',
-    },
-    background: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    header: {
-        alignItems: 'center',
-        padding: SPACING.xl,
-        paddingTop: 60,
-    },
-    avatar: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: SPACING.md,
-        borderWidth: 2,
-        borderColor: COLORS.primary,
-    },
-    avatarText: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: COLORS.primary,
-    },
-    name: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#fff',
-        marginBottom: 4,
-    },
-    email: {
-        fontSize: 14,
-        color: '#9CA3AF',
-    },
-    content: {
-        padding: SPACING.lg,
-    },
-    formContainer: {
-        backgroundColor: COLORS.surfaceDark || '#1F2937',
-        padding: SPACING.lg,
-        borderRadius: BORDER_RADIUS.xl,
-        borderWidth: 1,
-        borderColor: '#374151',
-    },
-    formTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        marginBottom: SPACING.lg,
-        color: '#fff',
-    },
-    inputGroup: {
-        marginBottom: SPACING.lg,
-    },
-    inputLabel: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#D1D5DB',
-        marginBottom: SPACING.sm,
-    },
-    selectionContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-    },
-    selectionChip: {
-        paddingVertical: 12,
+    container: { flex: 1, backgroundColor: '#080C14' },
+    scrollContent: { paddingBottom: 50 },
+
+    // Hero Banner
+    heroBanner: {
+        paddingTop: 32,
         paddingHorizontal: 20,
-        borderRadius: BORDER_RADIUS.md,
-        backgroundColor: '#111827',
-        borderWidth: 1,
-        borderColor: '#374151',
-        minWidth: '45%',
+        paddingBottom: 28,
+        overflow: 'hidden',
         alignItems: 'center',
     },
-    selectionChipActive: {
-        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    menuBtn: {
+        position: 'absolute',
+        top: 32,
+        left: 20,
+        width: 38, height: 38, borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        alignItems: 'center', justifyContent: 'center',
+        zIndex: 10,
+    },
+    glowBlob: {
+        position: 'absolute', top: -50, right: -50,
+        width: 220, height: 220, borderRadius: 110,
+        backgroundColor: 'rgba(16,185,129,0.1)',
+    },
+    avatarRing: {
+        width: 88, height: 88, borderRadius: 44,
+        alignItems: 'center', justifyContent: 'center',
+        padding: 3, marginBottom: 14,
+    },
+    avatarInner: {
+        width: 80, height: 80, borderRadius: 40,
+        backgroundColor: '#0D1B2A',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    avatarText: { fontSize: 32, fontWeight: '800', color: COLORS.primary },
+    heroName: { fontSize: 22, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
+    heroEmail: { fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 4, marginBottom: 16 },
+    statsRow: { flexDirection: 'row', gap: 10 },
+    statPill: {
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        backgroundColor: 'rgba(16,185,129,0.1)',
+        borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)',
+        paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20,
+    },
+    statPillText: { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
+
+    // Body
+    body: { paddingHorizontal: 16, paddingTop: 20 },
+
+    // Card (Edit + Details)
+    card: {
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderRadius: 20, padding: 20,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+        marginBottom: 16,
+    },
+    cardTitle: { fontSize: 18, fontWeight: '700', color: '#fff', marginBottom: 20 },
+
+    // Input
+    inputGroup: { marginBottom: 20 },
+    inputLabel: { fontSize: 13, fontWeight: '600', color: '#9CA3AF', marginBottom: 10, letterSpacing: 0.3 },
+    input: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+        borderRadius: 14, padding: 14, fontSize: 15, color: '#fff',
+    },
+    textArea: { height: 100, textAlignVertical: 'top' },
+
+    // Chips
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: {
+        paddingVertical: 9, paddingHorizontal: 16,
+        borderRadius: 50, borderWidth: 1,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderColor: 'rgba(255,255,255,0.08)',
+    },
+    chipActive: {
+        backgroundColor: 'rgba(16,185,129,0.12)',
         borderColor: COLORS.primary,
     },
-    selectionText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#D1D5DB',
+    chipText: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
+    chipTextActive: { color: COLORS.primary, fontWeight: '700' },
+
+    // Form actions
+    formBtns: { marginTop: 8, gap: 10 },
+    saveBtn: { borderRadius: 50, overflow: 'hidden' },
+    saveBtnGrad: { paddingVertical: 15, alignItems: 'center' },
+    saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+    cancelBtn: { alignItems: 'center', paddingVertical: 10 },
+    cancelBtnText: { color: '#6B7280', fontWeight: '600' },
+
+    // Detail rows
+    detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, gap: 10 },
+    detailLabel: { color: '#6B7280', fontSize: 14 },
+    detailValue: { color: '#E5E7EB', fontSize: 14, fontWeight: '600', flex: 1, textAlign: 'right' },
+    divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)' },
+    editBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 6, marginTop: 16, paddingVertical: 10,
+        backgroundColor: 'rgba(16,185,129,0.08)',
+        borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)',
+        borderRadius: 50,
     },
-    selectionTextActive: {
-        fontWeight: 'bold',
-        color: COLORS.primary,
+    editBtnText: { color: COLORS.primary, fontWeight: '700', fontSize: 14 },
+
+    // Menu
+    menuSection: {
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderRadius: 20, overflow: 'hidden',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+        marginBottom: 16,
     },
-    pillInput: {
-        backgroundColor: '#111827',
-        borderWidth: 1,
-        borderColor: '#374151',
-        borderRadius: BORDER_RADIUS.md,
-        padding: 16,
-        fontSize: 16,
-        color: '#fff',
+    menuRow: {
+        flexDirection: 'row', alignItems: 'center',
+        padding: 16, gap: 12,
     },
-    formActions: {
-        marginTop: SPACING.lg,
-        gap: SPACING.md,
+    menuIcon: {
+        width: 38, height: 38, borderRadius: 11,
+        alignItems: 'center', justifyContent: 'center',
     },
-    actionButton: {
-        paddingVertical: 16,
-        borderRadius: BORDER_RADIUS.lg,
-        alignItems: 'center',
-    },
-    saveButton: {
-        backgroundColor: COLORS.primary,
-    },
-    saveButtonText: {
-        color: COLORS.secondary,
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    cancelButton: {
-        alignItems: 'center',
-        paddingVertical: 12,
-    },
-    cancelButtonText: {
-        color: '#9CA3AF',
-        fontWeight: '600',
-    },
-    detailsCard: {
-        backgroundColor: COLORS.surfaceDark || '#1F2937',
-        borderRadius: BORDER_RADIUS.lg,
-        padding: SPACING.lg,
-        borderWidth: 1,
-        borderColor: '#374151',
-    },
-    detailRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingVertical: SPACING.sm,
-    },
-    detailLabel: {
-        color: '#9CA3AF',
-        fontSize: 14,
-    },
-    detailValue: {
-        color: '#fff',
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: '#374151',
-        marginVertical: 4,
-    },
-    editProfileBtn: {
-        marginTop: SPACING.lg,
-        alignItems: 'center',
-    },
-    editProfileBtnText: {
-        color: COLORS.primary,
-        fontWeight: 'bold',
-    },
-    section: {
-        marginTop: SPACING.xl,
-    },
-    menuItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: SPACING.md,
-        backgroundColor: COLORS.surfaceDark || '#1F2937',
-        borderRadius: BORDER_RADIUS.md,
-        borderWidth: 1,
-        borderColor: '#374151',
-    },
-    menuLabel: {
-        fontSize: 16,
-        color: '#fff',
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        justifyContent: 'center',
-        padding: SPACING.lg,
-    },
-    modalContent: {
-        backgroundColor: COLORS.surfaceDark || '#1F2937',
-        borderRadius: BORDER_RADIUS.xl,
-        padding: SPACING.xl,
-        borderWidth: 1,
-        borderColor: '#374151',
+    menuLabel: { flex: 1, fontSize: 15, color: '#E5E7EB', fontWeight: '600' },
+    menuDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginHorizontal: 16 },
+
+    // Feedback Modal
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' },
+    modalBox: {
+        backgroundColor: '#0D1B2A',
+        borderTopLeftRadius: 28, borderTopRightRadius: 28,
+        padding: 24,
+        borderWidth: 1, borderBottomWidth: 0,
+        borderColor: 'rgba(255,255,255,0.08)',
     },
     modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: SPACING.lg,
+        flexDirection: 'row', justifyContent: 'space-between',
+        alignItems: 'center', marginBottom: 20,
     },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#fff',
+    modalTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
+    modalCloseBtn: {
+        width: 32, height: 32, borderRadius: 8,
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        alignItems: 'center', justifyContent: 'center',
     },
-    modalLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#D1D5DB',
-        marginBottom: SPACING.sm,
-    },
-    ratingContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: 15,
-        marginBottom: SPACING.lg,
-    },
-    textArea: {
-        height: 100,
-        textAlignVertical: 'top',
-    },
-    anonymousRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginVertical: SPACING.lg,
+    starsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+    anonRow: {
+        flexDirection: 'row', justifyContent: 'space-between',
+        alignItems: 'center', marginVertical: 16,
     },
 });

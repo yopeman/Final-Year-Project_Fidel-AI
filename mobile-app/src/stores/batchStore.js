@@ -27,6 +27,10 @@ export const useBatchStore = create((set, get) => ({
     isLoading: false,
     error: null,
 
+    // Premium access state — shared across screens
+    premiumUnlocked: false,
+    enrollmentStatusGlobal: null, // 'PENDING' | 'ENROLLED' | null
+
     // Fetch all batches
     getBatches: async (language = "English") => {
         try {
@@ -47,6 +51,9 @@ export const useBatchStore = create((set, get) => ({
                         status
                         feeAmount
                         maxStudents
+                        enrollments {
+                            id
+                        }
                     }
                 }
             `;
@@ -137,7 +144,9 @@ export const useBatchStore = create((set, get) => ({
             set({ isLoading: false });
 
             if (enrollment) {
-                return { isEnrolled: true, status: enrollment.status, enrollmentId: enrollment.id };
+                // Backend returns 'APPLIED' for enrolled-but-unpaid. Normalize to 'PENDING' for UI.
+                const uiStatus = enrollment.status === 'APPLIED' ? 'PENDING' : enrollment.status;
+                return { isEnrolled: true, status: uiStatus, enrollmentId: enrollment.id };
             }
 
             return { isEnrolled: false, status: null };
@@ -204,11 +213,32 @@ export const useBatchStore = create((set, get) => ({
         }
     },
 
-    // Check Payment Status
+    // Check Payment Status — also checks enrollment status directly as the source of truth
     checkPaymentStatus: async (enrollmentId) => {
         try {
-            // set({ isLoading: true }); // Don't set global loading regarding background checks
-            const query = `
+            // Check enrollment status directly — most reliable after webhook
+            const enrollmentQuery = `
+                query enrollment($id: ID!) {
+                    enrollment(id: $id) {
+                        id
+                        status
+                    }
+                }
+            `;
+            const enrollmentData = await graphQLRequest(enrollmentQuery, { id: enrollmentId });
+            const enrollmentStatus = enrollmentData?.enrollment?.status;
+
+            if (enrollmentStatus === 'ENROLLED' || enrollmentStatus === 'COMPLETED') {
+                set(state => ({
+                    enrollments: state.enrollments.map(e =>
+                        e.id === enrollmentId ? { ...e, status: enrollmentStatus } : e
+                    )
+                }));
+                return { success: true, status: 'COMPLETED' };
+            }
+
+            // Fallback: check payment records
+            const paymentQuery = `
                 query payments($enrollmentId: ID!) {
                     payments(enrollmentId: $enrollmentId) {
                         id
@@ -216,8 +246,7 @@ export const useBatchStore = create((set, get) => ({
                     }
                 }
             `;
-            const data = await graphQLRequest(query, { enrollmentId });
-            // You might want to update the specific enrollment status in the store
+            const data = await graphQLRequest(paymentQuery, { enrollmentId });
             const payments = data.payments;
             const completedPayment = payments.find(p => p.status === 'COMPLETED');
 
@@ -335,6 +364,57 @@ export const useBatchStore = create((set, get) => ({
         set({ generatedVideos: recommendations, isLoading: false });
         return { success: true, videos: recommendations };
     },
+
+
+    // Unlock premium — verify payment status, auto-unlock in dev if backend not ready
+    unlockPremium: async (enrollmentId) => {
+        try {
+            // Check enrollment/payment status directly (works without backend restart)
+            const result = await get().checkPaymentStatus(enrollmentId);
+            if (result.success && result.status === 'COMPLETED') {
+                set({ premiumUnlocked: true, enrollmentStatusGlobal: 'ENROLLED' });
+                return { success: true };
+            }
+
+            // DEV ONLY: auto-unlock if backend verification isn't ready yet
+            // Remove this block before deploying to production
+            const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.NODE_ENV !== 'production';
+            if (isDev) {
+                console.warn('[DEV] Payment not confirmed by backend — force-unlocking for development.');
+                set({ premiumUnlocked: true, enrollmentStatusGlobal: 'ENROLLED' });
+                return { success: true };
+            }
+
+            return { success: false, status: result.status || 'PENDING' };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+
+    // Get Batch meeting link
+    getBatchMeetingLink: async (batchId) => {
+        try {
+            set({ isLoading: true, error: null });
+            const query = `
+                mutation getBatchMeetingLink($batchId: ID!) {
+                    getBatchMeetingLink(batchId: $batchId) {
+                        meetingLink
+                        status
+                    }
+                }
+            `;
+            const data = await graphQLRequest(query, { batchId });
+            set({ isLoading: false });
+            return { success: true, data: data.getBatchMeetingLink };
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || 'Failed to get batch meeting link';
+            set({ error: errorMsg, isLoading: false });
+            return { success: false, error: errorMsg };
+        }
+    },
+
+    resetPremiumState: () => set({ premiumUnlocked: false, enrollmentStatusGlobal: null }),
 
     clearError: () => set({ error: null }),
 }));
