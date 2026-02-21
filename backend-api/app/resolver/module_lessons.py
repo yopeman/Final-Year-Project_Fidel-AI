@@ -130,7 +130,12 @@ def resolve_complete_lesson(_, info, id: str):
         .first()
     )
 
-    if not next_lesson:
+    if next_lesson:
+        next_lesson.is_locked = False
+        db.commit()
+        db.refresh(next_lesson)
+
+    else:
         next_module = (
             db.query(Modules)
             .filter(
@@ -140,10 +145,26 @@ def resolve_complete_lesson(_, info, id: str):
             )
             .first()
         )
+        
         if next_module:
             next_module.is_locked = False
             db.commit()
             db.refresh(next_module)
+            
+            next_module_lesson = (
+                db.query(ModuleLessons)
+                .filter(
+                    ModuleLessons.module_id == next_module.id,
+                    ModuleLessons.display_order == 1,
+                    ModuleLessons.is_deleted == False,
+                )
+                .first()
+            )
+            
+            if next_module_lesson:
+                next_module_lesson.is_locked = False
+                db.commit()
+                db.refresh(next_module_lesson)
 
     # Send notification to student about lesson completion
     send_notification(
