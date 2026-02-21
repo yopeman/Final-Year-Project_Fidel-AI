@@ -919,7 +919,7 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
             name=module["name"],
             description=module["description"],
             display_order=module["displayOrder"],
-            is_locked=False,
+            is_locked=module["isLocked"],
         )
         db.add(new_module)
         db.flush()
@@ -931,7 +931,7 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
                 content=lesson["content"],
                 display_order=lesson["displayOrder"],
                 is_completed=lesson["isCompleted"],
-                is_locked=False,
+                is_locked=lesson["isLocked"],
             )
             db.add(new_lesson)
             db.flush()
