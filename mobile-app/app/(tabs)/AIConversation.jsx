@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useChatStore } from '../../src/stores/chatStore';
 import { useBatchStore } from '../../src/stores/batchStore';
-import { COLORS, BORDER_RADIUS, SPACING } from '../../src/constants/theme';
+import { COLORS, SPACING } from '../../src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import PremiumMenu from '../../src/components/PremiumMenu';
 
@@ -124,20 +124,6 @@ export default function AIConversationScreen() {
                         <Text style={styles.heroSubtext}>
                             Talk with your AI tutor in a safe, stress-free space. Pick a topic and start speaking naturally.
                         </Text>
-                        <TouchableOpacity
-                            style={styles.heroButton}
-                            onPress={() => startConversation({ title: customTopic.trim() || 'Free Talk' })}
-                        >
-                            <LinearGradient
-                                colors={[COLORS.primary, '#F59E0B']}
-                                style={styles.heroButtonGradient}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                            >
-                                <Ionicons name="mic" size={18} color="#fff" />
-                                <Text style={styles.heroButtonText}>Start Free Talk</Text>
-                            </LinearGradient>
-                        </TouchableOpacity>
                     </LinearGradient>
                 </View>
 
@@ -283,7 +269,7 @@ const styles = StyleSheet.create({
     // Hero
     heroWrapper: { marginBottom: 30 },
     heroCard: {
-        borderRadius: 28, padding: 28, alignItems: 'center',
+        borderRadius: 28, padding: 15, alignItems: 'center',
         borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)',
     },
     aiAvatarLarge: {
@@ -316,6 +302,12 @@ const styles = StyleSheet.create({
 
     // Section
     section: { marginBottom: 28 },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 14,
+    },
     sectionHeader: {
         flexDirection: 'row', justifyContent: 'space-between',
         alignItems: 'center', marginBottom: 14,

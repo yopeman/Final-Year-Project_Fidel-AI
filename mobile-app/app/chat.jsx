@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useChatStore } from '../src/stores/chatStore';
 import { COLORS, BORDER_RADIUS, SPACING } from '../src/constants';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
 
 export default function ChatScreen() {
     const { topic } = useLocalSearchParams();
@@ -25,6 +27,10 @@ export default function ChatScreen() {
     const [suggestions, setSuggestions] = useState([]);
     const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
 
+    // Audio recording state
+    const [recording, setRecording] = useState(null);
+    const [isRecording, setIsRecording] = useState(false);
+
     useEffect(() => {
         const initChat = async () => {
             // Check if we already have this conversation active
@@ -43,6 +49,13 @@ export default function ChatScreen() {
         if (topic) {
             initChat();
         }
+
+        // Cleanup audio on unmount
+        return () => {
+            if (recording) {
+                recording.stopAndUnloadAsync();
+            }
+        };
     }, [topic]);
 
     useEffect(() => {
@@ -53,13 +66,76 @@ export default function ChatScreen() {
         }
     }, [messages, isLoading]);
 
-    const handleSend = async () => {
-        if (!input.trim() || isLoading || !currentConversation) return;
+    const startRecording = async () => {
+        try {
+            console.log('Requesting permissions..');
+            const permission = await Audio.requestPermissionsAsync();
 
-        const messageText = input;
-        setInput('');
+            if (permission.status === 'granted') {
+                await Audio.setAudioModeAsync({
+                    allowsRecordingIOS: true,
+                    playsInSilentModeIOS: true,
+                });
 
-        const res = await talkWithAi(currentConversation.id, messageText);
+                console.log('Starting recording..');
+                const { recording } = await Audio.Recording.createAsync(
+                    Audio.RecordingOptionsPresets.HIGH_QUALITY
+                );
+                setRecording(recording);
+                setIsRecording(true);
+                console.log('Recording started');
+            } else {
+                console.error('Permission not granted');
+            }
+        } catch (err) {
+            console.error('Failed to start recording', err);
+        }
+    };
+
+    const stopRecording = async () => {
+        console.log('Stopping recording..');
+        setIsRecording(false);
+        setRecording(null);
+
+        try {
+            await recording.stopAndUnloadAsync();
+            const uri = recording.getURI();
+            console.log('Recording stopped and stored at', uri);
+
+            let base64Audio = '';
+            if (Platform.OS === 'web') {
+                // For web, use fetch and FileReader to get base64 from blob URI
+                const response = await fetch(uri);
+                const blob = await response.blob();
+                base64Audio = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64String = reader.result.split(',')[1];
+                        resolve(base64String);
+                    };
+                    reader.readAsDataURL(blob);
+                });
+            } else {
+                // For native, use FileSystem
+                base64Audio = await FileSystem.readAsStringAsync(uri, {
+                    encoding: FileSystem.EncodingType.Base64,
+                });
+            }
+
+            handleSend(null, base64Audio);
+        } catch (error) {
+            console.error('Failed to stop recording', error);
+        }
+    };
+
+    const handleSend = async (text = null, audioBase64 = null) => {
+        const messageText = text || input;
+        if (!messageText.trim() && !audioBase64) return;
+        if (isLoading || !currentConversation) return;
+
+        if (!audioBase64) setInput('');
+
+        const res = await talkWithAi(currentConversation.id, messageText, audioBase64);
         if (res.success) {
             handleGetSuggestions();
         }
@@ -94,7 +170,7 @@ export default function ChatScreen() {
         messages.forEach((msg) => {
             uiMessages.push({
                 id: `${msg.id}-student`,
-                text: msg.studentText,
+                text: msg.studentText || (msg.studentAudioUrl ? "🎤 [Audio Message]" : ""),
                 sender: 'user',
                 time: msg.createdAt
             });
@@ -186,26 +262,34 @@ export default function ChatScreen() {
                         )}
 
                         <View style={styles.inputContainer}>
-                            <TouchableOpacity style={styles.iconButton}>
-                                <Ionicons name="mic-outline" size={24} color={COLORS.primary} />
+                            <TouchableOpacity
+                                style={[styles.iconButton, isRecording && styles.recordingButton]}
+                                onPressIn={startRecording}
+                                onPressOut={stopRecording}
+                            >
+                                <Ionicons
+                                    name={isRecording ? "mic" : "mic-outline"}
+                                    size={24}
+                                    color={isRecording ? "#EF4444" : COLORS.primary}
+                                />
                             </TouchableOpacity>
                             <TextInput
                                 style={styles.input}
                                 value={input}
                                 onChangeText={setInput}
-                                placeholder="Message AI Tutor..."
+                                placeholder={isRecording ? "Recording..." : "Message AI Tutor..."}
                                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                                editable={!isLoading}
+                                editable={!isLoading && !isRecording}
                                 multiline
                                 maxHeight={100}
                             />
                             <TouchableOpacity
-                                onPress={handleSend}
-                                disabled={isLoading || !input.trim()}
-                                style={[styles.sendButton, (isLoading || !input.trim()) && styles.disabledButton]}
+                                onPress={() => handleSend()}
+                                disabled={isLoading || isRecording || !input.trim()}
+                                style={[styles.sendButton, (isLoading || isRecording || !input.trim()) && styles.disabledButton]}
                             >
                                 <LinearGradient
-                                    colors={isLoading || !input.trim() ? ['#333', '#222'] : [COLORS.primary, '#F59E0B']}
+                                    colors={isLoading || isRecording || !input.trim() ? ['#333', '#222'] : [COLORS.primary, '#F59E0B']}
                                     style={styles.sendGradient}
                                 >
                                     <Ionicons name="arrow-up" size={24} color={COLORS.secondary} />

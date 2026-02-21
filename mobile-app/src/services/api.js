@@ -375,7 +375,7 @@ export const aiAPI = {
         const res = await graphQLRequest(query);
         return { data: { ideas: res.data.generateIdea } };
     },
-    talkWithAi: async (conversationId, message) => {
+    talkWithAi: async (conversationId, message, audioFile = null) => {
         // CreateConversationInteractionInput: { conversationId, text, audioFile }
         const query = `
             mutation talkWithAi($input: CreateConversationInteractionInput!) {
@@ -390,7 +390,7 @@ export const aiAPI = {
             }
          `;
         const res = await graphQLRequest(query, {
-            input: { conversationId, text: message }
+            input: { conversationId, text: message, audioFile }
         });
         return { data: { message: res.data.talkWithAi } };
     },

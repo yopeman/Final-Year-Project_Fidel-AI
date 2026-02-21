@@ -93,11 +93,11 @@ export default function NotificationsScreen() {
                         {unreadCount > 0 ? `You have ${unreadCount} unread messages` : 'Up to date!'}
                     </Text>
                 </View>
-                {unreadCount > 0 && (
+                {/* {unreadCount > 0 && (
                     <TouchableOpacity style={styles.markReadBtn} onPress={handleMarkAllRead}>
                         <Text style={styles.markReadBtnText}>Mark all as read</Text>
                     </TouchableOpacity>
-                )}
+                )} */}
             </View>
 
             <FlatList
