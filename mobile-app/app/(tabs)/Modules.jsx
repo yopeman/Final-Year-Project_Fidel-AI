@@ -35,9 +35,22 @@ export default function ModulesScreen() {
         useCallback(() => { getModules(); }, [])
     );
 
-    const renderLesson = (lesson, lessonIndex) => {
+    const renderLesson = (lesson, lessonIndex, moduleIndex, currentModule) => {
         const isCompleted = lesson.isCompleted;
-        const isLocked = lesson.isLocked && !isPremium;
+        let isLocked = false;
+
+        if (isCompleted) {
+            isLocked = false;
+        } else if (moduleIndex === 0 && lessonIndex === 0) {
+            isLocked = false;
+        } else if (lessonIndex > 0) {
+            isLocked = !currentModule.lessons[lessonIndex - 1].isCompleted;
+        } else if (moduleIndex > 0) {
+            const prevModule = modules[moduleIndex - 1];
+            if (prevModule && prevModule.lessons && prevModule.lessons.length > 0) {
+                isLocked = !prevModule.lessons[prevModule.lessons.length - 1].isCompleted;
+            }
+        }
         const meta = getLessonMeta(lesson.type);
 
         let iconColor = '#fff';
@@ -75,7 +88,7 @@ export default function ModulesScreen() {
                 <View style={styles.lessonRow}>
                     {/* Icon */}
                     <LinearGradient colors={iconBg} style={styles.lessonIconWrap}>
-                        <Ionicons name={iconName} size={17} color={iconColor} />
+                        <Ionicons name={isLocked ? 'lock-closed' : iconName} size={17} color={isLocked ? '#4B5563' : iconColor} />
                     </LinearGradient>
 
                     {/* Text */}
@@ -100,9 +113,9 @@ export default function ModulesScreen() {
                     {!isCompleted && !isLocked && (
                         <Ionicons name="chevron-forward" size={16} color="#4B5563" />
                     )}
-                    {isLocked && !isPremium && (
+                    {isLocked && (
                         <View style={styles.lockPill}>
-                            <Text style={styles.lockPillText}>Premium</Text>
+                            <Text style={styles.lockPillText}>Next Up</Text>
                         </View>
                     )}
                 </View>
@@ -162,7 +175,7 @@ export default function ModulesScreen() {
 
                 {/* Lessons */}
                 <View style={styles.lessonList}>
-                    {item.lessons?.map((lesson, li) => renderLesson(lesson, li))}
+                    {item.lessons?.map((lesson, li) => renderLesson(lesson, li, index, item))}
                 </View>
             </View>
         );

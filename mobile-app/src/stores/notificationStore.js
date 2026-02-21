@@ -48,12 +48,16 @@ export const useNotificationStore = create((set, get) => ({
 
     markAllAsRead: async () => {
         try {
+            console.log('markAllAsRead: Starting optimistic update...');
             const updatedNotifications = get().notifications.map(n => ({ ...n, isRead: true }));
             set({ notifications: updatedNotifications, unreadCount: 0 });
 
+            console.log('markAllAsRead: Calling API...');
             await notificationAPI.markAllAsRead();
+            console.log('markAllAsRead: API success.');
             return { success: true };
         } catch (error) {
+            console.error('markAllAsRead: API failed', error);
             get().getNotifications();
             return { success: false };
         }

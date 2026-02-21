@@ -21,12 +21,12 @@ export default function PremiumMenu({ visible, onClose }) {
                 Animated.timing(slideAnim, {
                     toValue: 0,
                     duration: 300,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(fadeAnim, {
                     toValue: 1,
                     duration: 300,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ]).start();
         } else {
@@ -34,12 +34,12 @@ export default function PremiumMenu({ visible, onClose }) {
                 Animated.timing(slideAnim, {
                     toValue: -MENU_WIDTH,
                     duration: 250,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(fadeAnim, {
                     toValue: 0,
                     duration: 250,
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ]).start();
         }

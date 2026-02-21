@@ -10,10 +10,16 @@ import {
     Platform,
     ActivityIndicator,
     BackHandler,
+    StatusBar,
+    Dimensions
 } from 'react-native';
 import { useAuthStore } from '../../src/stores/authStore';
-import Icon from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { COLORS, SPACING, FONTS, BORDER_RADIUS } from '../../src/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+
+const { height } = Dimensions.get('window');
 
 const VerifyScreen = () => {
     const router = useRouter();
@@ -207,263 +213,314 @@ const VerifyScreen = () => {
     };
 
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            <View style={styles.content}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={goBackToRegister}
-                        disabled={isLoading || isSubmitting}
-                    >
-                        <Icon name="arrow-left" size={24} color="#007AFF" />
-                    </TouchableOpacity>
-                    <Text style={styles.title}>Verify Email</Text>
-                    <View style={{ width: 40 }} /> {/* Spacer for alignment */}
-                </View>
+        <View style={styles.container}>
+            <StatusBar barStyle="light-content" />
+            <LinearGradient
+                colors={['#0A2540', '#0D1B2A', '#080C14']}
+                style={styles.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            >
+                {/* Decorative glow blobs */}
+                <View style={[styles.glowBlob, { top: -50, right: -50, backgroundColor: 'rgba(16,185,129,0.1)' }]} />
+                <View style={[styles.glowBlob, { bottom: -100, left: -100, backgroundColor: 'rgba(99,102,241,0.08)' }]} />
 
-                <Icon
-                    name="email-check-outline"
-                    size={80}
-                    color="#007AFF"
-                    style={styles.emailIcon}
-                />
-
-                <Text style={styles.subtitle}>
-                    Enter the verification code sent to
-                </Text>
-                <Text style={styles.emailText}>{email}</Text>
-
-                {error && (
-                    <View style={styles.errorContainer}>
-                        <Icon name="alert-circle" size={20} color="#FF3B30" />
-                        <Text style={styles.errorText}>{error}</Text>
-                    </View>
-                )}
-
-                {/* Code Inputs */}
-                <View style={styles.codeContainer}>
-                    {code.map((digit, index) => (
-                        <TextInput
-                            key={index}
-                            ref={ref => (inputRefs.current[index] = ref)}
-                            style={[
-                                styles.codeInput,
-                                digit && styles.codeInputFilled,
-                                (isLoading || isSubmitting) && styles.codeInputDisabled,
-                            ]}
-                            value={digit}
-                            onChangeText={(value) => handleCodeChange(value, index)}
-                            onKeyPress={(e) => handleKeyPress(e, index)}
-                            keyboardType="number-pad"
-                            maxLength={6}
-                            selectTextOnFocus
-                            editable={!isLoading && !isSubmitting}
-                            caretHidden={true}
-                            contextMenuHidden={true}
-                        />
-                    ))}
-                </View>
-
-                <Text style={styles.codeHint}>
-                    Enter the 6-digit code
-                </Text>
-
-                {/* Verify Button */}
-                <TouchableOpacity
-                    style={[
-                        styles.verifyButton,
-                        (isLoading || isSubmitting) && styles.buttonDisabled,
-                        code.join('').length !== 6 && styles.buttonInactive,
-                    ]}
-                    onPress={() => handleVerify()}
-                    disabled={isLoading || isSubmitting || code.join('').length !== 6}
-                    activeOpacity={0.8}
+                <KeyboardAvoidingView
+                    style={styles.keyboardView}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 >
-                    {isLoading || isSubmitting ? (
-                        <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                        <Text style={styles.verifyButtonText}>Verify Email</Text>
-                    )}
-                </TouchableOpacity>
+                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                        <View style={styles.content}>
+                            {/* Header */}
+                            <View style={styles.header}>
+                                <TouchableOpacity
+                                    style={styles.backButton}
+                                    onPress={goBackToRegister}
+                                    disabled={isLoading || isSubmitting}
+                                >
+                                    <Ionicons name="arrow-back" size={24} color="rgba(255,255,255,0.7)" />
+                                </TouchableOpacity>
+                                <Text style={styles.title}>Verify Email</Text>
+                                <View style={{ width: 40 }} />
+                            </View>
 
-                {/* Resend Code Section */}
-                <View style={styles.resendContainer}>
-                    <Text style={styles.resendText}>
-                        Didn't receive the code?
-                    </Text>
-                    <TouchableOpacity
-                        onPress={handleResendCode}
-                        disabled={!canResend || isLoading || isSubmitting}
-                        style={styles.resendButton}
-                    >
-                        {canResend ? (
-                            <Text style={styles.resendButtonText}>Resend Code</Text>
-                        ) : (
-                            <Text style={styles.resendTimerText}>
-                                Resend in {formatTime(timer)}
+                            <View style={styles.centerSection}>
+                                <LinearGradient
+                                    colors={['rgba(255,193,7,0.2)', 'rgba(255,193,7,0.05)']}
+                                    style={styles.iconBadge}
+                                >
+                                    <Ionicons name="mail-unread" size={40} color={COLORS.primary} />
+                                </LinearGradient>
+
+                                <Text style={styles.subtitle}>
+                                    Enter the verification code sent to
+                                </Text>
+                                <Text style={styles.emailText}>{email}</Text>
+                            </View>
+
+                            {error && (
+                                <View style={styles.errorContainer}>
+                                    <Ionicons name="alert-circle" size={18} color="#EF4444" />
+                                    <Text style={styles.errorText}>{error}</Text>
+                                </View>
+                            )}
+
+                            {/* Code Inputs */}
+                            <View style={styles.codeContainer}>
+                                {code.map((digit, index) => (
+                                    <TextInput
+                                        key={index}
+                                        ref={ref => (inputRefs.current[index] = ref)}
+                                        style={[
+                                            styles.codeInput,
+                                            digit && styles.codeInputFilled,
+                                            (isLoading || isSubmitting) && styles.codeInputDisabled,
+                                        ]}
+                                        value={digit}
+                                        onChangeText={(value) => handleCodeChange(value, index)}
+                                        onKeyPress={(e) => handleKeyPress(e, index)}
+                                        keyboardType="number-pad"
+                                        maxLength={1}
+                                        selectTextOnFocus
+                                        editable={!isLoading && !isSubmitting}
+                                        placeholder="0"
+                                        placeholderTextColor="rgba(255,255,255,0.1)"
+                                    />
+                                ))}
+                            </View>
+
+                            <Text style={styles.codeHint}>
+                                6-digit verification code
                             </Text>
-                        )}
-                    </TouchableOpacity>
-                </View>
 
-                {/* Support Text */}
-                <Text style={styles.supportText}>
-                    If you're having trouble receiving the code, please check your spam folder
-                    or contact support at support@example.com
-                </Text>
-            </View>
-        </KeyboardAvoidingView>
+                            {/* Verify Button */}
+                            <TouchableOpacity
+                                style={styles.verifyButton}
+                                onPress={() => handleVerify()}
+                                disabled={isLoading || isSubmitting || code.join('').length !== 6}
+                                activeOpacity={0.8}
+                            >
+                                <LinearGradient
+                                    colors={[COLORS.primary, '#059669']}
+                                    style={styles.btnGradient}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                >
+                                    {isLoading || isSubmitting ? (
+                                        <ActivityIndicator color="#fff" size="small" />
+                                    ) : (
+                                        <>
+                                            <Text style={styles.verifyButtonText}>Verify Email</Text>
+                                            <Ionicons name="checkpoint" size={18} color="#fff" />
+                                        </>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+
+                            {/* Resend Code Section */}
+                            <View style={styles.resendContainer}>
+                                <Text style={styles.resendText}>
+                                    Didn't receive the code?
+                                </Text>
+                                <TouchableOpacity
+                                    onPress={handleResendCode}
+                                    disabled={!canResend || isLoading || isSubmitting}
+                                    activeOpacity={0.7}
+                                >
+                                    {canResend ? (
+                                        <Text style={styles.resendButtonText}>Resend Code</Text>
+                                    ) : (
+                                        <View style={styles.resendTimer}>
+                                            <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.4)" />
+                                            <Text style={styles.resendTimerText}>
+                                                Resend in {formatTime(timer)}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Support Text */}
+                            <Text style={styles.supportText}>
+                                Check your spam folder or contact support if the code doesn't arrive.
+                            </Text>
+                        </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </LinearGradient>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+    },
+    gradient: {
+        flex: 1,
+    },
+    glowBlob: {
+        position: 'absolute',
+        width: 300,
+        height: 300,
+        borderRadius: 150,
+        opacity: 0.6,
+    },
+    keyboardView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        padding: 24,
     },
     content: {
-        flex: 1,
-        paddingHorizontal: 24,
-        paddingTop: 60,
-        paddingBottom: 40,
+        width: '100%',
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderRadius: 24,
+        padding: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 40,
+        marginBottom: 32,
     },
     backButton: {
         padding: 8,
+        marginLeft: -8,
     },
     title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#1a1a1a',
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#fff',
         flex: 1,
         textAlign: 'center',
     },
-    emailIcon: {
-        alignSelf: 'center',
-        marginBottom: 24,
+    centerSection: {
+        alignItems: 'center',
+        marginBottom: 32,
+    },
+    iconBadge: {
+        width: 80,
+        height: 80,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,193,7,0.3)',
     },
     subtitle: {
-        fontSize: 16,
-        color: '#666',
+        fontSize: 15,
+        color: 'rgba(255,255,255,0.5)',
         textAlign: 'center',
-        marginBottom: 8,
+        marginBottom: 6,
+        fontWeight: '600',
     },
     emailText: {
         fontSize: 18,
-        fontWeight: '600',
-        color: '#007AFF',
+        fontWeight: '700',
+        color: COLORS.primary,
         textAlign: 'center',
-        marginBottom: 40,
     },
     errorContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFE5E5',
-        padding: 16,
-        borderRadius: 8,
+        backgroundColor: 'rgba(239,68,68,0.1)',
+        padding: 12,
+        borderRadius: 12,
         marginBottom: 24,
+        gap: 8,
     },
     errorText: {
-        color: '#FF3B30',
+        color: '#EF4444',
         fontSize: 14,
-        marginLeft: 8,
+        fontWeight: '600',
         flex: 1,
     },
     codeContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 12,
+        marginBottom: 16,
     },
     codeInput: {
-        width: 50,
-        height: 60,
-        borderWidth: 2,
-        borderColor: '#E0E0E0',
+        width: height * 0.055,
+        height: height * 0.07,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
         borderRadius: 12,
         textAlign: 'center',
-        fontSize: 24,
-        fontWeight: '600',
-        color: '#333',
-        backgroundColor: '#f9f9f9',
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#fff',
+        backgroundColor: 'rgba(255,255,255,0.05)',
     },
     codeInputFilled: {
-        borderColor: '#007AFF',
-        backgroundColor: '#F0F7FF',
+        borderColor: COLORS.primary,
+        backgroundColor: 'rgba(255,193,7,0.05)',
     },
     codeInputDisabled: {
-        opacity: 0.6,
+        opacity: 0.5,
     },
     codeHint: {
-        fontSize: 14,
-        color: '#666',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.3)',
         textAlign: 'center',
-        marginBottom: 40,
+        marginBottom: 32,
+        fontWeight: '600',
     },
     verifyButton: {
-        backgroundColor: '#007AFF',
-        paddingVertical: 18,
-        borderRadius: 12,
+        borderRadius: 18,
+        overflow: 'hidden',
+        marginBottom: 32,
+    },
+    btnGradient: {
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 32,
-        shadowColor: '#007AFF',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-    buttonDisabled: {
-        backgroundColor: '#99C9FF',
-    },
-    buttonInactive: {
-        backgroundColor: '#E0E0E0',
+        paddingVertical: 18,
+        gap: 10,
     },
     verifyButtonText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '800',
     },
     resendContainer: {
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: 10,
     },
     resendText: {
         fontSize: 14,
-        color: '#666',
-        marginBottom: 8,
-    },
-    resendButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+        color: 'rgba(255,255,255,0.4)',
+        marginBottom: 10,
+        fontWeight: '600',
     },
     resendButtonText: {
-        fontSize: 16,
-        color: '#007AFF',
-        fontWeight: '600',
+        fontSize: 15,
+        color: COLORS.primary,
+        fontWeight: '800',
+    },
+    resendTimer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
     },
     resendTimerText: {
-        fontSize: 16,
-        color: '#999',
-        fontWeight: '600',
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.4)',
+        fontWeight: '700',
     },
     supportText: {
         fontSize: 12,
-        color: '#999',
+        color: 'rgba(255,255,255,0.25)',
         textAlign: 'center',
         lineHeight: 18,
-        marginTop: 'auto',
+        marginTop: 20,
+        paddingHorizontal: 20,
     },
 });
 

@@ -9,8 +9,8 @@ export const COLORS = {
     secondary: '#64748B', // Soft Gray
 
     // Backgrounds
-    background: '#0F172A', // Deep Blue-Black (Slate 900)
-    backgroundGradient: ['#0F172A', '#1E293B'], // Gradient for main screens
+    background: '#080C14', // Very Deep Blue-Black
+    backgroundGradient: ['#0A2540', '#0D1B2A', '#080C14'], // Premium gradient from Home.jsx
     surface: '#1E293B', // Slightly lighter dark surface (Slate 800)
     surfaceLight: '#334155', // Lighter surface for inputs/modals (Slate 700)
 

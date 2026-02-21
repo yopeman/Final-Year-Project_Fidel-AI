@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
+import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const steps = [
     { key: 'basics', title: 'Basic Info' },
@@ -10,7 +13,13 @@ const steps = [
 
 export default function CreateProfile() {
     const router = useRouter();
-    const { createProfile, isLoading, error } = useAuthStore();
+    const { createProfile, isLoading, error, hasProfile, hasPlan } = useAuthStore();
+
+    useEffect(() => {
+        if (hasProfile && hasPlan) {
+            router.replace('/(tabs)/Home');
+        }
+    }, [hasProfile, hasPlan]);
     const [currentStep, setCurrentStep] = useState(0);
 
     const [formData, setFormData] = useState({
@@ -131,82 +140,140 @@ export default function CreateProfile() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${((currentStep + 1) / steps.length) * 100}%` }]} />
+        <View style={styles.container}>
+            <StatusBar barStyle="light-content" />
+            <LinearGradient
+                colors={['#0A2540', '#0D1B2A', '#080C14']}
+                style={styles.heroBanner}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            >
+                <View style={styles.glowBlob} />
+                <View style={styles.header}>
+                    <Text style={styles.stepTitle}>{steps[currentStep].title}</Text>
+                    <View style={styles.progressContainer}>
+                        <View style={styles.progressBar}>
+                            <View style={[styles.progressFill, { width: `${((currentStep + 1) / steps.length) * 100}%` }]} />
+                        </View>
+                        <Text style={styles.progressText}>Step {currentStep + 1} of {steps.length}</Text>
+                    </View>
                 </View>
-                <Text style={styles.stepTitle}>{steps[currentStep].title}</Text>
-            </View>
+            </LinearGradient>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {renderStepContent()}
-                {error && <Text style={styles.errorText}>{error}</Text>}
+                {error && (
+                    <View style={styles.errorContainer}>
+                        <Ionicons name="alert-circle" size={20} color="#EF4444" />
+                        <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                )}
             </ScrollView>
 
             <View style={styles.footer}>
                 {currentStep > 0 && (
                     <TouchableOpacity style={styles.backButton} onPress={handleBack} disabled={isLoading}>
+                        <Ionicons name="arrow-back" size={20} color="rgba(255,255,255,0.6)" />
                         <Text style={styles.backButtonText}>Back</Text>
                     </TouchableOpacity>
                 )}
 
-                <TouchableOpacity style={styles.nextButton} onPress={handleNext} disabled={isLoading}>
-                    {isLoading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.nextButtonText}>{currentStep === steps.length - 1 ? 'Create Profile' : 'Next'}</Text>
-                    )}
+                <TouchableOpacity
+                    style={[styles.nextButton, currentStep === 0 && { marginLeft: 0 }]}
+                    onPress={handleNext}
+                    disabled={isLoading}
+                    activeOpacity={0.8}
+                >
+                    <LinearGradient
+                        colors={[COLORS.primary, '#059669']}
+                        style={styles.nextButtonGrad}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <>
+                                <Text style={styles.nextButtonText}>
+                                    {currentStep === steps.length - 1 ? 'Create Profile' : 'Next Step'}
+                                </Text>
+                                <Ionicons name="arrow-forward" size={18} color="#fff" />
+                            </>
+                        )}
+                    </LinearGradient>
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#080C14',
+    },
+    heroBanner: {
+        paddingTop: 60,
+        paddingHorizontal: 24,
+        paddingBottom: 30,
+        overflow: 'hidden',
+    },
+    glowBlob: {
+        position: 'absolute', top: -30, right: -30,
+        width: 180, height: 180, borderRadius: 90,
+        backgroundColor: 'rgba(16,185,129,0.1)',
     },
     header: {
-        padding: 20,
-        backgroundColor: '#f9f9f9',
+        gap: 12,
+    },
+    stepTitle: {
+        fontSize: 32,
+        fontWeight: '800',
+        color: '#fff',
+        letterSpacing: -0.5,
+    },
+    progressContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
     progressBar: {
+        flex: 1,
         height: 6,
-        backgroundColor: '#e0e0e0',
+        backgroundColor: 'rgba(255,255,255,0.1)',
         borderRadius: 3,
-        marginBottom: 10,
         overflow: 'hidden',
     },
     progressFill: {
         height: '100%',
-        backgroundColor: '#FFD700', // Gold/Yellow
+        backgroundColor: COLORS.primary,
+        borderRadius: 3,
     },
-    stepTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
+    progressText: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.5)',
+        fontWeight: '600',
     },
     scrollContent: {
-        padding: 20,
+        padding: 24,
     },
     stepContainer: {
-        gap: 20,
+        gap: 24,
     },
     label: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#444',
-        marginBottom: 10,
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#fff',
+        marginBottom: 8,
     },
     input: {
         borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 12,
-        padding: 15,
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 16,
+        padding: 16,
         fontSize: 16,
-        backgroundColor: '#f5f5f5',
+        color: '#fff',
+        backgroundColor: 'rgba(255,255,255,0.05)',
     },
     optionsContainer: {
         flexDirection: 'row',
@@ -214,57 +281,76 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     optionChip: {
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 20,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 14,
         borderWidth: 1,
-        borderColor: '#ddd',
-        backgroundColor: '#fff',
+        borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: 'rgba(255,255,255,0.04)',
     },
     selectedOption: {
-        backgroundColor: '#000',
-        borderColor: '#000',
+        backgroundColor: 'rgba(16,185,129,0.15)',
+        borderColor: COLORS.primary,
     },
     optionText: {
         fontSize: 14,
-        color: '#333',
+        color: 'rgba(255,255,255,0.7)',
+        fontWeight: '600',
     },
     selectedOptionText: {
-        color: '#FFD700',
-        fontWeight: 'bold',
+        color: COLORS.primary,
+        fontWeight: '700',
     },
     footer: {
-        padding: 20,
-        borderTopWidth: 1,
-        borderTopColor: '#f0f0f0',
+        padding: 24,
+        paddingBottom: 40,
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        backgroundColor: '#080C14',
     },
     backButton: {
-        padding: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        marginRight: 16,
+        gap: 8,
     },
     backButtonText: {
         fontSize: 16,
-        color: '#666',
+        color: 'rgba(255,255,255,0.6)',
+        fontWeight: '600',
     },
     nextButton: {
-        backgroundColor: '#000',
-        paddingVertical: 16,
-        paddingHorizontal: 32,
-        borderRadius: 30,
         flex: 1,
-        marginLeft: 10,
+        borderRadius: 18,
+        overflow: 'hidden',
+    },
+    nextButtonGrad: {
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16,
+        gap: 10,
     },
     nextButtonText: {
-        color: '#FFD700',
+        color: '#fff',
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '800',
+    },
+    errorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(239,68,68,0.1)',
+        padding: 14,
+        borderRadius: 12,
+        marginTop: 20,
+        gap: 10,
     },
     errorText: {
-        color: 'red',
-        marginTop: 10,
-        textAlign: 'center',
+        color: '#EF4444',
+        fontSize: 14,
+        fontWeight: '600',
+        flex: 1,
     },
 });

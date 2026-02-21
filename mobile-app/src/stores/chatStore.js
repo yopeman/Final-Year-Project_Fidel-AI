@@ -64,7 +64,7 @@ export const useChatStore = create(
                 try {
                     set({ isLoading: true, error: null });
 
-                    const response = await aiAPI.talkWithAi(conversationId, message);
+                    const response = await aiAPI.talkWithAi(conversationId, message, audioFile);
                     const interaction = response.data.message;
 
                     // Update messages list

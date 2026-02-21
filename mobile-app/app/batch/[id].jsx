@@ -120,7 +120,7 @@ export default function BatchDetails() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const {
-        currentBatch, selectBatch, enrollInBatch, getCourseSchedules,
+        currentBatch, getBatchById, enrollInBatch, getCourseSchedules,
         schedules, getMeetingLink, isLoading, checkEnrollmentStatus,
         initiatePayment, checkPaymentStatus,
         premiumUnlocked, enrollmentStatusGlobal,
@@ -157,7 +157,7 @@ export default function BatchDetails() {
         Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
     }, [activeTab]);
 
-    useEffect(() => { if (id) selectBatch(id); }, [id]);
+    useEffect(() => { if (id) getBatchById(id); }, [id]);
 
     useFocusEffect(useCallback(() => { if (id) checkAccess(); }, [id]));
 
@@ -238,6 +238,7 @@ export default function BatchDetails() {
         setEnrolling(true);
         const result = await enrollInBatch(id, null);
         setEnrolling(false);
+
         if (result.success) {
             setMyEnrollmentId(result.enrollment.id);
             setEnrollmentStatus('PENDING');
@@ -245,6 +246,19 @@ export default function BatchDetails() {
                 { text: '💳 Pay Now', onPress: () => handlePayment(result.enrollment.id) },
                 { text: 'Later' }
             ]);
+        } else if (result.isDuplicate) {
+            // Already enrolled case
+            setMyEnrollmentId(result.enrollmentId);
+            setEnrollmentStatus(result.status || 'PENDING');
+
+            if (result.status === 'ENROLLED') {
+                Alert.alert('Already Enrolled', 'You already have full access to this batch.');
+            } else {
+                Alert.alert('Already Enrolled', 'You are already enrolled. Proceed to payment to unlock full access?', [
+                    { text: '💳 Pay Now', onPress: () => handlePayment(result.enrollmentId) },
+                    { text: 'Later' }
+                ]);
+            }
         } else {
             Alert.alert('Enrollment Failed', result.error || 'Please try again.');
         }

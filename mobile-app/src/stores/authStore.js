@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI, profileAPI } from '../services/api';
+import { useBatchStore } from './batchStore';
 
 export const useAuthStore = create((set, get) => ({
     user: null,
@@ -40,6 +41,9 @@ export const useAuthStore = create((set, get) => ({
                 });
 
                 if (user) {
+                    if (user.profile) {
+                        useBatchStore.getState().syncWithProfile(user.profile);
+                    }
                     get().refreshUser();
                 }
             } else {
@@ -58,6 +62,9 @@ export const useAuthStore = create((set, get) => ({
 
             if (user) {
                 await AsyncStorage.setItem('user', JSON.stringify(user));
+                if (user.profile) {
+                    useBatchStore.getState().syncWithProfile(user.profile);
+                }
                 set({
                     user,
                     isAuthenticated: true,
@@ -140,6 +147,10 @@ export const useAuthStore = create((set, get) => ({
                 isLoading: false
             });
 
+            if (user?.profile) {
+                useBatchStore.getState().syncWithProfile(user.profile);
+            }
+
             return { success: true, user };
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || 'Login failed';
@@ -172,10 +183,31 @@ export const useAuthStore = create((set, get) => ({
             console.warn('Logout failed', e);
         }
 
-        await AsyncStorage.removeItem('accessToken');
-        await AsyncStorage.removeItem('refreshToken');
-        await AsyncStorage.removeItem('user');
-        set({ user: null, token: null, refreshToken: null, isAuthenticated: false, error: null });
+        // Clear all relevant storage keys
+        await Promise.all([
+            AsyncStorage.removeItem('accessToken'),
+            AsyncStorage.removeItem('refreshToken'),
+            AsyncStorage.removeItem('user'),
+            AsyncStorage.removeItem('planStatus')
+        ]);
+
+        // Clear batch store persistence
+        const batchStore = useBatchStore.getState();
+        if (batchStore.clearPersistedData) {
+            await batchStore.clearPersistedData();
+        }
+
+        set({
+            user: null,
+            token: null,
+            refreshToken: null,
+            isAuthenticated: false,
+            hasProfile: false,
+            hasPlan: false,
+            error: null
+        });
+
+        console.log('[AuthStore] Logout complete, storage cleared');
     },
 
     clearError: () => set({ error: null }),

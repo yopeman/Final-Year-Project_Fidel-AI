@@ -11,7 +11,10 @@ import { useNotificationStore } from '../../src/stores/notificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, BORDER_RADIUS, SPACING } from '../../src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle } from 'react-native-svg';
 import PremiumMenu from '../../src/components/PremiumMenu';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const { width } = Dimensions.get('window');
 
@@ -32,19 +35,69 @@ export default function HomeScreen() {
     const router = useRouter();
     const { user } = useAuthStore();
     const [menuVisible, setMenuVisible] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
+    const [selectedMonth, setSelectedMonth] = useState('all');
     const progressAnim = useRef(new Animated.Value(0)).current;
 
     const { progress, getCurrentPosition, getModules, getProgress, isLoading } = useLearningStore();
     const { unreadCount, getNotifications } = useNotificationStore();
-    const { batches, enrollments, getBatches, isLoading: batchLoading, premiumUnlocked } = useBatchStore();
+    const {
+        batches,
+        enrollments,
+        getBatches,
+        isLoading: batchLoading,
+        premiumUnlocked,
+        initializeStore,
+        syncWithProfile
+    } = useBatchStore();
 
-    const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
+    // Initialize store with persisted data
+    useEffect(() => {
+        const init = async () => {
+            try {
+                await initializeStore();
+                if (user?.profile) {
+                    await syncWithProfile(user.profile);
+                }
+                setIsInitialized(true);
+                console.log('[Home] Store initialized, premium status:', premiumUnlocked);
+            } catch (error) {
+                console.error('[Home] Initialization error:', error);
+                setIsInitialized(true);
+            }
+        };
+
+        init();
+    }, []);
+
+    // Re-sync when user changes
+    useEffect(() => {
+        const syncUserData = async () => {
+            if (user?.profile && isInitialized) {
+                await syncWithProfile(user.profile);
+            }
+        };
+
+        syncUserData();
+    }, [user?.id, user?.profile, isInitialized]);
+
+    // Fetch data on mount
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        await Promise.all([
+            getModules(),
+            getProgress(),
+            getBatches(),
+            getNotifications()
+        ]);
+    };
+
+    const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED' || e.status === 'COMPLETED');
     const currentPosition = getCurrentPosition();
     const overallProgress = progress?.completionPercentage || 0;
-
-    useEffect(() => {
-        getModules(); getProgress(); getBatches(); getNotifications();
-    }, []);
 
     useEffect(() => {
         Animated.timing(progressAnim, {
@@ -54,18 +107,105 @@ export default function HomeScreen() {
         }).start();
     }, [overallProgress]);
 
-    const onRefresh = React.useCallback(() => {
-        getModules(); getProgress(); getBatches();
-    }, []);
+    const onRefresh = React.useCallback(async () => {
+        await fetchData();
+        if (user?.profile) {
+            await syncWithProfile(user.profile);
+        }
+    }, [user?.profile]);
 
-    const myBatches = batches.filter(b =>
-        enrollments.some(e => e.batch?.id === b.id && e.status === 'ENROLLED') || b.status === 'ENROLLED_MOCK'
-    );
+    // Get enrolled batches with full details
+    const enrolledBatches = React.useMemo(() => {
+        return enrollments
+            .filter(e => e.status === 'ENROLLED' || e.status === 'COMPLETED')
+            .map(enrollment => {
+                const batchDetails = batches.find(b => b.id === enrollment.batch?.id);
+                return {
+                    ...enrollment,
+                    batch: {
+                        ...enrollment.batch,
+                        ...batchDetails,
+                        startDate: enrollment.batch?.startDate || batchDetails?.startDate,
+                        endDate: enrollment.batch?.endDate || batchDetails?.endDate,
+                        level: enrollment.batch?.level || batchDetails?.level,
+                        status: enrollment.batch?.status || batchDetails?.status || 'ACTIVE',
+                        language: enrollment.batch?.language || batchDetails?.language || 'English'
+                    }
+                };
+            })
+            .sort((a, b) => new Date(a.enrollmentDate) - new Date(b.enrollmentDate));
+    }, [enrollments, batches]);
+
+    // Group batches by month
+    const groupedBatches = React.useMemo(() => {
+        const groups = {};
+
+        enrolledBatches.forEach(enrollment => {
+            if (!enrollment.batch?.startDate) return;
+
+            const date = new Date(enrollment.batch.startDate);
+            const monthYear = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            if (!groups[monthYear]) {
+                groups[monthYear] = [];
+            }
+
+            groups[monthYear].push({
+                ...enrollment.batch,
+                enrollmentId: enrollment.id,
+                enrollmentDate: enrollment.enrollmentDate,
+            });
+        });
+
+        return groups;
+    }, [enrolledBatches]);
+
+    // Get unique months for filter
+    const availableMonths = React.useMemo(() => {
+        const months = new Set();
+        Object.keys(groupedBatches).forEach(month => {
+            const shortMonth = month.split(' ')[0].toLowerCase();
+            months.add(shortMonth);
+        });
+        return Array.from(months);
+    }, [groupedBatches]);
+
+    // Filter batches by month
+    const filteredMonths = React.useMemo(() => {
+        if (selectedMonth === 'all') {
+            return Object.entries(groupedBatches);
+        }
+
+        return Object.entries(groupedBatches).filter(([month]) =>
+            month.toLowerCase().includes(selectedMonth.toLowerCase())
+        );
+    }, [groupedBatches, selectedMonth]);
 
     const progressWidth = progressAnim.interpolate({
         inputRange: [0, 1],
         outputRange: ['0%', '100%'],
     });
+
+    if (!isInitialized) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <LinearGradient
+                    colors={['#0A2540', '#0D1B2A', '#080C14']}
+                    style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center' }]}
+                >
+                    <View style={{ alignItems: 'center' }}>
+                        <View style={{ width: 60, height: 60, marginBottom: 16 }}>
+                            <CircleProgress value={0} loading={true} />
+                        </View>
+                        <Text style={{ color: '#fff', fontSize: 16, opacity: 0.8 }}>Loading your profile...</Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 8 }}>
+                            Please wait while we set up your experience
+                        </Text>
+                    </View>
+                </LinearGradient>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -80,6 +220,7 @@ export default function HomeScreen() {
                         refreshing={isLoading || batchLoading}
                         onRefresh={onRefresh}
                         tintColor={COLORS.primary}
+                        colors={[COLORS.primary]}
                     />
                 }
             >
@@ -98,17 +239,16 @@ export default function HomeScreen() {
                         <View style={styles.topBarLeft}>
                             {isPremium && (
                                 <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuBtn}>
-                                    <Ionicons name="menu" size={26} color="#fff" />
+                                    <Ionicons name="menu" size={20} color="#fff" />
                                 </TouchableOpacity>
                             )}
                             <View>
                                 <Text style={styles.greeting}>
-                                    <Text style={styles.greetingText}>Good {getTimeOfDay()},</Text>
+                                    Good {getTimeOfDay()},
                                 </Text>
-                                <Text style={styles.greeting}>
-                                    <Text style={styles.greetingText}>{user?.firstName || 'Learner'}</Text>
+                                <Text style={styles.userName}>
+                                    {user?.firstName || 'Learner'}
                                 </Text>
-
                                 <Text style={styles.subGreeting}>Keep up the great work!</Text>
                             </View>
                         </View>
@@ -117,7 +257,7 @@ export default function HomeScreen() {
                                 style={styles.notifBtn}
                                 onPress={() => router.push('/notifications')}
                             >
-                                <Ionicons name="notifications-outline" size={22} color="#fff" />
+                                <Ionicons name="notifications-outline" size={20} color="#fff" />
                                 {unreadCount > 0 && <View style={styles.notifDot} />}
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => router.push('/(tabs)/Profile')}>
@@ -126,17 +266,19 @@ export default function HomeScreen() {
                                     style={styles.avatarRing}
                                 >
                                     <View style={styles.avatarInner}>
-                                        <Text style={styles.avatarText}>{user?.firstName?.[0]?.toUpperCase() || 'U'}</Text>
+                                        <Text style={styles.avatarText}>
+                                            {user?.firstName?.[0]?.toUpperCase() || 'U'}
+                                        </Text>
                                     </View>
                                 </LinearGradient>
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    {/* Progress hero */}
+                    {/* Progress hero card */}
                     <View style={styles.heroProgressCard}>
                         <View style={styles.heroProgressLeft}>
-                            <Text style={styles.heroProgressLabel}>Overall Progress</Text>
+                            <Text style={styles.heroProgressLabel}>OVERALL PROGRESS</Text>
                             <Text style={styles.heroProgressValue}>{Math.round(overallProgress)}%</Text>
                             <View style={styles.heroStatRow}>
                                 <Ionicons name="flame" size={14} color="#F59E0B" />
@@ -151,14 +293,13 @@ export default function HomeScreen() {
                         </View>
                     </View>
 
-                    {/* Animated bar */}
+                    {/* Progress bar */}
                     <View style={styles.heroBarBg}>
                         <Animated.View style={[styles.heroBarFill, { width: progressWidth }]} />
                     </View>
                 </LinearGradient>
 
                 <View style={styles.body}>
-
                     {/* ── Up Next ── */}
                     <View style={styles.upNextSection}>
                         <View style={styles.sectionHeaderRow}>
@@ -189,13 +330,13 @@ export default function HomeScreen() {
                                     </LinearGradient>
                                 </View>
                                 <View style={styles.upNextInfo}>
-                                    <Text style={styles.upNextModule}>{currentPosition?.moduleTitle || 'Foundation'}</Text>
+                                    <Text style={styles.upNextModule}>NEXT LESSON</Text>
                                     <Text style={styles.upNextLesson} numberOfLines={1}>
                                         {currentPosition?.lessonTitle || 'Ready to start!'}
                                     </Text>
                                 </View>
                                 <View style={styles.upNextChevron}>
-                                    <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
+                                    <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
                                 </View>
                             </LinearGradient>
                         </TouchableOpacity>
@@ -213,7 +354,7 @@ export default function HomeScreen() {
                                     activeOpacity={0.75}
                                 >
                                     <View style={[styles.actionIconCircle, { backgroundColor: a.color + '25' }]}>
-                                        <Ionicons name={a.icon} size={26} color={a.color} />
+                                        <Ionicons name={a.icon} size={24} color={a.color} />
                                     </View>
                                     <Text style={styles.actionLabel}>{a.label}</Text>
                                 </TouchableOpacity>
@@ -221,14 +362,19 @@ export default function HomeScreen() {
                         </View>
                     </View>
 
-                    {/* ── Premium Features ── */}
+                    {/* ── Premium Section ── */}
                     <View style={styles.section}>
                         <View style={styles.sectionHeaderRow}>
                             <Text style={styles.sectionTitle}>Premium</Text>
-                            {isPremium
-                                ? <View style={styles.activePill}><Text style={styles.activePillText}>✦ ACTIVE</Text></View>
-                                : <View style={styles.lockedPill}><Text style={styles.lockedPillText}>🔒 LOCKED</Text></View>
-                            }
+                            {isPremium ? (
+                                <View style={styles.activePill}>
+                                    <Text style={styles.activePillText}>✦ ACTIVE</Text>
+                                </View>
+                            ) : (
+                                <View style={styles.lockedPill}>
+                                    <Text style={styles.lockedPillText}>🔒 LOCKED</Text>
+                                </View>
+                            )}
                         </View>
                         <View style={styles.premiumRow}>
                             {PREMIUM_ITEMS.map((item, i) => (
@@ -239,14 +385,14 @@ export default function HomeScreen() {
                                     activeOpacity={isPremium ? 0.75 : 1}
                                 >
                                     <View style={[styles.premiumTileIcon, { backgroundColor: item.color + '22' }]}>
-                                        <Ionicons name={item.icon} size={26} color={isPremium ? item.color : '#4B5563'} />
+                                        <Ionicons name={item.icon} size={24} color={isPremium ? item.color : '#4B5563'} />
                                     </View>
-                                    <Text style={[styles.premiumTileLabel, !isPremium && { color: '#4B5563' }]}>
+                                    <Text style={[styles.premiumTileLabel, !isPremium && { color: '#6B7280' }]}>
                                         {item.title}
                                     </Text>
                                     {!isPremium && (
                                         <View style={styles.lockOverlay}>
-                                            <Ionicons name="lock-closed" size={11} color="#6B7280" />
+                                            <Ionicons name="lock-closed" size={12} color="#6B7280" />
                                         </View>
                                     )}
                                     {isPremium && <View style={[styles.activeDot, { backgroundColor: item.color }]} />}
@@ -256,40 +402,133 @@ export default function HomeScreen() {
                     </View>
 
                     {/* ── My Batches ── */}
-                    {myBatches.length > 0 && (
+                    {enrolledBatches.length > 0 && (
                         <View style={[styles.section, { marginBottom: 40 }]}>
                             <View style={styles.sectionHeaderRow}>
-                                <Text style={styles.sectionTitle}>My Batches</Text>
+                                <Text style={styles.sectionTitle}>My Batches ({enrolledBatches.length})</Text>
                                 <TouchableOpacity onPress={() => router.push('/(tabs)/Batch')}>
                                     <Text style={styles.seeAll}>See All</Text>
                                 </TouchableOpacity>
                             </View>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.batchScroll}>
-                                {myBatches.map((batch, index) => (
+
+                            {/* Month Filter */}
+                            {availableMonths.length > 1 && (
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    style={{ marginBottom: 16 }}
+                                >
                                     <TouchableOpacity
-                                        key={batch.id || index}
-                                        style={styles.batchCard}
-                                        onPress={() => router.push(`batch/${batch.id}`)}
-                                        activeOpacity={0.8}
+                                        style={[
+                                            styles.batchLevelPill,
+                                            { marginRight: 8 },
+                                            selectedMonth === 'all' && { backgroundColor: COLORS.primary + '20', borderColor: COLORS.primary }
+                                        ]}
+                                        onPress={() => setSelectedMonth('all')}
                                     >
-                                        <LinearGradient
-                                            colors={['rgba(245,158,11,0.15)', 'rgba(245,158,11,0.05)']}
-                                            style={styles.batchGradient}
-                                        >
-                                            <View style={styles.batchIconWrap}>
-                                                <Ionicons name="school" size={22} color="#F59E0B" />
-                                            </View>
-                                            <Text style={styles.batchName} numberOfLines={2}>{batch.name}</Text>
-                                            <View style={styles.batchLevelPill}>
-                                                <Text style={styles.batchLevelText}>{batch.level || 'N/A'}</Text>
-                                            </View>
-                                        </LinearGradient>
+                                        <Text style={[
+                                            styles.batchLevelText,
+                                            selectedMonth === 'all' && { color: COLORS.primary }
+                                        ]}>
+                                            All
+                                        </Text>
                                     </TouchableOpacity>
-                                ))}
+
+                                    {availableMonths.map((month) => (
+                                        <TouchableOpacity
+                                            key={month}
+                                            style={[
+                                                styles.batchLevelPill,
+                                                { marginRight: 8 },
+                                                selectedMonth === month && { backgroundColor: COLORS.primary + '20', borderColor: COLORS.primary }
+                                            ]}
+                                            onPress={() => setSelectedMonth(month)}
+                                        >
+                                            <Text style={[
+                                                styles.batchLevelText,
+                                                selectedMonth === month && { color: COLORS.primary }
+                                            ]}>
+                                                {month.charAt(0).toUpperCase() + month.slice(1)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            )}
+
+                            {/* Batches Horizontal Scroll */}
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                style={styles.batchScroll}
+                            >
+                                {filteredMonths.length > 0 ? (
+                                    filteredMonths.map(([monthYear, monthBatches]) => (
+                                        monthBatches.map((batch) => (
+                                            <TouchableOpacity
+                                                key={batch.id}
+                                                style={styles.batchCard}
+                                                onPress={() => router.push(`/batch/${batch.id}`)}
+                                                activeOpacity={0.8}
+                                            >
+                                                <LinearGradient
+                                                    colors={['rgba(245,158,11,0.15)', 'rgba(245,158,11,0.05)']}
+                                                    style={styles.batchGradient}
+                                                >
+                                                    <View style={styles.batchIconWrap}>
+                                                        <Ionicons name="school" size={20} color="#F59E0B" />
+                                                    </View>
+                                                    <Text style={styles.batchName} numberOfLines={2}>
+                                                        {batch.name}
+                                                    </Text>
+                                                    <View style={styles.batchLevelPill}>
+                                                        <Text style={styles.batchLevelText}>
+                                                            {batch.level || 'BEGINNER'}
+                                                        </Text>
+                                                    </View>
+                                                    <Text style={[styles.heroStatText, { marginTop: 8, fontSize: 10 }]}>
+                                                        {new Date(batch.startDate).toLocaleDateString('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </Text>
+                                                </LinearGradient>
+                                            </TouchableOpacity>
+                                        ))
+                                    ))
+                                ) : (
+                                    <View style={{ paddingVertical: 20, alignItems: 'center', width: width - 40 }}>
+                                        <Text style={styles.heroStatText}>No batches for this month</Text>
+                                    </View>
+                                )}
                             </ScrollView>
                         </View>
                     )}
 
+                    {/* ── No Batches State ── */}
+                    {enrolledBatches.length === 0 && (
+                        <View style={[styles.section, { marginBottom: 40, alignItems: 'center' }]}>
+                            <View style={[styles.batchCard, { width: '100%', marginRight: 0 }]}>
+                                <LinearGradient
+                                    colors={['rgba(245,158,11,0.1)', 'rgba(245,158,11,0.02)']}
+                                    style={[styles.batchGradient, { alignItems: 'center', padding: 24 }]}
+                                >
+                                    <Ionicons name="school-outline" size={48} color="#F59E0B" style={{ marginBottom: 12 }} />
+                                    <Text style={[styles.batchName, { textAlign: 'center' }]}>No Batches Yet</Text>
+                                    <Text style={[styles.heroStatText, { textAlign: 'center', marginBottom: 16 }]}>
+                                        Join a batch to start learning with live classes
+                                    </Text>
+                                    <TouchableOpacity
+                                        style={[styles.batchLevelPill, { backgroundColor: COLORS.primary + '20', borderColor: COLORS.primary }]}
+                                        onPress={() => router.push('/(tabs)/Batch')}
+                                    >
+                                        <Text style={[styles.batchLevelText, { color: COLORS.primary }]}>
+                                            Browse Batches →
+                                        </Text>
+                                    </TouchableOpacity>
+                                </LinearGradient>
+                            </View>
+                        </View>
+                    )}
                 </View>
             </ScrollView>
         </View>
@@ -304,28 +543,87 @@ function getTimeOfDay() {
     return 'Evening';
 }
 
-function CircleProgress({ value }) {
-    const size = 72;
-    const radius = 28;
-    const stroke = 5;
+function CircleProgress({ value, loading = false }) {
+    const size = 56;
+    const strokeWidth = 4;
+    const center = size / 2;
+    const radius = size / 2 - strokeWidth / 2;
     const circumference = 2 * Math.PI * radius;
-    const filled = (value / 100) * circumference;
+
+    const animatedValue = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (!loading) {
+            Animated.timing(animatedValue, {
+                toValue: value,
+                duration: 1000,
+                useNativeDriver: false,
+            }).start();
+        }
+    }, [value, loading]);
+
+    const strokeDashoffset = animatedValue.interpolate({
+        inputRange: [0, 100],
+        outputRange: [circumference, 0],
+    });
+
+    if (loading) {
+        return (
+            <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+                <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+                    <Circle
+                        cx={center}
+                        cy={center}
+                        r={radius}
+                        stroke="rgba(255,255,255,0.08)"
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                    />
+                    <AnimatedCircle
+                        cx={center}
+                        cy={center}
+                        r={radius}
+                        stroke={COLORS.primary}
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={circumference}
+                        strokeDashoffset={circumference * 0.7}
+                        strokeLinecap="round"
+                        fill="transparent"
+                    />
+                </Svg>
+                <View style={{ position: 'absolute' }}>
+                    <Ionicons name="sync" size={16} color={COLORS.primary} />
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-            {/* Background ring */}
-            <View style={{
-                position: 'absolute', width: size, height: size, borderRadius: size / 2,
-                borderWidth: stroke, borderColor: 'rgba(255,255,255,0.1)',
-            }} />
-            {/* SVG-free approximate fill using a gradient border trick */}
-            <View style={{
-                position: 'absolute', width: size, height: size, borderRadius: size / 2,
-                borderWidth: stroke,
-                borderColor: COLORS.primary,
-                opacity: value > 5 ? 1 : 0,
-            }} />
-            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>{Math.round(value)}%</Text>
+            <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+                <Circle
+                    cx={center}
+                    cy={center}
+                    r={radius}
+                    stroke="rgba(255,255,255,0.08)"
+                    strokeWidth={strokeWidth}
+                    fill="transparent"
+                />
+                <AnimatedCircle
+                    cx={center}
+                    cy={center}
+                    r={radius}
+                    stroke={COLORS.primary}
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    fill="transparent"
+                />
+            </Svg>
+            <View style={{ position: 'absolute' }}>
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>{Math.round(value)}%</Text>
+            </View>
         </View>
     );
 }
@@ -358,6 +656,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     greeting: { fontSize: 20, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
+    userName: { fontSize: 20, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
     subGreeting: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 3 },
     topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     notifBtn: {

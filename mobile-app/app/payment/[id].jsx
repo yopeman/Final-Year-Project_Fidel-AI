@@ -5,6 +5,7 @@ import {
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useBatchStore } from '../../src/stores/batchStore';
+import { useAuthStore } from '../../src/stores/authStore';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -106,14 +107,32 @@ function PremiumSuccessModal({ visible, onContinue }) {
 export default function PaymentScreen() {
     const { id } = useLocalSearchParams(); // Enrollment ID
     const router = useRouter();
-    const { initiatePayment, unlockPremium, isLoading, error } = useBatchStore();
+    const { user } = useAuthStore();
+    const {
+        initiatePayment,
+        verifyPaymentAndUnlock,
+        checkPaymentStatus,
+        syncWithProfile,
+        isLoading,
+        error,
+        clearError
+    } = useBatchStore();
+
     const [paymentData, setPaymentData] = useState(null);
     const [verifying, setVerifying] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [verificationAttempts, setVerificationAttempts] = useState(0);
+    const [paymentInitiated, setPaymentInitiated] = useState(false);
     const shimmer = useRef(new Animated.Value(0)).current;
+    const appState = useRef(AppState.currentState);
 
     useEffect(() => {
-        if (id) startPayment();
+        if (id) {
+            initializePayment();
+        }
+        return () => {
+            clearError();
+        };
     }, [id]);
 
     // Shimmer animation for the secure badge
@@ -126,68 +145,194 @@ export default function PaymentScreen() {
         ).start();
     }, []);
 
-    const startPayment = async () => {
-        const result = await initiatePayment(id);
-        if (result.success) {
-            setPaymentData(result.payment);
-            // If payment has a checkoutUrl, open it in browser
-            if (result.payment?.checkoutUrl) {
-                Linking.openURL(result.payment.checkoutUrl).catch(() => { });
+    const initializePayment = async () => {
+        try {
+            // First check if payment is already completed
+            const statusCheck = await checkPaymentStatus(id);
+
+            if (statusCheck.success) {
+                if (statusCheck.status === 'COMPLETED') {
+                    // Payment already verified - unlock premium
+                    await handleSuccessfulVerification(statusCheck);
+                    return;
+                } else if (statusCheck.payment) {
+                    // Payment exists but not completed
+                    setPaymentData(statusCheck.payment);
+
+                    // If there's a checkout URL, open it
+                    if (statusCheck.payment.checkoutUrl) {
+                        await Linking.openURL(statusCheck.payment.checkoutUrl);
+                        setPaymentInitiated(true);
+                    }
+                    return;
+                }
             }
+
+            // No payment exists, initiate new one
+            const result = await initiatePayment(id);
+
+            if (result.success) {
+                setPaymentData(result.payment);
+
+                // Double-check payment status after initiation
+                if (result.payment?.status === 'COMPLETED') {
+                    await handleSuccessfulVerification({ payment: result.payment });
+                    return;
+                }
+
+                // Open checkout URL for pending payments
+                if (result.payment?.checkoutUrl) {
+                    await Linking.openURL(result.payment.checkoutUrl);
+                    setPaymentInitiated(true);
+                }
+            } else {
+                Alert.alert('Payment Error', result.error || 'Failed to initiate payment.');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to initialize payment. Please try again.');
+        }
+    };
+    const handleEnroll = async () => {
+        const result = await enrollInBatch(id, user?.profile?.id);
+        if (result.success) {
+            // Navigate to payment
+            router.push(`/payment/${result.enrollment.id}`);
+        } else if (result.isDuplicate) {
+            // Already enrolled - navigate to payment or batch details
+            Alert.alert(
+                'Already Enrolled',
+                'You are already enrolled in this batch.',
+                [
+                    { text: 'OK', onPress: () => router.push(`/payment/${result.enrollmentId}`) }
+                ]
+            );
         } else {
-            Alert.alert('Payment Error', result.error || 'Failed to initiate payment.');
+            Alert.alert('Error', result.error);
+        }
+    };
+    const handleSuccessfulVerification = async (verificationData) => {
+        try {
+            // Update payment data
+            setPaymentData(verificationData.payment || { status: 'COMPLETED' });
+
+            // Force sync with profile to get latest enrollment status
+            if (user?.profile) {
+                await syncWithProfile(user.profile);
+            }
+
+            // Double-check store state
+            const store = useBatchStore.getState();
+            if (!store.premiumUnlocked) {
+                // If store still doesn't show premium, try one more verification
+                const verifyResult = await verifyPaymentAndUnlock(id);
+                if (verifyResult.success && verifyResult.verified) {
+                    setShowSuccess(true);
+                }
+            } else {
+                setShowSuccess(true);
+            }
+        } catch (error) {
+            console.error('Error in successful verification:', error);
+            setShowSuccess(true); // Still show success if payment was confirmed
         }
     };
 
     // Auto-verify when user returns to app from Chapa browser
-    const appState = useRef(AppState.currentState);
     useEffect(() => {
-        const sub = AppState.addEventListener('change', async (nextState) => {
-            if (appState.current.match(/inactive|background/) && nextState === 'active') {
-                if (paymentData && !showSuccess) {
-                    setVerifying(true);
-                    const result = await unlockPremium(id);
-                    setVerifying(false);
-                    if (result.success) {
-                        setPaymentData(prev => ({ ...prev, status: 'COMPLETED' }));
-                        setShowSuccess(true);
+        const subscription = AppState.addEventListener('change', async (nextAppState) => {
+            if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+                // Add delay to allow webhook to process
+                setTimeout(async () => {
+                    if (paymentData && !showSuccess && paymentInitiated) {
+                        await verifyPayment();
                     }
-                }
+                }, 2000);
             }
-            appState.current = nextState;
+            appState.current = nextAppState;
         });
-        return () => sub.remove();
-    }, [paymentData, showSuccess]);
+
+        return () => subscription.remove();
+    }, [paymentData, showSuccess, paymentInitiated]);
 
     const verifyPayment = async () => {
-        setVerifying(true);
-        const result = await unlockPremium(id);
-        setVerifying(false);
+        if (verifying) return;
 
-        if (result.success) {
-            setPaymentData(prev => ({ ...prev, status: 'COMPLETED' }));
-            setShowSuccess(true);
-        } else {
-            Alert.alert(
-                'Payment Not Confirmed',
-                'Chapa has not confirmed your payment yet. Complete the payment and try again.'
-            );
+        setVerifying(true);
+        setVerificationAttempts(prev => prev + 1);
+
+        try {
+            // Call verification
+            const result = await verifyPaymentAndUnlock(id);
+
+            if (result.success && result.verified) {
+                // Update payment data
+                setPaymentData(prev => ({
+                    ...prev,
+                    status: 'COMPLETED',
+                    ...(result.payment && { ...result.payment })
+                }));
+
+                // Sync with profile to ensure premium status is updated
+                if (user?.profile) {
+                    await syncWithProfile(user.profile);
+                }
+
+                // Show success modal
+                setShowSuccess(true);
+            } else {
+                // Handle failed verification
+                if (verificationAttempts < 3) {
+                    Alert.alert(
+                        'Payment Not Confirmed',
+                        'Your payment could not be verified yet. This can take a few moments.',
+                        [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                                text: 'Try Again',
+                                onPress: () => {
+                                    setVerifying(false);
+                                    verifyPayment();
+                                }
+                            }
+                        ]
+                    );
+                } else {
+                    Alert.alert(
+                        'Verification Failed',
+                        'Unable to verify payment after multiple attempts. Please check your transaction status or contact support.',
+                        [{ text: 'OK' }]
+                    );
+                }
+            }
+        } catch (error) {
+            Alert.alert('Verification Error', 'Failed to verify payment status.');
+        } finally {
+            setVerifying(false);
         }
+    };
+
+    // Manual verification handler
+    const handleManualVerification = async () => {
+        setVerificationAttempts(0); // Reset attempts for manual verification
+        await verifyPayment();
     };
 
     // Dev-only: bypass Chapa verification for testing
     const forceUnlockDev = () => {
-        useBatchStore.setState({
-            premiumUnlocked: true,
-            enrollmentStatusGlobal: 'ENROLLED',
-        });
-        setPaymentData(prev => ({ ...prev, status: 'COMPLETED' }));
-        setShowSuccess(true);
+        if (__DEV__) {
+            useBatchStore.setState({
+                premiumUnlocked: true,
+                enrollmentStatusGlobal: 'ENROLLED',
+            });
+            setPaymentData(prev => ({ ...prev, status: 'COMPLETED' }));
+            setShowSuccess(true);
+        }
     };
 
     const handleContinue = () => {
         setShowSuccess(false);
-        router.replace('/(tabs)/Modules');
+        // Navigate to home and force a refresh
+        router.replace('/(tabs)/Home');
     };
 
     // ── Loading state
@@ -210,7 +355,7 @@ export default function PaymentScreen() {
                     <Ionicons name="alert-circle" size={52} color="#EF4444" />
                     <Text style={styles.errorTitle}>Payment Failed</Text>
                     <Text style={styles.errorSub}>{error}</Text>
-                    <TouchableOpacity style={styles.retryBtn} onPress={startPayment}>
+                    <TouchableOpacity style={styles.retryBtn} onPress={initializePayment}>
                         <Text style={styles.retryText}>Retry</Text>
                     </TouchableOpacity>
                 </View>
@@ -267,17 +412,17 @@ export default function PaymentScreen() {
                                 <Ionicons name={f.icon} size={18} color={f.color} />
                             </View>
                             <Text style={styles.unlockLabel}>{f.label}</Text>
-                            <Ionicons name="lock-closed-outline" size={14} color="#6B7280" />
+                            {!showSuccess && <Ionicons name="lock-closed-outline" size={14} color="#6B7280" />}
                         </View>
                     ))}
                 </View>
 
                 {/* Gateway & Re-open */}
-                <View style={styles.gatewayBox}>
-                    <Ionicons name="card-outline" size={36} color="#6B7280" />
-                    <Text style={styles.gatewayText}>Payment page opened in browser</Text>
-                    <Text style={styles.gatewayHint}>Complete your payment on the Chapa page and return here. Premium access will activate automatically.</Text>
-                    {paymentData?.checkoutUrl && (
+                {paymentData?.checkoutUrl && paymentData?.status !== 'COMPLETED' && !showSuccess && (
+                    <View style={styles.gatewayBox}>
+                        <Ionicons name="card-outline" size={36} color="#6B7280" />
+                        <Text style={styles.gatewayText}>Payment page opened in browser</Text>
+                        <Text style={styles.gatewayHint}>Complete your payment on the Chapa page and return here. Premium access will activate automatically.</Text>
                         <TouchableOpacity
                             style={styles.reopenBtn}
                             onPress={() => Linking.openURL(paymentData.checkoutUrl).catch(() => { })}
@@ -286,8 +431,25 @@ export default function PaymentScreen() {
                             <Ionicons name="open-outline" size={15} color="#F59E0B" />
                             <Text style={styles.reopenBtnText}>Re-open Payment Page</Text>
                         </TouchableOpacity>
-                    )}
-                </View>
+                    </View>
+                )}
+
+                {/* Success Message */}
+                {paymentData?.status === 'COMPLETED' && !showSuccess && (
+                    <View style={[styles.gatewayBox, { borderColor: '#10B98133' }]}>
+                        <Ionicons name="checkmark-circle" size={48} color="#10B981" />
+                        <Text style={[styles.gatewayText, { color: '#10B981' }]}>Payment Completed!</Text>
+                        <Text style={styles.gatewayHint}>Your payment was successful. Click continue to access premium features.</Text>
+                        <TouchableOpacity
+                            style={[styles.reopenBtn, { borderColor: '#10B98155' }]}
+                            onPress={handleContinue}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="arrow-forward" size={15} color="#10B981" />
+                            <Text style={[styles.reopenBtnText, { color: '#10B981' }]}>Continue to Premium</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 {/* Secure badge */}
                 <Animated.View style={[styles.secureBadge, { opacity: shimmerOpacity }]}>
@@ -297,37 +459,57 @@ export default function PaymentScreen() {
             </ScrollView>
 
             {/* Footer */}
-            <View style={styles.footer}>
-                <TouchableOpacity
-                    style={[styles.verifyBtn, verifying && styles.verifyBtnDisabled]}
-                    onPress={verifyPayment}
-                    disabled={verifying}
-                    activeOpacity={0.85}
-                >
-                    {verifying ? (
-                        <ActivityIndicator color="#1A1A2E" />
-                    ) : (
-                        <>
-                            <Ionicons name="checkmark-circle-outline" size={20} color="#1A1A2E" />
-                            <Text style={styles.verifyText}>I've Completed Payment</Text>
-                        </>
+            {paymentData?.status !== 'COMPLETED' && !showSuccess && (
+                <View style={styles.footer}>
+                    <TouchableOpacity
+                        style={[styles.verifyBtn, verifying && styles.verifyBtnDisabled]}
+                        onPress={handleManualVerification}
+                        disabled={verifying}
+                        activeOpacity={0.85}
+                    >
+                        {verifying ? (
+                            <ActivityIndicator color="#1A1A2E" />
+                        ) : (
+                            <>
+                                <Ionicons name="checkmark-circle-outline" size={20} color="#1A1A2E" />
+                                <Text style={styles.verifyText}>I've Completed Payment</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.statusCheckBtn, verifying && styles.statusCheckBtnDisabled]}
+                        onPress={handleManualVerification}
+                        disabled={verifying}
+                        activeOpacity={0.8}
+                    >
+                        {verifying ? (
+                            <ActivityIndicator color={COLORS.primary} size="small" />
+                        ) : (
+                            <>
+                                <Ionicons name="refresh-circle-outline" size={18} color={COLORS.primary} />
+                                <Text style={styles.statusCheckText}>Check Payment Status</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+
+                    {/* DEV-ONLY test button — remove before production */}
+                    {__DEV__ && (
+                        <TouchableOpacity
+                            style={styles.devTestBtn}
+                            onPress={forceUnlockDev}
+                            activeOpacity={0.75}
+                        >
+                            <Ionicons name="flask-outline" size={14} color="#6B7280" />
+                            <Text style={styles.devTestText}>🧪 Dev: Skip Verification (Instant Premium)</Text>
+                        </TouchableOpacity>
                     )}
-                </TouchableOpacity>
 
-                {/* DEV-ONLY test button — remove before production */}
-                <TouchableOpacity
-                    style={styles.devTestBtn}
-                    onPress={forceUnlockDev}
-                    activeOpacity={0.75}
-                >
-                    <Ionicons name="flask-outline" size={14} color="#6B7280" />
-                    <Text style={styles.devTestText}>🧪 Dev: Skip Verification</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => router.back()} style={styles.cancelBtn}>
-                    <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.cancelBtn}>
+                        <Text style={styles.cancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
 }
@@ -462,6 +644,21 @@ const styles = StyleSheet.create({
     devTestText: { color: '#4B5563', fontSize: 12 },
     cancelBtn: { alignItems: 'center', paddingVertical: SPACING.sm, marginTop: SPACING.xs },
     cancelText: { color: '#6B7280', fontWeight: '600' },
+
+    statusCheckBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: 'transparent',
+        paddingVertical: 12,
+        borderRadius: BORDER_RADIUS.lg,
+        borderWidth: 1,
+        borderColor: COLORS.primary + '44',
+        marginTop: SPACING.md,
+    },
+    statusCheckBtnDisabled: { opacity: 0.5 },
+    statusCheckText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
 });
 
 // ─────────────────────────────────────────────
