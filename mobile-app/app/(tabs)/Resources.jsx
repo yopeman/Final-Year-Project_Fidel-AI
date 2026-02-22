@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, StatusBar, Animated, RefreshControl,
+    ActivityIndicator, StatusBar, Animated, RefreshControl
 } from 'react-native';
 import { useMaterialStore } from '../../src/stores/materialStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING } from '../../src/constants/theme';
+import { useBatchStore } from '../../src/stores/batchStore';
+import FileViewerModal from '../../src/components/FileViewerModal';
 
 // ─── Design tokens (consistent with app theme) ────────────────────────────────
 const DARK_BG = '#080C14';
@@ -85,7 +87,7 @@ function CourseCard({ course, index, onSelect, isSelected }) {
 }
 
 // ─── Material Card ────────────────────────────────────────────────────────────
-function MaterialCard({ material, index, courseAccent }) {
+function MaterialCard({ material, index, courseAccent, onFilePress }) {
     const scale = useRef(new Animated.Value(1)).current;
     const [open, setOpen] = useState(false);
     const anim = useRef(new Animated.Value(0)).current;
@@ -98,7 +100,7 @@ function MaterialCard({ material, index, courseAccent }) {
         setOpen(v => !v);
     };
 
-    const maxH = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 80] });
+    const maxH = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 500] });
     const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
     const accent = courseAccent || ACCENT;
 
@@ -130,7 +132,7 @@ function MaterialCard({ material, index, courseAccent }) {
                         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color="#6B7280" />
                     </View>
 
-                    {/* Expandable description */}
+                    {/* Expandable description and files */}
                     <Animated.View style={{ maxHeight: maxH, opacity, overflow: 'hidden' }}>
                         <View style={styles.matDescWrap}>
                             {material.description ? (
@@ -139,6 +141,33 @@ function MaterialCard({ material, index, courseAccent }) {
                                 <Text style={[styles.matDesc, { fontStyle: 'italic', color: '#4B5563' }]}>
                                     No description provided.
                                 </Text>
+                            )}
+
+                            {material.files?.length > 0 && (
+                                <View style={styles.fileList}>
+                                    {material.files.map((file, i) => (
+                                        <TouchableOpacity
+                                            key={`${file.id}-${i}`}
+                                            style={[styles.fileItem, { borderLeftColor: accent }]}
+                                            onPress={() => onFilePress(file)}
+                                        >
+                                            <View style={styles.fileIconWrapper}>
+                                                <Ionicons
+                                                    name={file.fileExtension?.includes('pdf') ? 'document-text' : 'document'}
+                                                    size={18}
+                                                    color={accent}
+                                                />
+                                            </View>
+                                            <View style={styles.fileInfo}>
+                                                <Text style={styles.fileName} numberOfLines={1}>{file.fileName}</Text>
+                                                <Text style={styles.fileSize}>
+                                                    {file.fileExtension?.toUpperCase()} • {file.fileSize ? `${(file.fileSize / 1024).toFixed(1)} KB` : 'Tap to open'}
+                                                </Text>
+                                            </View>
+                                            <Ionicons name="eye-outline" size={18} color="rgba(255,255,255,0.3)" />
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
                             )}
                         </View>
                     </Animated.View>
@@ -151,17 +180,25 @@ function MaterialCard({ material, index, courseAccent }) {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ResourcesScreen() {
     const { courses, materials, isLoading, getCourses, getMaterials } = useMaterialStore();
+    const { activeBatchId } = useBatchStore();
     const [selectedCourse, setSelectedCourse] = useState(null);
     const scrollY = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => { getCourses(); }, []);
+    const [viewFileModalVisible, setViewFileModalVisible] = useState(false);
+    const [viewFileUrl, setViewFileUrl] = useState('');
+    const [viewFileTitle, setViewFileTitle] = useState('');
+
+    useEffect(() => {
+        getCourses(activeBatchId);
+    }, [activeBatchId]);
+
     useEffect(() => {
         if (selectedCourse) getMaterials(selectedCourse.id);
         else getMaterials(null);
     }, [selectedCourse]);
 
     const onRefresh = async () => {
-        await getCourses();
+        await getCourses(activeBatchId);
         if (selectedCourse) getMaterials(selectedCourse.id);
     };
 
@@ -271,7 +308,7 @@ export default function ResourcesScreen() {
                     ) : (
                         courses.map((course, i) => (
                             <CourseCard
-                                key={course.id}
+                                key={`${course.id}-${i}`}
                                 course={course}
                                 index={i}
                                 isSelected={selectedCourse?.id === course.id}
@@ -319,10 +356,15 @@ export default function ResourcesScreen() {
                         ) : (
                             materials.map((mat, i) => (
                                 <MaterialCard
-                                    key={mat.id}
+                                    key={`${mat.id}-${i}`}
                                     material={mat}
                                     index={i}
                                     courseAccent={selectedPalette.accent}
+                                    onFilePress={(file) => {
+                                        setViewFileUrl(file.filePath);
+                                        setViewFileTitle(file.fileName);
+                                        setViewFileModalVisible(true);
+                                    }}
                                 />
                             ))
                         )}
@@ -339,6 +381,14 @@ export default function ResourcesScreen() {
                     </View>
                 )}
             </Animated.ScrollView>
+
+            {/* File Viewer Modal */}
+            <FileViewerModal
+                visible={viewFileModalVisible}
+                onClose={() => setViewFileModalVisible(false)}
+                fileUrl={viewFileUrl}
+                title={viewFileTitle}
+            />
         </View>
     );
 }
@@ -464,7 +514,26 @@ const styles = StyleSheet.create({
         marginTop: 10, paddingTop: 10,
         borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)',
     },
-    matDesc: { fontSize: 13, color: '#9CA3AF', lineHeight: 20 },
+    matDesc: { fontSize: 13, color: '#9CA3AF', lineHeight: 20, marginBottom: 12 },
+    fileList: { marginTop: 8 },
+    fileItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderRadius: 12,
+        padding: 10,
+        marginBottom: 8,
+        borderLeftWidth: 2,
+    },
+    fileIconWrapper: {
+        width: 36, height: 36, borderRadius: 10,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center', justifyContent: 'center',
+        marginRight: 10
+    },
+    fileInfo: { flex: 1 },
+    fileName: { color: '#fff', fontSize: 13, fontWeight: '600', marginBottom: 2 },
+    fileSize: { color: 'rgba(255,255,255,0.3)', fontSize: 11 },
 
     // ── States ────────────────────────────────────────────────────────────────
     loadingBox: { paddingTop: 40, alignItems: 'center', gap: 12 },

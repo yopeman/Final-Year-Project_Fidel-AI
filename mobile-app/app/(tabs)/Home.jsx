@@ -13,6 +13,7 @@ import { COLORS, BORDER_RADIUS, SPACING } from '../../src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import PremiumMenu from '../../src/components/PremiumMenu';
+import PremiumUpgradeModal from '../../src/components/PremiumUpgradeModal';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -21,7 +22,7 @@ const { width } = Dimensions.get('window');
 const QUICK_ACTIONS = [
     { label: 'AI Tutor', icon: 'chatbubbles', color: '#6366F1', bg: 'rgba(99,102,241,0.15)', route: '/(tabs)/AIConversation' },
     { label: 'Library', icon: 'library', color: '#10B981', bg: 'rgba(16,185,129,0.15)', route: '/(tabs)/Modules' },
-    { label: 'Batches', icon: 'people', color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', route: '/(tabs)/Batch' },
+    { label: 'My Batch', icon: 'people', color: '#F59E0B', bg: 'rgba(245,158,11,0.15)', id: 'my-batch' },
     { label: 'Profile', icon: 'person-circle', color: '#EC4899', bg: 'rgba(236,72,153,0.15)', route: '/(tabs)/Profile' },
 ];
 
@@ -35,6 +36,7 @@ export default function HomeScreen() {
     const router = useRouter();
     const { user } = useAuthStore();
     const [menuVisible, setMenuVisible] = useState(false);
+    const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
     const [selectedMonth, setSelectedMonth] = useState('all');
     const progressAnim = useRef(new Animated.Value(0)).current;
@@ -211,6 +213,7 @@ export default function HomeScreen() {
         <View style={styles.container}>
             <StatusBar barStyle="light-content" />
             <PremiumMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
+            <PremiumUpgradeModal visible={upgradeModalVisible} onClose={() => setUpgradeModalVisible(false)} />
 
             <ScrollView
                 style={styles.scrollView}
@@ -237,11 +240,9 @@ export default function HomeScreen() {
                     {/* Top bar */}
                     <View style={styles.topBar}>
                         <View style={styles.topBarLeft}>
-                            {isPremium && (
-                                <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuBtn}>
-                                    <Ionicons name="menu" size={20} color="#fff" />
-                                </TouchableOpacity>
-                            )}
+                            <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuBtn}>
+                                <Ionicons name="menu" size={20} color="#fff" />
+                            </TouchableOpacity>
                             <View>
                                 <Text style={styles.greeting}>
                                     Good {getTimeOfDay()},
@@ -350,7 +351,13 @@ export default function HomeScreen() {
                                 <TouchableOpacity
                                     key={a.label}
                                     style={[styles.actionTile, { backgroundColor: a.bg }]}
-                                    onPress={() => router.push(a.route)}
+                                    onPress={() => {
+                                        if (a.id === 'my-batch') {
+                                            setMenuVisible(true);
+                                        } else {
+                                            router.push(a.route);
+                                        }
+                                    }}
                                     activeOpacity={0.75}
                                 >
                                     <View style={[styles.actionIconCircle, { backgroundColor: a.color + '25' }]}>
@@ -381,8 +388,8 @@ export default function HomeScreen() {
                                 <TouchableOpacity
                                     key={i}
                                     style={[styles.premiumTile, !isPremium && styles.premiumTileLocked]}
-                                    onPress={() => isPremium && router.push(item.route)}
-                                    activeOpacity={isPremium ? 0.75 : 1}
+                                    onPress={() => isPremium ? router.push(item.route) : setUpgradeModalVisible(true)}
+                                    activeOpacity={0.75}
                                 >
                                     <View style={[styles.premiumTileIcon, { backgroundColor: item.color + '22' }]}>
                                         <Ionicons name={item.icon} size={24} color={isPremium ? item.color : '#4B5563'} />
@@ -467,7 +474,10 @@ export default function HomeScreen() {
                                             <TouchableOpacity
                                                 key={batch.id}
                                                 style={styles.batchCard}
-                                                onPress={() => router.push(`/batch/${batch.id}`)}
+                                                onPress={async () => {
+                                                    await useBatchStore.getState().setActiveBatchId(batch.id);
+                                                    setMenuVisible(true);
+                                                }}
                                                 activeOpacity={0.8}
                                             >
                                                 <LinearGradient

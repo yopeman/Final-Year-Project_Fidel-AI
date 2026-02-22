@@ -11,6 +11,7 @@ import {
     ActivityIndicator,
     BackHandler,
     StatusBar,
+    ScrollView,
     Dimensions
 } from 'react-native';
 import { useAuthStore } from '../../src/stores/authStore';

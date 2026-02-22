@@ -3,7 +3,7 @@ import {
     View, Text, StyleSheet, FlatList, TouchableOpacity,
     TextInput, ScrollView, RefreshControl, StatusBar,
     Dimensions, Image, KeyboardAvoidingView, Platform,
-    ActivityIndicator, Alert
+    ActivityIndicator, Alert, Keyboard
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,25 +13,38 @@ import { useBatchStore } from '../../src/stores/batchStore';
 import { useAuthStore } from '../../src/stores/authStore';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import PremiumMenu from '../../src/components/PremiumMenu';
+import PremiumUpgradeModal from '../../src/components/PremiumUpgradeModal';
+import FileViewerModal from '../../src/components/FileViewerModal';
 
 const { width } = Dimensions.get('window');
 
+const REACTION_CONFIG = {
+    LIKE: { icon: 'thumbs-up', color: '#3B82F6', label: 'Like', emoji: '👍' },
+    DISLIKE: { icon: 'thumbs-down', color: '#6B7280', label: 'Dislike', emoji: '👎' },
+    LOVE: { icon: 'heart', color: '#EF4444', label: 'Love', emoji: '❤️' }
+};
+
 const CommunityScreen = () => {
     const { user } = useAuthStore();
-    const { currentBatch, enrollments, premiumUnlocked } = useBatchStore();
+    const { activeBatchId, enrollments, premiumUnlocked } = useBatchStore();
     const {
-        posts, isLoading, getPosts, createPost, toggleReaction, addComment,
-        selectedFiles, addFiles, removeFile, clearFiles
+        posts, isLoading, getPosts, createPost, toggleReaction, toggleCommentReaction,
+        addComment, selectedFiles, addFiles, removeFile, clearFiles
     } = useCommunityStore();
 
     const [menuVisible, setMenuVisible] = useState(false);
+    const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
     const [newPost, setNewPost] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [activePostId, setActivePostId] = useState(null); // For comments
     const [commentText, setCommentText] = useState('');
+    const [showReactionPickerId, setShowReactionPickerId] = useState(null);
+    const [viewFileModalVisible, setViewFileModalVisible] = useState(false);
+    const [viewFileUrl, setViewFileUrl] = useState('');
+    const [viewFileTitle, setViewFileTitle] = useState('');
 
     const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
-    const batchId = currentBatch?.id || enrollments.find(e => e.status === 'ENROLLED')?.batch?.id;
+    const batchId = activeBatchId || enrollments.find(e => e.status === 'ENROLLED')?.batch?.id;
 
     useEffect(() => {
         if (batchId) {
@@ -55,7 +68,7 @@ const CommunityScreen = () => {
 
         const res = await createPost(batchId, newPost.trim(), selectedFiles);
         if (res.success) {
-            Alert.alert("Success", res.warning || "Your post has been shared!");
+            Keyboard.dismiss();
             setNewPost('');
             clearFiles();
         } else {
@@ -89,13 +102,17 @@ const CommunityScreen = () => {
         if (!commentText.trim()) return;
         const res = await addComment(postId, commentText.trim());
         if (res.success) {
+            Keyboard.dismiss();
             setCommentText('');
-            setActivePostId(null);
+            // Optional: Close comments view
+            // setActivePostId(null); 
+        } else {
+            Alert.alert("Error", res.error || "Failed to add comment. Please try again.");
         }
     };
 
     const renderPost = ({ item }) => {
-        const hasReacted = item.reactions?.some(r => r.userId === user?.id);
+        const userReaction = item.reactions?.find(r => r.userId === user?.id);
         const reactionsCount = item.reactions?.length || 0;
         const commentsCount = item.comments?.length || 0;
 
@@ -109,20 +126,46 @@ const CommunityScreen = () => {
                         <Text style={styles.authorName}>{item.author?.firstName} {item.author?.lastName}</Text>
                         <Text style={styles.postTime}>{new Date(item.createdAt).toLocaleDateString()}</Text>
                     </View>
-                    <TouchableOpacity style={styles.moreBtn}>
-                        <Ionicons name="ellipsis-horizontal" size={20} color="rgba(255,255,255,0.4)" />
-                    </TouchableOpacity>
+
                 </View>
+
+                {item.attachments?.some(att => att.fileExtension?.match(/jpg|jpeg|png|gif|mp4|mp3/i)) && (
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={() => {
+                            const img = item.attachments.find(att => att.fileExtension?.match(/jpg|jpeg|png|gif|mp4|mp3/i));
+                            if (img) {
+                                setViewFileUrl(img.filePath);
+                                setViewFileTitle(img.fileName);
+                                setViewFileModalVisible(true);
+                            }
+                        }}
+                    >
+                        <Image
+                            source={{ uri: item.attachments.find(att => att.fileExtension?.match(/jpg|jpeg|png|gif|mp4|mp3/i)).filePath }}
+                            style={styles.postImage}
+                            resizeMode="cover"
+                        />
+                    </TouchableOpacity>
+                )}
 
                 <Text style={styles.postContent}>{item.content}</Text>
 
                 {item.attachments?.length > 0 && (
                     <View style={styles.attachmentsRow}>
                         {item.attachments.map(att => (
-                            <View key={att.id} style={styles.attachmentBadge}>
+                            <TouchableOpacity
+                                key={att.id}
+                                style={styles.attachmentBadge}
+                                onPress={() => {
+                                    setViewFileUrl(att.filePath);
+                                    setViewFileTitle(att.fileName);
+                                    setViewFileModalVisible(true);
+                                }}
+                            >
                                 <Ionicons name="document-attach" size={14} color={COLORS.primary} />
                                 <Text style={styles.attachmentName} numberOfLines={1}>{att.fileName}</Text>
-                            </View>
+                            </TouchableOpacity>
                         ))}
                     </View>
                 )}
@@ -132,15 +175,15 @@ const CommunityScreen = () => {
                 <View style={styles.actionsRow}>
                     <TouchableOpacity
                         style={styles.actionItem}
-                        onPress={() => toggleReaction(item.id, 'LIKE', user?.id)}
+                        onPress={() => setShowReactionPickerId(showReactionPickerId === item.id ? null : item.id)}
                     >
                         <Ionicons
-                            name={hasReacted ? "heart" : "heart-outline"}
+                            name={userReaction ? REACTION_CONFIG[userReaction.reactionType].icon : "happy-outline"}
                             size={22}
-                            color={hasReacted ? "#EF4444" : "rgba(255,255,255,0.5)"}
+                            color={userReaction ? REACTION_CONFIG[userReaction.reactionType].color : "rgba(255,255,255,0.5)"}
                         />
-                        <Text style={[styles.actionText, hasReacted && { color: "#EF4444" }]}>
-                            {reactionsCount > 0 ? reactionsCount : 'Like'}
+                        <Text style={[styles.actionText, userReaction && { color: REACTION_CONFIG[userReaction.reactionType].color }]}>
+                            {reactionsCount > 0 ? reactionsCount : 'React'}
                         </Text>
                     </TouchableOpacity>
 
@@ -151,11 +194,28 @@ const CommunityScreen = () => {
                         <Ionicons name="chatbubble-outline" size={20} color="rgba(255,255,255,0.5)" />
                         <Text style={styles.actionText}>{commentsCount > 0 ? commentsCount : 'Comment'}</Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.actionItem}>
-                        <Ionicons name="share-social-outline" size={20} color="rgba(255,255,255,0.5)" />
-                    </TouchableOpacity>
                 </View>
+
+                {showReactionPickerId === item.id && (
+                    <View style={styles.reactionPicker}>
+                        {Object.entries(REACTION_CONFIG).map(([type, config]) => (
+                            <TouchableOpacity
+                                key={type}
+                                style={[
+                                    styles.reactionOption,
+                                    userReaction?.reactionType === type && styles.reactionOptionActive
+                                ]}
+                                onPress={() => {
+                                    toggleReaction(item.id, type, user?.id);
+                                    setShowReactionPickerId(null);
+                                }}
+                            >
+                                <Text style={styles.reactionEmoji}>{config.emoji}</Text>
+                                <Text style={styles.reactionLabel}>{config.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
 
                 {activePostId === item.id && (
                     <View style={styles.commentSection}>
@@ -165,7 +225,25 @@ const CommunityScreen = () => {
                                     <Text style={styles.commentAvatarText}>{comment.author?.firstName?.[0]}</Text>
                                 </View>
                                 <View style={styles.commentBubble}>
-                                    <Text style={styles.commentAuthor}>{comment.author?.firstName}</Text>
+                                    <View style={styles.commentHeader}>
+                                        <Text style={styles.commentAuthor}>{comment.author?.firstName}</Text>
+                                        <View style={styles.commentReactions}>
+                                            {Object.entries(REACTION_CONFIG).map(([type, config]) => {
+                                                const hasReacted = comment.reactions?.some(r => r.userId === user?.id && r.reactionType === type);
+                                                const count = comment.reactions?.filter(r => r.reactionType === type).length || 0;
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={type}
+                                                        onPress={() => toggleCommentReaction(item.id, comment.id, type, user?.id)}
+                                                        style={[styles.smallReaction, hasReacted && styles.smallReactionActive]}
+                                                    >
+                                                        <Text style={styles.smallEmoji}>{config.emoji}</Text>
+                                                        {count > 0 && <Text style={styles.reactionCountText}>{count}</Text>}
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
                                     <Text style={styles.commentText}>{comment.content}</Text>
                                 </View>
                             </View>
@@ -189,9 +267,14 @@ const CommunityScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.container}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+        >
             <StatusBar barStyle="light-content" />
             <PremiumMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
+            <PremiumUpgradeModal visible={upgradeModalVisible} onClose={() => setUpgradeModalVisible(false)} />
 
             <LinearGradient
                 colors={['#0A2540', '#0D1B2A', '#080C14']}
@@ -205,81 +288,14 @@ const CommunityScreen = () => {
                         <Text style={styles.headerTitle}>Batch Lounge</Text>
                         <Text style={styles.headerSubtitle}>Discuss with your batchmates</Text>
                     </View>
-                    <TouchableOpacity style={styles.notifBtn}>
-                        <Ionicons name="notifications-outline" size={22} color="#fff" />
-                    </TouchableOpacity>
                 </View>
             </LinearGradient>
-
-            <View style={styles.composerCard}>
-                <View style={styles.composerHeader}>
-                    <View style={styles.composerAvatar}>
-                        <Text style={styles.avatarText}>{user?.firstName?.[0] || 'U'}</Text>
-                    </View>
-                    <TextInput
-                        style={styles.composerInput}
-                        placeholder="What's on your mind?"
-                        placeholderTextColor="rgba(255,255,255,0.3)"
-                        multiline
-                        value={newPost}
-                        onChangeText={setNewPost}
-                    />
-                </View>
-
-                {selectedFiles.length > 0 && (
-                    <View style={styles.previewContainer}>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            {selectedFiles.map((file) => (
-                                <View key={file.uri} style={styles.filePreview}>
-                                    <Ionicons
-                                        name={file.type?.includes('image') ? "image" : "document"}
-                                        size={18}
-                                        color={COLORS.primary}
-                                    />
-                                    <Text style={styles.previewName} numberOfLines={1}>{file.name}</Text>
-                                    <TouchableOpacity
-                                        style={styles.removeFileBtn}
-                                        onPress={() => removeFile(file.uri)}
-                                    >
-                                        <Ionicons name="close-circle" size={16} color="#EF4444" />
-                                    </TouchableOpacity>
-                                </View>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
-
-                <View style={styles.composerActions}>
-                    <TouchableOpacity style={styles.composerTool} onPress={() => handleFilePick('photo')}>
-                        <Ionicons name="image-outline" size={20} color={COLORS.primary} />
-                        <Text style={styles.toolText}>Photo</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.composerTool} onPress={() => handleFilePick('all')}>
-                        <Ionicons name="attach-outline" size={20} color="#3B82F6" />
-                        <Text style={styles.toolText}>File</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[
-                            styles.postBtn,
-                            (!newPost.trim() && selectedFiles.length === 0) && styles.postBtnDisabled
-                        ]}
-                        disabled={!newPost.trim() && selectedFiles.length === 0}
-                        onPress={handleCreatePost}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                            <Text style={styles.postBtnText}>Post</Text>
-                        )}
-                    </TouchableOpacity>
-                </View>
-            </View>
 
             <FlatList
                 data={posts}
                 renderItem={renderPost}
                 keyExtractor={item => item.id}
-                contentContainerStyle={styles.listContent}
+                contentContainerStyle={[styles.listContent, { paddingBottom: 20 }]}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
                 }
@@ -296,7 +312,92 @@ const CommunityScreen = () => {
                     )
                 }
             />
-        </View>
+
+            {isPremium ? (
+                <View style={styles.composerCard}>
+                    <View style={styles.composerRow}>
+                        <TouchableOpacity
+                            style={styles.attachmentButton}
+                            onPress={() => handleFilePick('all')}
+                        >
+                            <Ionicons name="attach-outline" size={24} color="rgba(255,255,255,0.5)" />
+                        </TouchableOpacity>
+
+                        <View style={styles.verticalDivider} />
+
+                        <TextInput
+                            style={styles.composerInput}
+                            placeholder="Write a message..."
+                            placeholderTextColor="rgba(255,255,255,0.3)"
+                            multiline
+                            value={newPost}
+                            onChangeText={setNewPost}
+                        />
+
+                        <TouchableOpacity
+                            style={[
+                                styles.sendButton,
+                                (!newPost.trim() && selectedFiles.length === 0) && styles.sendButtonDisabled
+                            ]}
+                            disabled={(!newPost.trim() && selectedFiles.length === 0) || isLoading}
+                            onPress={handleCreatePost}
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                                <Ionicons
+                                    name="send"
+                                    size={20}
+                                    color={(!newPost.trim() && selectedFiles.length === 0) ? "rgba(255,255,255,0.2)" : COLORS.primary}
+                                />
+                            )}
+                        </TouchableOpacity>
+                    </View>
+
+                    {selectedFiles.length > 0 && (
+                        <View style={styles.previewContainer}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                {selectedFiles.map((file) => (
+                                    <View key={file.uri} style={styles.filePreview}>
+                                        <Ionicons
+                                            name={file.type?.includes('image') ? "image" : "document"}
+                                            size={18}
+                                            color={COLORS.primary}
+                                        />
+                                        <Text style={styles.previewName} numberOfLines={1}>{file.name}</Text>
+                                        <TouchableOpacity
+                                            style={styles.removeFileBtn}
+                                            onPress={() => removeFile(file.uri)}
+                                        >
+                                            <Ionicons name="close-circle" size={16} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
+                </View>
+            ) : (
+                <TouchableOpacity
+                    style={[styles.composerCard, { alignItems: 'center', paddingVertical: 16, marginBottom: 16 }]}
+                    onPress={() => setUpgradeModalVisible(true)}
+                    activeOpacity={0.8}
+                >
+                    <Ionicons name="lock-closed" size={24} color={COLORS.primary} style={{ marginBottom: 8 }} />
+                    <Text style={[styles.headerTitle, { fontSize: 16, textAlign: 'center' }]}>Batch Lounge is Premium</Text>
+                    <Text style={[styles.headerSubtitle, { textAlign: 'center', marginTop: 2, fontSize: 11 }]}>
+                        Enroll in a batch to participate in discussions.
+                    </Text>
+                </TouchableOpacity>
+            )}
+
+            <FileViewerModal
+                visible={viewFileModalVisible}
+                onClose={() => setViewFileModalVisible(false)}
+                fileUrl={viewFileUrl}
+                title={viewFileTitle}
+            />
+        </KeyboardAvoidingView>
     );
 };
 
@@ -320,21 +421,38 @@ const styles = StyleSheet.create({
 
     // Composer
     composerCard: {
-        backgroundColor: '#0F172A',
-        margin: 16, borderRadius: 20,
-        padding: 16,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        margin: 12, borderRadius: 12,
+        paddingHorizontal: 12, paddingVertical: 8,
         borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
     },
-    composerHeader: { flexDirection: 'row', gap: 12 },
-    composerAvatar: {
-        width: 40, height: 40, borderRadius: 20,
-        backgroundColor: COLORS.primary,
-        alignItems: 'center', justifyContent: 'center'
+    composerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8
     },
-    avatarText: { color: '#fff', fontWeight: 'bold' },
+    attachmentButton: {
+        padding: 4
+    },
+    verticalDivider: {
+        width: 1,
+        height: 24,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        marginHorizontal: 4
+    },
     composerInput: {
-        flex: 1, color: '#fff', fontSize: 16,
-        paddingTop: 8, height: 80, textAlignVertical: 'top'
+        flex: 1,
+        color: '#fff',
+        fontSize: 15,
+        maxHeight: 100,
+        paddingVertical: 8,
+    },
+    sendButton: {
+        padding: 8,
+        marginLeft: 4
+    },
+    sendButtonDisabled: {
+        opacity: 0.5
     },
     previewContainer: {
         marginVertical: 12,
@@ -438,6 +556,75 @@ const styles = StyleSheet.create({
 
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
     emptyText: { color: 'rgba(255,255,255,0.3)', marginTop: 12, fontSize: 15 },
+
+    postImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: 12,
+        marginBottom: 12,
+        backgroundColor: 'rgba(255,255,255,0.02)',
+    },
+    reactionPicker: {
+        flexDirection: 'row',
+        backgroundColor: '#1E293B',
+        borderRadius: 30,
+        padding: 6,
+        marginTop: 8,
+        position: 'absolute',
+        bottom: 50,
+        left: 16,
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        zIndex: 100,
+        gap: 10
+    },
+    reactionOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        gap: 6
+    },
+    reactionOptionActive: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    reactionEmoji: { fontSize: 20 },
+    reactionLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '600' },
+
+    commentHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 4
+    },
+    commentReactions: {
+        flexDirection: 'row',
+        gap: 6
+    },
+    smallReaction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 10,
+        gap: 2
+    },
+    smallReactionActive: {
+        backgroundColor: 'rgba(16,185,129,0.1)',
+        borderColor: 'rgba(16,185,129,0.2)',
+        borderWidth: 1
+    },
+    smallEmoji: { fontSize: 12 },
+    reactionCountText: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 10,
+        fontWeight: '700'
+    }
 });
 
 export default CommunityScreen;

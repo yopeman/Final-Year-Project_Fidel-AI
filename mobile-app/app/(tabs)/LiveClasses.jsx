@@ -16,14 +16,14 @@ const { width } = Dimensions.get('window');
 const LiveClassesScreen = () => {
     const { user } = useAuthStore();
     const {
-        currentBatch, enrollments, schedules, isLoading,
-        getCourseSchedules, getBatchMeetingLink
+        activeBatchId, enrollments, schedules, isLoading,
+        getBatchSchedules, getMeetingLink
     } = useBatchStore();
 
     const [menuVisible, setMenuVisible] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
 
-    const batchId = currentBatch?.id || enrollments.find(e => e.status === 'ENROLLED')?.batch?.id;
+    const batchId = activeBatchId || enrollments.find(e => e.status === 'ENROLLED')?.batch?.id;
 
     useEffect(() => {
         if (batchId) {
@@ -33,11 +33,7 @@ const LiveClassesScreen = () => {
 
     const fetchSchedules = useCallback(async () => {
         if (batchId) {
-            // Note: Currently getCourseSchedules takes batchCourseId. 
-            // We might need a getBatchSchedules or loop through batchCourses.
-            // For now, let's assume we can fetch schedules for the batch context.
-            // Adjusting based on batchStore.js logic.
-            await getCourseSchedules();
+            await getBatchSchedules(batchId);
         }
     }, [batchId]);
 
@@ -47,19 +43,41 @@ const LiveClassesScreen = () => {
         setRefreshing(false);
     }, [fetchSchedules]);
 
-    const handleJoinClass = async () => {
-        if (!batchId) return;
-        const res = await getBatchMeetingLink(batchId);
+    const handleJoinClass = async (scheduleId) => {
+        if (!scheduleId) return;
+        const res = await getMeetingLink(scheduleId);
         if (res.success && res.data?.meetingLink) {
             Linking.openURL(res.data.meetingLink);
         } else {
-            Alert.alert("Class Not Started", res.error || "The live session has not started yet or the link is unavailable.");
+            console.log("Join Class Error:", res.error);
+            if (res.error?.includes('not paid') || res.error?.includes('payment')) {
+                Alert.alert(
+                    "Payment Required",
+                    "Your enrollment is not fully active. Please complete your payment to join live classes.",
+                    [
+                        { text: "Later", style: "cancel" },
+                        {
+                            text: "Complete Payment",
+                            onPress: () => {
+                                // Find the enrollment for this batch to get ID
+                                const enrollment = enrollments.find(e => e.batch?.id === batchId);
+                                if (enrollment) router.push(`/payment/${enrollment.id}`);
+                                else Alert.alert("Error", "Could not find your enrollment details.");
+                            }
+                        }
+                    ]
+                );
+            } else {
+                Alert.alert("Class Not Started", res.error || "The live session has not started yet or the link is unavailable.");
+            }
         }
     };
 
     const renderSchedule = ({ item }) => {
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const dayName = days[item.schedule?.dayOfWeek] || 'Scheduled';
+        // Fix for dayOfWeek if it's a string from backend
+        const dayIdx = parseInt(item.schedule?.dayOfWeek);
+        const dayName = isNaN(dayIdx) ? item.schedule?.dayOfWeek : (days[dayIdx] || 'Scheduled');
 
         return (
             <View style={styles.scheduleCard}>
@@ -80,7 +98,7 @@ const LiveClassesScreen = () => {
                         <Text style={styles.infoText}>{item.schedule?.startTime} - {item.schedule?.endTime}</Text>
                     </View>
 
-                    <TouchableOpacity style={styles.joinBtn} onPress={handleJoinClass}>
+                    <TouchableOpacity style={styles.joinBtn} onPress={() => handleJoinClass(item.id)}>
                         <LinearGradient
                             colors={[COLORS.primary, '#059669']}
                             style={styles.joinGradient}
