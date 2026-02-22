@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import PremiumMenu from '../../src/components/PremiumMenu';
+import PremiumUpgradeModal from '../../src/components/PremiumUpgradeModal';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +29,7 @@ export default function ModulesScreen() {
     const { modules, getModules, isLoading } = useLearningStore();
     const { enrollments, premiumUnlocked } = useBatchStore();
     const [menuVisible, setMenuVisible] = React.useState(false);
+    const [upgradeModalVisible, setUpgradeModalVisible] = React.useState(false);
 
     const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
 
@@ -185,6 +187,7 @@ export default function ModulesScreen() {
         <View style={styles.container}>
             <StatusBar barStyle="light-content" />
             <PremiumMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
+            <PremiumUpgradeModal visible={upgradeModalVisible} onClose={() => setUpgradeModalVisible(false)} />
 
             {/* Header */}
             <LinearGradient
@@ -205,11 +208,19 @@ export default function ModulesScreen() {
                         <Text style={styles.headerSubtitle}>All your lessons in one place</Text>
                     </View>
                 </View>
-                {isPremium && (
+                {isPremium ? (
                     <View style={styles.premiumBanner}>
                         <Ionicons name="sparkles" size={13} color={COLORS.primary} />
                         <Text style={styles.premiumBannerText}>All content unlocked</Text>
                     </View>
+                ) : (
+                    <TouchableOpacity
+                        style={[styles.premiumBanner, { borderColor: '#F59E0B' }]}
+                        onPress={() => setUpgradeModalVisible(true)}
+                    >
+                        <Ionicons name="lock-closed" size={13} color="#F59E0B" />
+                        <Text style={[styles.premiumBannerText, { color: '#F59E0B' }]}>Unlock Premium Content</Text>
+                    </TouchableOpacity>
                 )}
             </LinearGradient>
 

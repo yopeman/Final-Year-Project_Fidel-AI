@@ -120,7 +120,7 @@ export default function BatchDetails() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const {
-        currentBatch, getBatchById, enrollInBatch, getCourseSchedules,
+        currentBatch, getBatchById, enrollInBatch, getBatchSchedules,
         schedules, getMeetingLink, isLoading, checkEnrollmentStatus,
         initiatePayment, checkPaymentStatus,
         premiumUnlocked, enrollmentStatusGlobal,
@@ -206,10 +206,10 @@ export default function BatchDetails() {
     };
 
     useEffect(() => {
-        if (id && activeTab === 'schedules' && currentBatch?.courses) {
-            currentBatch.courses.forEach(c => getCourseSchedules(c.id));
+        if (id && activeTab === 'schedules') {
+            getBatchSchedules(id);
         }
-    }, [id, activeTab, currentBatch]);
+    }, [id, activeTab]);
 
     useEffect(() => {
         const isEnrolled = enrollmentStatus === 'ENROLLED' || enrollmentStatus === 'COMPLETED';
@@ -264,16 +264,61 @@ export default function BatchDetails() {
         }
     };
 
-    const handlePayment = (enrollmentId) => {
-        router.push({ pathname: `/payment/${enrollmentId}` });
+    const handlePayment = async (enrollmentId) => {
+        setEnrolling(true);
+        try {
+            // Step 1 & 2: Proactively initiate and redirect
+            const result = await initiatePayment(enrollmentId);
+            if (result.success && result.payment?.checkoutUrl) {
+                // Open Chapa immediately
+                await Linking.openURL(result.payment.checkoutUrl);
+                // Step 3: Navigate to payment screen for return handling (verify/show success)
+                router.push({
+                    pathname: `/payment/${enrollmentId}`,
+                    params: { autoOpened: 'true' }
+                });
+            } else {
+                // Fallback to manual flow in payment screen
+                router.push(`/payment/${enrollmentId}`);
+            }
+        } catch (error) {
+            console.error('Payment Error:', error);
+            router.push(`/payment/${enrollmentId}`);
+        } finally {
+            setEnrolling(false);
+        }
     };
 
     const handleJoinMeeting = async (scheduleId) => {
         setJoining(scheduleId);
         const result = await getMeetingLink(scheduleId);
         setJoining(null);
-        if (result.success && result.data?.meetingLink) Linking.openURL(result.data.meetingLink);
-        else Alert.alert('Error', result.error || 'Session might not be active yet.');
+        if (result.success && result.data?.meetingLink) {
+            Linking.openURL(result.data.meetingLink);
+        } else {
+            console.log("Join Class Error:", result.error);
+            if (result.error?.includes('not paid') || result.error?.includes('payment')) {
+                Alert.alert(
+                    "Payment Required",
+                    "Your enrollment for this batch is not fully active. Complete your payment to join live classes.",
+                    [
+                        { text: "Later", style: "cancel" },
+                        {
+                            text: "💳 Pay Now",
+                            onPress: () => {
+                                if (myEnrollmentId && myEnrollmentId !== 'premium-access') {
+                                    handlePayment(myEnrollmentId);
+                                } else {
+                                    Alert.alert("Error", "Could not find your enrollment ID. Please try re-enrolling.");
+                                }
+                            }
+                        }
+                    ]
+                );
+            } else {
+                Alert.alert('Error', result.error || 'Session might not be active yet.');
+            }
+        }
     };
 
     // ── Loading
@@ -429,7 +474,7 @@ export default function BatchDetails() {
         <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionTitle}>📅 Upcoming Sessions</Text>
-                <TouchableOpacity onPress={() => currentBatch.courses?.forEach(c => getCourseSchedules(c.id))} style={styles.refreshBtn}>
+                <TouchableOpacity onPress={() => getBatchSchedules(id)} style={styles.refreshBtn}>
                     <Ionicons name="refresh" size={18} color="#F59E0B" />
                 </TouchableOpacity>
             </View>

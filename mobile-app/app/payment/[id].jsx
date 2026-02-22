@@ -105,13 +105,14 @@ function PremiumSuccessModal({ visible, onContinue }) {
 // Payment Screen
 // ─────────────────────────────────────────────
 export default function PaymentScreen() {
-    const { id } = useLocalSearchParams(); // Enrollment ID
+    const { id, txRef, autoOpened } = useLocalSearchParams(); // Enrollment ID and optional redirect ref
     const router = useRouter();
-    const { user } = useAuthStore();
+    const { user, refreshUser } = useAuthStore();
     const {
         initiatePayment,
         verifyPaymentAndUnlock,
         checkPaymentStatus,
+        cancelPayment, // Now available in store
         syncWithProfile,
         isLoading,
         error,
@@ -134,6 +135,14 @@ export default function PaymentScreen() {
             clearError();
         };
     }, [id]);
+
+    // Step 3: Handle Gateway Redirect (Deep Link)
+    useEffect(() => {
+        if (txRef && !showSuccess) {
+            console.log('Detected return from gateway with txRef:', txRef);
+            verifyPayment();
+        }
+    }, [txRef]);
 
     // Shimmer animation for the secure badge
     useEffect(() => {
@@ -159,9 +168,15 @@ export default function PaymentScreen() {
                     // Payment exists but not completed
                     setPaymentData(statusCheck.payment);
 
-                    // If there's a checkout URL, open it
+                    // If there's a checkout URL, open it (unless already opened)
                     if (statusCheck.payment.checkoutUrl) {
-                        await Linking.openURL(statusCheck.payment.checkoutUrl);
+                        if (autoOpened !== 'true') {
+                            try {
+                                await Linking.openURL(statusCheck.payment.checkoutUrl);
+                            } catch (err) {
+                                console.error('Failed to auto-open checkout URL:', err);
+                            }
+                        }
                         setPaymentInitiated(true);
                     }
                     return;
@@ -180,9 +195,15 @@ export default function PaymentScreen() {
                     return;
                 }
 
-                // Open checkout URL for pending payments
+                // Open checkout URL for pending payments (unless already opened)
                 if (result.payment?.checkoutUrl) {
-                    await Linking.openURL(result.payment.checkoutUrl);
+                    if (autoOpened !== 'true') {
+                        try {
+                            await Linking.openURL(result.payment.checkoutUrl);
+                        } catch (err) {
+                            console.error('Failed to auto-open checkout URL:', err);
+                        }
+                    }
                     setPaymentInitiated(true);
                 }
             } else {
@@ -212,24 +233,27 @@ export default function PaymentScreen() {
     };
     const handleSuccessfulVerification = async (verificationData) => {
         try {
-            // Update payment data
+            // Update local payment data first
             setPaymentData(verificationData.payment || { status: 'COMPLETED' });
 
-            // Force sync with profile to get latest enrollment status
-            if (user?.profile) {
-                await syncWithProfile(user.profile);
-            }
+            // CRITICAL: Refresh the user from the server to get the updated enrollment status
+            // This also calls syncWithProfile internally in authStore
+            const refreshResult = await refreshUser();
 
-            // Double-check store state
-            const store = useBatchStore.getState();
-            if (!store.premiumUnlocked) {
-                // If store still doesn't show premium, try one more verification
-                const verifyResult = await verifyPaymentAndUnlock(id);
-                if (verifyResult.success && verifyResult.verified) {
-                    setShowSuccess(true);
-                }
-            } else {
+            if (refreshResult.success) {
                 setShowSuccess(true);
+            } else {
+                // Fallback to manual sync if refresh fails
+                const store = useBatchStore.getState();
+                if (store.premiumUnlocked || store.enrollmentStatusGlobal === 'ENROLLED') {
+                    setShowSuccess(true);
+                } else {
+                    // One last try: call verifyPaymentAndUnlock directly
+                    const verifyResult = await verifyPaymentAndUnlock(id);
+                    if (verifyResult.success && verifyResult.verified) {
+                        setShowSuccess(true);
+                    }
+                }
             }
         } catch (error) {
             console.error('Error in successful verification:', error);
@@ -257,27 +281,39 @@ export default function PaymentScreen() {
     const verifyPayment = async () => {
         if (verifying) return;
 
+        if (!id) {
+            console.error('Payment Error: enrollmentId (id) is missing from URL params');
+            Alert.alert('Error', 'Missing enrollment ID. Please go back and try again.');
+            return;
+        }
+
         setVerifying(true);
         setVerificationAttempts(prev => prev + 1);
 
         try {
-            // Call verification
+            // Step 4: Call backend verification
             const result = await verifyPaymentAndUnlock(id);
 
-            if (result.success && result.verified) {
-                // Update payment data
+            if (result.success && (result.verified || result.payment?.status === 'COMPLETED')) {
+                // Step 5: Frontend shows premium modal
+                const payment = result.payment;
+
+                // Update local payment data with backend subscription info
                 setPaymentData(prev => ({
                     ...prev,
                     status: 'COMPLETED',
-                    ...(result.payment && { ...result.payment })
+                    ...(payment && {
+                        ...payment,
+                        isPremium: payment.subscriptionActive || true // Map backend field
+                    })
                 }));
 
-                // Sync with profile to ensure premium status is updated
+                // Refresh user profile to reflect premium status (Step 5)
                 if (user?.profile) {
                     await syncWithProfile(user.profile);
                 }
 
-                // Show success modal
+                // Show 🎉 “Premium Activated” modal
                 setShowSuccess(true);
             } else {
                 // Handle failed verification
@@ -305,7 +341,11 @@ export default function PaymentScreen() {
                 }
             }
         } catch (error) {
-            Alert.alert('Verification Error', 'Failed to verify payment status.');
+            console.error('Verification Error Detail:', error);
+            Alert.alert(
+                'Verification Error',
+                `Failed to verify payment: ${error.message || 'Unknown error'}`
+            );
         } finally {
             setVerifying(false);
         }
@@ -369,8 +409,6 @@ export default function PaymentScreen() {
         <View style={styles.container}>
             <LinearGradient colors={['#0A1628', '#0D2137', '#0A1628']} style={StyleSheet.absoluteFillObject} />
 
-            <PremiumSuccessModal visible={showSuccess} onContinue={handleContinue} />
-
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
                 {/* Header */}
@@ -431,6 +469,34 @@ export default function PaymentScreen() {
                             <Ionicons name="open-outline" size={15} color="#F59E0B" />
                             <Text style={styles.reopenBtnText}>Re-open Payment Page</Text>
                         </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.reopenBtn, { borderColor: '#EF444433', marginTop: 12 }]}
+                            onPress={() => {
+                                Alert.alert(
+                                    'Cancel Payment',
+                                    'Are you sure you want to cancel this pending payment?',
+                                    [
+                                        { text: 'No', style: 'cancel' },
+                                        {
+                                            text: 'Yes, Cancel',
+                                            style: 'destructive',
+                                            onPress: async () => {
+                                                const res = await cancelPayment(paymentData.id);
+                                                if (res.success) {
+                                                    Alert.alert('Canceled', 'Payment has been canceled.');
+                                                    checkStatus(); // Refresh state
+                                                }
+                                            }
+                                        }
+                                    ]
+                                )
+                            }}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="close-circle-outline" size={15} color="#EF4444" />
+                            <Text style={[styles.reopenBtnText, { color: '#EF4444' }]}>Cancel Payment</Text>
+                        </TouchableOpacity>
                     </View>
                 )}
 
@@ -461,6 +527,24 @@ export default function PaymentScreen() {
             {/* Footer */}
             {paymentData?.status !== 'COMPLETED' && !showSuccess && (
                 <View style={styles.footer}>
+                    {/* Step 2: Manual Redirect Fallback */}
+                    {paymentData?.checkoutUrl && (
+                        <TouchableOpacity
+                            style={styles.payNowBtn}
+                            onPress={() => Linking.openURL(paymentData.checkoutUrl)}
+                            activeOpacity={0.85}
+                        >
+                            <LinearGradient
+                                colors={['#F59E0B', '#D97706']}
+                                style={styles.payNowGradient}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                            >
+                                <Ionicons name="card-outline" size={22} color="#1A1A2E" />
+                                <Text style={styles.payNowText}>Complete Payment</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                         style={[styles.verifyBtn, verifying && styles.verifyBtnDisabled]}
                         onPress={handleManualVerification}
@@ -472,7 +556,7 @@ export default function PaymentScreen() {
                         ) : (
                             <>
                                 <Ionicons name="checkmark-circle-outline" size={20} color="#1A1A2E" />
-                                <Text style={styles.verifyText}>I've Completed Payment</Text>
+                                <Text style={styles.verifyText}>I Have Completed Payment</Text>
                             </>
                         )}
                     </TouchableOpacity>
@@ -493,15 +577,17 @@ export default function PaymentScreen() {
                         )}
                     </TouchableOpacity>
 
-                    {/* DEV-ONLY test button — remove before production */}
+                    {/* DEV-ONLY test button — ENHANCED visibility */}
                     {__DEV__ && (
                         <TouchableOpacity
-                            style={styles.devTestBtn}
+                            style={[styles.devTestBtn, { backgroundColor: '#3B3B3B', paddingVertical: 12, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: '#EF4444' }]}
                             onPress={forceUnlockDev}
                             activeOpacity={0.75}
                         >
-                            <Ionicons name="flask-outline" size={14} color="#6B7280" />
-                            <Text style={styles.devTestText}>🧪 Dev: Skip Verification (Instant Premium)</Text>
+                            <Ionicons name="flask" size={16} color="#EF4444" />
+                            <Text style={[styles.devTestText, { color: '#F3F4F6', fontWeight: 'bold' }]}>
+                                EMERGENCY BYPASS: Force Unlock Premium
+                            </Text>
                         </TouchableOpacity>
                     )}
 
@@ -510,6 +596,12 @@ export default function PaymentScreen() {
                     </TouchableOpacity>
                 </View>
             )}
+
+            {/* Premium Success Modal */}
+            <PremiumSuccessModal
+                visible={showSuccess}
+                onContinue={handleContinue}
+            />
         </View>
     );
 }
@@ -517,6 +609,147 @@ export default function PaymentScreen() {
 // ─────────────────────────────────────────────
 // Styles
 // ─────────────────────────────────────────────
+const modal = StyleSheet.create({
+    backdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    card: {
+        width: '100%',
+        maxWidth: 400,
+        borderRadius: 32,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#1E3A5F',
+        backgroundColor: '#0A1628',
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+    },
+    gradientBg: { ...StyleSheet.absoluteFillObject, opacity: 0.8 },
+    iconWrap: {
+        height: 160,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    ring: {
+        position: 'absolute',
+        width: 100,
+        height: 100,
+        borderRadius: 100,
+        borderWidth: 2,
+        borderColor: '#F59E0B30',
+    },
+    checkCircle: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 8,
+        shadowColor: '#F59E0B',
+        shadowOpacity: 0.5,
+        shadowRadius: 15,
+    },
+    headline: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#fff',
+        textAlign: 'center',
+        marginBottom: 8,
+    },
+    subtitle: {
+        fontSize: 15,
+        color: '#9CA3AF',
+        textAlign: 'center',
+        paddingHorizontal: 24,
+        lineHeight: 22,
+        marginBottom: 32,
+    },
+    features: {
+        paddingHorizontal: 24,
+        gap: 12,
+        marginBottom: 32,
+    },
+    featureRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        backgroundColor: '#0F1B33',
+        padding: 14,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#1E2D44',
+    },
+    featureIconWrap: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    featureName: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 2,
+    },
+    featureDesc: {
+        fontSize: 12,
+        color: '#6B7280',
+    },
+    cta: {
+        margin: 24,
+        marginTop: 0,
+        borderRadius: 18,
+        overflow: 'hidden',
+    },
+    ctaGradient: {
+        height: 60,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10,
+    },
+    ctaText: {
+        color: '#1A1A2E',
+        fontSize: 17,
+        fontWeight: 'bold',
+    },
+    // Chapa Redirect Button
+    payNowBtn: {
+        width: '100%',
+        height: 56,
+        borderRadius: 16,
+        overflow: 'hidden',
+        marginBottom: 12,
+        elevation: 4,
+        shadowColor: '#F59E0B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    payNowGradient: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+    },
+    payNowText: {
+        color: '#1A1A2E',
+        fontSize: 18,
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
+    },
+});
+
 const styles = StyleSheet.create({
     container: { flex: 1 },
     centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -659,51 +892,6 @@ const styles = StyleSheet.create({
     },
     statusCheckBtnDisabled: { opacity: 0.5 },
     statusCheckText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
-});
 
-// ─────────────────────────────────────────────
-// Modal Styles
-// ─────────────────────────────────────────────
-const modal = StyleSheet.create({
-    backdrop: {
-        flex: 1, backgroundColor: 'rgba(0,0,0,0.85)',
-        justifyContent: 'center', alignItems: 'center', padding: SPACING.lg,
-    },
-    card: {
-        width: '100%', borderRadius: BORDER_RADIUS.xl * 1.5,
-        padding: SPACING.xl, alignItems: 'center',
-        overflow: 'hidden',
-        borderWidth: 1, borderColor: '#F59E0B33',
-    },
-    gradientBg: { ...StyleSheet.absoluteFillObject },
-
-    iconWrap: { alignItems: 'center', justifyContent: 'center', width: 100, height: 100, marginBottom: SPACING.lg },
-    ring: {
-        position: 'absolute', width: 90, height: 90, borderRadius: 45,
-        borderWidth: 2, borderColor: '#F59E0B66',
-    },
-    checkCircle: {
-        width: 72, height: 72, borderRadius: 36,
-        alignItems: 'center', justifyContent: 'center',
-    },
-
-    headline: { fontSize: 26, fontWeight: 'bold', color: '#fff', marginBottom: 8 },
-    subtitle: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 20, marginBottom: SPACING.xl },
-
-    features: { width: '100%', gap: SPACING.sm, marginBottom: SPACING.xl },
-    featureRow: {
-        flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-        backgroundColor: '#0F1B33', borderRadius: BORDER_RADIUS.lg,
-        padding: SPACING.md, borderWidth: 1, borderColor: '#1E2D44',
-    },
-    featureIconWrap: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-    featureName: { color: '#fff', fontWeight: '600', fontSize: 13 },
-    featureDesc: { color: '#9CA3AF', fontSize: 11, marginTop: 2 },
-
-    cta: { width: '100%', borderRadius: BORDER_RADIUS.lg, overflow: 'hidden' },
-    ctaGradient: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        gap: 8, paddingVertical: 16,
-    },
-    ctaText: { color: '#1A1A2E', fontWeight: 'bold', fontSize: 17 },
+    statusCheckText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
 });

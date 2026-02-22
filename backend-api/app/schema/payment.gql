@@ -20,6 +20,14 @@ type Payment {
   updatedAt: DateTime!
   isDeleted: Boolean!
   deletedAt: DateTime
+  
+  # Step 4 Workflow Alignment Fields
+  isSuccess: Boolean
+  subscriptionActive: Boolean
+  subscriptionPlan: String
+  subscriptionStartDate: DateTime
+  subscriptionEndDate: DateTime
+
   # Relationships
   enrollment: BatchEnrollment!
 }

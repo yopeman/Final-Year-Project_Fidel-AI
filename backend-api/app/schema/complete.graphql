@@ -212,6 +212,14 @@ type Payment {
   updatedAt: DateTime!
   isDeleted: Boolean!
   deletedAt: DateTime
+
+  # Step 4 Workflow Alignment Fields
+  isSuccess: Boolean
+  subscriptionActive: Boolean
+  subscriptionPlan: String
+  subscriptionStartDate: DateTime
+  subscriptionEndDate: DateTime
+
   # Relationships
   enrollment: BatchEnrollment!
 }
@@ -223,6 +231,7 @@ extend type Query {
 
 extend type Mutation {
   makePayment(enrollmentId: ID!): Payment!
+  verifyPayment(enrollmentId: ID!): Payment!
   cancelPayment(id: ID!): Payment!
   deletePayment(id: ID!): Boolean!
 }

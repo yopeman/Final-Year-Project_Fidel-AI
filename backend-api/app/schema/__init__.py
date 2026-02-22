@@ -8,3 +8,4 @@ type_defs = [load_schema_from_path(file) for file in schema_files]
 
 with open("./app/schema/complete.graphql", "w") as file:
     file.write("\n\n".join(type_defs))
+# Schema package initialized and complete.graphql updated

@@ -13,7 +13,37 @@ export default function PremiumMenu({ visible, onClose }) {
     const router = useRouter();
     const slideAnim = useRef(new Animated.Value(-MENU_WIDTH)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const { user } = useBatchStore(); // Assuming user info might be needed, or just for consistency
+
+    const {
+        enrollments,
+        batches,
+        activeBatchId,
+        setActiveBatchId,
+        premiumUnlocked
+    } = useBatchStore();
+
+    // Get active/completed enrollments
+    const enrolledBatches = React.useMemo(() => {
+        return enrollments
+            .filter(e => e.status === 'ENROLLED' || e.status === 'COMPLETED')
+            .map(e => {
+                const batchDetails = batches.find(b => b.id === e.batch?.id);
+                return {
+                    id: e.batch?.id,
+                    name: e.batch?.name || batchDetails?.name || 'Unnamed Batch',
+                    level: e.batch?.level || batchDetails?.level || 'N/A'
+                };
+            });
+    }, [enrollments, batches]);
+
+    const activeBatch = enrolledBatches.find(b => b.id === activeBatchId) || enrolledBatches[0];
+
+    useEffect(() => {
+        // Auto-select first batch if none active
+        if (enrolledBatches.length > 0 && !activeBatchId) {
+            setActiveBatchId(enrolledBatches[0].id);
+        }
+    }, [enrolledBatches, activeBatchId]);
 
     useEffect(() => {
         if (visible) {
@@ -49,17 +79,17 @@ export default function PremiumMenu({ visible, onClose }) {
         onClose();
         // Small delay to allow menu to close before navigating
         setTimeout(() => {
-            router.push(route);
+            router.push(`${route}${route.includes('?') ? '&' : '?'}batchId=${activeBatchId}`);
         }, 300);
     };
 
     if (!visible) return null;
 
-    const MENU_ITEMS = [
+    const MENU_ITEMS = premiumUnlocked && activeBatchId ? [
         {
             icon: 'videocam-outline',
             label: 'Live Classes',
-            route: '/(tabs)/LiveClasses', // Linking to LiveClasses
+            route: '/(tabs)/LiveClasses',
             color: '#3B82F6',
             desc: 'Join ongoing sessions'
         },
@@ -77,6 +107,14 @@ export default function PremiumMenu({ visible, onClose }) {
             color: '#10B981',
             desc: 'Connect with peers'
         },
+    ] : [
+        {
+            icon: 'school-outline',
+            label: 'Browse Batches',
+            route: '/(tabs)/Batch',
+            color: COLORS.primary,
+            desc: 'Find your perfect tutor'
+        }
     ];
 
     return (
@@ -97,13 +135,13 @@ export default function PremiumMenu({ visible, onClose }) {
                         <View style={styles.menuHeader}>
                             <View style={styles.premiumBadge}>
                                 <LinearGradient
-                                    colors={['#F59E0B', '#F97316']}
+                                    colors={premiumUnlocked ? ['#F59E0B', '#F97316'] : ['#4B5563', '#374151']}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 0 }}
                                     style={styles.premiumBadgeGradient}
                                 >
-                                    <Ionicons name="star" size={14} color="#FFF" />
-                                    <Text style={styles.premiumText}>PREMIUM</Text>
+                                    <Ionicons name={premiumUnlocked ? "star" : "lock-closed"} size={14} color="#FFF" />
+                                    <Text style={styles.premiumText}>{premiumUnlocked ? 'PREMIUM' : 'FREE'}</Text>
                                 </LinearGradient>
                             </View>
                             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -111,8 +149,45 @@ export default function PremiumMenu({ visible, onClose }) {
                             </TouchableOpacity>
                         </View>
 
-                        <Text style={styles.menuTitle}>Premium Access</Text>
-                        <Text style={styles.menuSubtitle}>Everything you need to master your skills.</Text>
+                        <Text style={styles.menuTitle}>{premiumUnlocked ? 'Premium Access' : 'Unlock More'}</Text>
+                        <Text style={styles.menuSubtitle}>
+                            {premiumUnlocked
+                                ? 'Everything you need to master your skills.'
+                                : 'Join a batch to access live classes and community.'}
+                        </Text>
+
+                        {/* Batch Selector (Only if premium and has batches) */}
+                        {premiumUnlocked && enrolledBatches.length > 0 && (
+                            <View style={styles.batchSelector}>
+                                <Text style={styles.sectionLabel}>ACTIVE BATCH</Text>
+                                <View style={styles.batchList}>
+                                    {enrolledBatches.map((batch) => (
+                                        <TouchableOpacity
+                                            key={batch.id}
+                                            style={[
+                                                styles.batchItem,
+                                                activeBatchId === batch.id && styles.batchItemActive
+                                            ]}
+                                            onPress={() => setActiveBatchId(batch.id)}
+                                        >
+                                            <View style={[
+                                                styles.batchDot,
+                                                activeBatchId === batch.id && { backgroundColor: COLORS.primary }
+                                            ]} />
+                                            <Text style={[
+                                                styles.batchName,
+                                                activeBatchId === batch.id && { color: '#FFF', fontWeight: 'bold' }
+                                            ]}>
+                                                {batch.name}
+                                            </Text>
+                                            {activeBatchId === batch.id && (
+                                                <Ionicons name="checkmark-circle" size={16} color={COLORS.primary} />
+                                            )}
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
 
                         {/* Menu Items */}
                         <View style={styles.itemsContainer}>
@@ -249,6 +324,45 @@ const styles = StyleSheet.create({
     itemDesc: {
         fontSize: 12,
         color: COLORS.textSecondary,
+    },
+    // Batch Selector Styles
+    batchSelector: {
+        marginBottom: 32,
+    },
+    sectionLabel: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        color: COLORS.textSecondary,
+        letterSpacing: 1,
+        marginBottom: 12,
+    },
+    batchList: {
+        gap: 8,
+    },
+    batchItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+        gap: 12,
+    },
+    batchItemActive: {
+        backgroundColor: 'rgba(16,185,129,0.05)',
+        borderColor: 'rgba(16,185,129,0.2)',
+    },
+    batchDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+    },
+    batchName: {
+        fontSize: 14,
+        color: COLORS.textSecondary,
+        flex: 1,
     },
     footer: {
         marginTop: 'auto',

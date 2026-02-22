@@ -72,6 +72,59 @@ const graphQLRequest = async (query, variables = {}) => {
     }
 }
 
+// Helper for Multipart GraphQL requests (File Uploads)
+const uploadGraphQLRequest = async (query, variables = {}, files = []) => {
+    try {
+        const formData = new FormData();
+
+        // Define the operations
+        const operations = {
+            query,
+            variables: {
+                ...variables,
+                files: files.map(() => null)
+            }
+        };
+        formData.append('operations', JSON.stringify(operations));
+
+        // Define the map
+        const map = {};
+        files.forEach((file, index) => {
+            map[index.toString()] = [`variables.files.${index}`];
+        });
+        formData.append('map', JSON.stringify(map));
+
+        // Append the actual files
+        files.forEach((file, index) => {
+            formData.append(index.toString(), {
+                uri: file.uri,
+                name: file.name,
+                type: file.type || 'application/octet-stream'
+            });
+        });
+
+        const response = await api.post('', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        if (response.data.errors) {
+            throw {
+                response: {
+                    data: {
+                        message: response.data.errors[0].message
+                    }
+                }
+            };
+        }
+        return response.data;
+    } catch (error) {
+        console.error('Upload GraphQL Request Error:', error.response?.data || error.message);
+        throw error;
+    }
+}
+
 // Auth endpoints
 export const authAPI = {
     register: async (data) => {
@@ -1030,6 +1083,42 @@ export const communityAPI = {
         const res = await graphQLRequest(query, { id });
         return { data: res.data.deleteCommunityReaction };
     },
+    // Comment Reactions
+    postCommentReaction: async (commentId, reactionType) => {
+        const query = `
+            mutation postCommentReaction($commentId: ID!, $reactionType: ReactionType!) {
+                postCommentReaction(commentId: $commentId, reactionType: $reactionType) {
+                    id
+                    reactionType
+                    userId
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { commentId, reactionType });
+        return { data: { reaction: res.data.postCommentReaction } };
+    },
+    updateCommentReaction: async (id, reactionType) => {
+        const query = `
+            mutation updateCommentReaction($id: ID!, $reactionType: ReactionType!) {
+                updateCommentReaction(id: $id, reactionType: $reactionType) {
+                    id
+                    reactionType
+                    userId
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { id, reactionType });
+        return { data: { reaction: res.data.updateCommentReaction } };
+    },
+    deleteCommentReaction: async (id) => {
+        const query = `
+            mutation deleteCommentReaction($id: ID!) {
+                deleteCommentReaction(id: $id)
+            }
+        `;
+        const res = await graphQLRequest(query, { id });
+        return { data: res.data.deleteCommentReaction };
+    },
     uploadAttachments: async (communityId, files) => {
         const query = `
             mutation uploadAttachments($communityId: ID!, $files: [Upload!]!) {
@@ -1042,7 +1131,7 @@ export const communityAPI = {
                 }
             }
         `;
-        const res = await graphQLRequest(query, { communityId, files });
+        const res = await uploadGraphQLRequest(query, { communityId }, files);
         return { data: { attachments: res.data.uploadAttachments } };
     },
     deleteAttachment: async (id) => {
@@ -1229,6 +1318,10 @@ export const materialsAPI = {
                     updatedAt
                     files {
                         id
+                        fileName
+                        filePath
+                        fileExtension
+                        fileSize
                     }
                     course {
                         id
@@ -1253,6 +1346,10 @@ export const materialsAPI = {
                     updatedAt
                     files {
                         id
+                        fileName
+                        filePath
+                        fileExtension
+                        fileSize
                     }
                     course {
                         id

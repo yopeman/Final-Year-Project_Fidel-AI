@@ -110,31 +110,42 @@ def resolve_make_payment(_, info, enrollmentId: str):
     if existing_payment:
         raise Exception("Payment already completed for this enrollment")
 
-    transaction_id = str(uuid.uuid4())
-    accept_payment = payment_service.accept_payment(
-        amount=batch.fee_amount,
-        currency='ETB',
-        # email=current_user.email,
-        first_name=current_user.first_name,
-        last_name=current_user.last_name,
-        tx_ref=transaction_id,
-        callback_url=f'{settings.base_url}/webhook'
-    )
+    # Generate a unique transaction ID
+    transaction_id = f"TXN-{uuid.uuid4().hex[:8].upper()}-{enrollmentId[:4].upper()}"
 
-    # Create new payment
-    new_payment = Payment(
-        enrollment_id=enrollment.id,
-        amount=batch.fee_amount,
-        currency='ETB',
-        transaction_id=transaction_id,
-        checkout_url=accept_payment.data.checkout_url,
-        status=PaymentStatus.pending,  # Default to pending
-    )
+    # Step 1: Initialize payment with return_url for Step 3 redirect
+    try:
+        accept_payment = payment_service.accept_payment(
+            amount=batch.fee_amount,
+            currency='ETB',
+            email=current_user.email,
+            first_name=current_user.first_name,
+            last_name=current_user.last_name,
+            tx_ref=transaction_id,
+            callback_url=f'{settings.base_url}/webhook',
+            return_url=f'Mobile-app://payment/{enrollmentId}?txRef={transaction_id}'
+        )
 
-    db.add(new_payment)
-    db.commit()
-    db.refresh(new_payment)
-    return new_payment
+        if accept_payment.status != "success":
+            raise Exception(f"Chapa Initialization Failed: {accept_payment.message}")
+
+        # Create new payment
+        new_payment = Payment(
+            enrollment_id=enrollment.id,
+            amount=batch.fee_amount,
+            currency='ETB',
+            transaction_id=transaction_id,
+            checkout_url=accept_payment.data.checkout_url,
+            status=PaymentStatus.pending,
+        )
+
+        db.add(new_payment)
+        db.commit()
+        db.refresh(new_payment)
+        return new_payment
+    except Exception as e:
+        db.rollback()
+        raise Exception(f"Failed to initiate payment: {str(e)}")
 
 
 def payment_webhook(status: str, trx_ref: str, db: Session):
@@ -236,21 +247,53 @@ def resolve_verify_payment(_, info, enrollmentId: str):
     if not payment_obj:
         raise Exception("No pending payment found for this enrollment")
 
-    # Verify with Chapa
+    # Verify with Chapa - ALWAYS call Chapa API, never trust frontend
     try:
         payment_verify = payment_service.verify_payment(tx_ref=payment_obj.transaction_id)
+        
         if payment_verify and payment_verify.status == "success":
-            payment_obj.status = PaymentStatus.completed
-            payment_obj.paid_at = datetime.now()
-            try:
-                payment_obj.receipt_url = payment_service.receipt_url(
-                    reference_id=payment_verify.data.reference
-                )
-            except Exception:
-                pass
-            enrollment.status = EnrollmentStatus.enrolled
-            db.commit()
-            db.refresh(payment_obj)
+            chapa_data = payment_verify.data
+            
+            # --- Robust Fraud Prevention Checks (Server-Side) ---
+            # 1. Match amount (protect against "inspect element" or manual API tampering)
+            if float(chapa_data.amount) < float(payment_obj.amount):
+                payment_obj.status = PaymentStatus.failed
+                db.commit()
+                raise Exception(f"FRAUD DETECTED: Amount mismatch. Expected {payment_obj.amount}, actually paid {chapa_data.amount}")
+            
+            # 2. Match currency
+            if chapa_data.currency.upper() != payment_obj.currency.upper():
+                raise Exception(f"Currency mismatch: Expected {payment_obj.currency}, got {chapa_data.currency}")
+            
+            # 3. Match user email (ensure this verification call belongs to the logged-in user)
+            if chapa_data.email.lower() != current_user.email.lower():
+                raise Exception("Identity mismatch: This payment was made by a different email address.")
+            
+            # 4. Status Check (ensure it's actually success from Chapa's perspective)
+            if chapa_data.status.lower() != "success":
+                raise Exception(f"Payment not successful on Chapa. Status: {chapa_data.status}")
+
+            # --- Success Logic ---
+            if payment_obj.status != PaymentStatus.completed:
+                payment_obj.status = PaymentStatus.completed
+                payment_obj.paid_at = datetime.now()
+                try:
+                    payment_obj.receipt_url = payment_service.receipt_url(
+                        reference_id=payment_verify.data.reference
+                    )
+                except Exception:
+                    pass
+                
+                enrollment.status = EnrollmentStatus.enrolled
+                db.commit()
+                db.refresh(payment_obj)
+
+            # Step 4 Mapping for response
+            payment_obj.isSuccess = True
+            payment_obj.subscriptionActive = True
+            payment_obj.subscriptionPlan = "premium"
+            payment_obj.subscriptionStartDate = payment_obj.paid_at
+            payment_obj.subscriptionEndDate = None 
 
             # Notify student
             try:
@@ -262,7 +305,7 @@ def resolve_verify_payment(_, info, enrollmentId: str):
                     send_notification(
                         user_id=profile.user_id,
                         title="Payment Confirmed",
-                        content=f"Your payment of {payment_obj.amount} {payment_obj.currency} has been confirmed. Premium access is now active.",
+                        content=f"Your payment of {payment_obj.amount} {payment_obj.currency} has been verified safely. Premium access is now active.",
                         db=db
                     )
             except Exception:
@@ -270,9 +313,11 @@ def resolve_verify_payment(_, info, enrollmentId: str):
 
             return payment_obj
         else:
-            raise Exception("Payment not yet confirmed by Chapa. Please complete payment and try again.")
+            message = payment_verify.message if payment_verify else "No response from Chapa"
+            raise Exception(f"Verification Failed: {message}")
     except Exception as e:
-        # If Chapa verification call itself fails (e.g., network), raise as-is
+        # Log and raise
+        print(f"CRITICAL: Payment verification error: {str(e)}")
         raise Exception(str(e))
 
 
@@ -412,3 +457,29 @@ def resolve_enrollment(payment_obj, info):
         BatchEnrollment.is_deleted == False
     ).first()
     return enrollment
+
+
+# Step 4 Workflow Alignment Field Resolvers
+@payment.field("isSuccess")
+def resolve_is_success(payment_obj, info):
+    return getattr(payment_obj, 'isSuccess', payment_obj.status == PaymentStatus.completed)
+
+
+@payment.field("subscriptionActive")
+def resolve_subscription_active(payment_obj, info):
+    return getattr(payment_obj, 'subscriptionActive', payment_obj.status == PaymentStatus.completed)
+
+
+@payment.field("subscriptionPlan")
+def resolve_subscription_plan(payment_obj, info):
+    return getattr(payment_obj, 'subscriptionPlan', "premium" if payment_obj.status == PaymentStatus.completed else None)
+
+
+@payment.field("subscriptionStartDate")
+def resolve_subscription_start_date(payment_obj, info):
+    return getattr(payment_obj, 'subscriptionStartDate', payment_obj.paid_at)
+
+
+@payment.field("subscriptionEndDate")
+def resolve_subscription_end_date(payment_obj, info):
+    return getattr(payment_obj, 'subscriptionEndDate', None)

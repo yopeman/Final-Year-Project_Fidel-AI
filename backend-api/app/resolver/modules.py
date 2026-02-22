@@ -28,7 +28,7 @@ def resolve_modules(_, info, profileId: str):
     )
 
     if not profile:
-        raise Exception("Profile not found")
+        return []
 
     # Allow admins to view any modules, students/tutors can only view their own
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:

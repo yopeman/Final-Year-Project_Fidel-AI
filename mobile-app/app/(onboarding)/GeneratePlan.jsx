@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLearningStore } from '../../src/stores/learningStore';

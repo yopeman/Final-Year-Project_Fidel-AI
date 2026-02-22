@@ -387,7 +387,13 @@ def resolve_get_student_progress(_, info, studentId: str):
     )
 
     if not profile:
-        raise Exception("Student profile not found")
+        return {
+            "totalModules": 0,
+            "totalLessons": 0,
+            "completedLessons": 0,
+            "remainingLessons": 0,
+            "progressPercentage": 0,
+        }
 
     # Get all modules for this student
     modules = (

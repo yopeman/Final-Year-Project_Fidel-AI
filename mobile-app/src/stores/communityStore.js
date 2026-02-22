@@ -112,20 +112,44 @@ export const useCommunityStore = create((set, get) => ({
 
     toggleReaction: async (postId, type, userId) => {
         try {
-            // Find if user already reacted
             const post = get().posts.find(p => p.id === postId);
-            const existingReaction = post?.reactions?.find(r => r.userId === userId && r.reactionType === type);
+            // Find if user already reacted with ANY type
+            const existingReaction = post?.reactions?.find(r => r.userId === userId);
 
             if (existingReaction) {
-                await communityAPI.deleteReaction(existingReaction.id);
-                set(state => ({
-                    posts: state.posts.map(p =>
-                        p.id === postId
-                            ? { ...p, reactions: p.reactions.filter(r => r.id !== existingReaction.id) }
-                            : p
-                    )
-                }));
+                if (existingReaction.reactionType === type) {
+                    // Same type -> Delete reaction
+                    await communityAPI.deleteReaction(existingReaction.id);
+                    set(state => ({
+                        posts: state.posts.map(p =>
+                            p.id === postId
+                                ? { ...p, reactions: p.reactions.filter(r => r.id !== existingReaction.id) }
+                                : p
+                        )
+                    }));
+                } else {
+                    // Different type -> Not implemented in communityAPI.postReaction for post? 
+                    // Actually, usually we delete then add or we need an update mutation.
+                    // The schema has deleteCommunityReaction but not updateCommunityReaction.
+                    // So we delete existing then add new.
+                    await communityAPI.deleteReaction(existingReaction.id);
+                    const response = await communityAPI.postReaction(postId, type);
+                    set(state => ({
+                        posts: state.posts.map(p =>
+                            p.id === postId
+                                ? {
+                                    ...p,
+                                    reactions: [
+                                        ...p.reactions.filter(r => r.id !== existingReaction.id),
+                                        response.data.reaction
+                                    ]
+                                }
+                                : p
+                        )
+                    }));
+                }
             } else {
+                // No reaction -> Create new
                 const response = await communityAPI.postReaction(postId, type);
                 set(state => ({
                     posts: state.posts.map(p =>
@@ -133,6 +157,54 @@ export const useCommunityStore = create((set, get) => ({
                             ? { ...p, reactions: [...(p.reactions || []), response.data.reaction] }
                             : p
                     )
+                }));
+            }
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+    toggleCommentReaction: async (postId, commentId, type, userId) => {
+        try {
+            const post = get().posts.find(p => p.id === postId);
+            const comment = post?.comments?.find(c => c.id === commentId);
+            const existingReaction = comment?.reactions?.find(r => r.userId === userId);
+
+            if (existingReaction) {
+                if (existingReaction.reactionType === type) {
+                    await communityAPI.deleteCommentReaction(existingReaction.id);
+                    set(state => ({
+                        posts: state.posts.map(p => p.id === postId ? {
+                            ...p,
+                            comments: p.comments.map(c => c.id === commentId ? {
+                                ...c,
+                                reactions: c.reactions.filter(r => r.id !== existingReaction.id)
+                            } : c)
+                        } : p)
+                    }));
+                } else {
+                    await communityAPI.updateCommentReaction(existingReaction.id, type);
+                    set(state => ({
+                        posts: state.posts.map(p => p.id === postId ? {
+                            ...p,
+                            comments: p.comments.map(c => c.id === commentId ? {
+                                ...c,
+                                reactions: c.reactions.map(r => r.id === existingReaction.id ? { ...r, reactionType: type } : r)
+                            } : c)
+                        } : p)
+                    }));
+                }
+            } else {
+                const response = await communityAPI.postCommentReaction(commentId, type);
+                set(state => ({
+                    posts: state.posts.map(p => p.id === postId ? {
+                        ...p,
+                        comments: p.comments.map(c => c.id === commentId ? {
+                            ...c,
+                            reactions: [...(c.reactions || []), response.data.reaction]
+                        } : c)
+                    } : p)
                 }));
             }
             return { success: true };

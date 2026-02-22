@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { coursesAPI, materialsAPI } from '../services/api';
+import { coursesAPI, materialsAPI, batchAPI } from '../services/api';
 
 export const useMaterialStore = create((set, get) => ({
     courses: [],
@@ -10,11 +10,20 @@ export const useMaterialStore = create((set, get) => ({
     error: null,
 
     // ── Courses ──────────────────────────────────────────────────────────────
-    getCourses: async () => {
+    getCourses: async (batchId = null) => {
         try {
             set({ isLoading: true, error: null });
-            const response = await coursesAPI.getCourses();
-            const courses = response.data.courses || [];
+            let courses = [];
+
+            if (batchId) {
+                const response = await batchAPI.getBatchCourses(batchId);
+                // The API returns { data: { courses: [...] } } where courses are batchCourse objects
+                courses = response.data.courses.map(bc => bc.course) || [];
+            } else {
+                const response = await coursesAPI.getCourses();
+                courses = response.data.courses || [];
+            }
+
             set({ courses, isLoading: false });
             return { success: true, courses };
         } catch (error) {

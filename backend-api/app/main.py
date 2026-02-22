@@ -1,4 +1,4 @@
-import os
+import os # Touched to trigger reload
 
 from ariadne import ScalarType, make_executable_schema, upload_scalar
 from ariadne.asgi import GraphQL
@@ -273,10 +273,33 @@ def read_root():
 def health_check():
     return {"status": "healthy"}
 
-@app.get('/webhook')
-def payment_webhook(status: str = None, trx_ref: str = None, db = Depends(get_db)):
-    print('Payment Webhook:', status, trx_ref)
-    p_webhook(status=status, trx_ref=trx_ref, db=db)
+@app.post('/webhook')
+async def payment_webhook(request: Request, db=Depends(get_db)):
+    # 1. Get the signature from headers
+    chapa_signature = request.headers.get("x-chapa-signature")
+    
+    # 2. Get raw body
+    body = await request.body()
+    
+    # Optional: Verify signature if secret is provided
+    # import hmac, hashlib
+    # expected_signature = hmac.new(settings.chapa_secret.encode(), body, hashlib.sha256).hexdigest()
+    # if chapa_signature != expected_signature:
+    #     return {"status": "error", "message": "Invalid signature"}
+
+    # 3. Parse JSON
+    import json
+    try:
+        data = json.loads(body)
+        status = data.get("status")
+        trx_ref = data.get("trx_ref")
+        
+        print('Payment Webhook (POST):', status, trx_ref)
+        p_webhook(status=status, trx_ref=trx_ref, db=db)
+        return {"status": "success"}
+    except Exception as e:
+        print(f"Webhook Error: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 @app.post("/api/upload/material/{materialId}/files", response_model=None)
 async def upload_course_material(materialId: str, files: List[UploadFile], request: Request):

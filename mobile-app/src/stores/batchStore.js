@@ -10,7 +10,8 @@ const STORAGE_KEYS = {
     ENROLLMENT_STATUS: 'batch_enrollment_status',
     BATCHES: 'batches_cache',
     LAST_SYNC: 'batch_last_sync',
-    PAYMENTS: 'batch_payments_cache'
+    PAYMENTS: 'batch_payments_cache',
+    ACTIVE_BATCH_ID: 'batch_active_id'
 };
 
 // Helper for direct graphQL calls
@@ -23,11 +24,27 @@ const graphQLRequest = async (query, variables = {}) => {
         };
         const response = await axios.post(API_BASE_URL, { query, variables }, { headers });
         if (response.data.errors) {
+            console.error('GraphQL Errors:', response.data.errors);
             throw new Error(response.data.errors[0].message);
         }
         return response.data.data;
     } catch (error) {
-        console.error('GraphQL Request Error:', error);
+        if (error.response) {
+            // Server responded with non-2xx code
+            console.error('GraphQL API Error Response:', error.response.status, error.response.data);
+            if (error.response.status === 503) {
+                throw new Error("Service Temporarily Unavailable (503). Backend might be offline.");
+            }
+            // Include server error details in the message
+            const serverMsg = error.response.data?.errors?.[0]?.message || JSON.stringify(error.response.data);
+            throw new Error(`Server Error (${error.response.status}): ${serverMsg}`);
+        } else if (error.request) {
+            // Request was made but no response received
+            console.error('GraphQL Network Error (No Response):', error.message);
+            throw new Error("Network Error: Could not connect to API. Please check your internet or if the server is running.");
+        } else {
+            console.error('GraphQL Error:', error.message);
+        }
         throw error;
     }
 };
@@ -41,14 +58,16 @@ const loadPersistedData = async () => {
             enrollmentStatus,
             batches,
             lastSync,
-            payments
+            payments,
+            activeBatchId
         ] = await Promise.all([
             AsyncStorage.getItem(STORAGE_KEYS.PREMIUM_UNLOCKED),
             AsyncStorage.getItem(STORAGE_KEYS.ENROLLMENTS),
             AsyncStorage.getItem(STORAGE_KEYS.ENROLLMENT_STATUS),
             AsyncStorage.getItem(STORAGE_KEYS.BATCHES),
             AsyncStorage.getItem(STORAGE_KEYS.LAST_SYNC),
-            AsyncStorage.getItem(STORAGE_KEYS.PAYMENTS)
+            AsyncStorage.getItem(STORAGE_KEYS.PAYMENTS),
+            AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_BATCH_ID)
         ]);
 
         return {
@@ -57,7 +76,8 @@ const loadPersistedData = async () => {
             enrollmentStatusGlobal: enrollmentStatus || null,
             batchesCache: batches ? JSON.parse(batches) : [],
             paymentsCache: payments ? JSON.parse(payments) : [],
-            lastSync: lastSync || null
+            lastSync: lastSync || null,
+            activeBatchId: activeBatchId || null
         };
     } catch (error) {
         console.error('Error loading persisted data:', error);
@@ -84,6 +104,7 @@ export const useBatchStore = create((set, get) => ({
     error: null,
     premiumUnlocked: false,
     enrollmentStatusGlobal: null,
+    activeBatchId: null,
     lastSync: null,
     currentPayment: null,
 
@@ -100,6 +121,7 @@ export const useBatchStore = create((set, get) => ({
                 batches: persisted.batchesCache,
                 payments: persisted.paymentsCache,
                 lastSync: persisted.lastSync,
+                activeBatchId: persisted.activeBatchId,
                 isLoading: false
             });
 
@@ -127,6 +149,7 @@ export const useBatchStore = create((set, get) => ({
                 AsyncStorage.setItem(STORAGE_KEYS.ENROLLMENT_STATUS, JSON.stringify(state.enrollmentStatusGlobal)),
                 AsyncStorage.setItem(STORAGE_KEYS.BATCHES, JSON.stringify(state.batches)),
                 AsyncStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(state.payments)),
+                AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_BATCH_ID, state.activeBatchId || ''),
                 AsyncStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString())
             ]);
             console.log('[BatchStore] State persisted successfully');
@@ -258,7 +281,12 @@ export const useBatchStore = create((set, get) => ({
             const localEnrollment = state.enrollments.find(e => e.batch?.id === batchId);
 
             if (localEnrollment) {
-                set({ isLoading: false });
+                const isPremium = localEnrollment.status === 'ENROLLED' || localEnrollment.status === 'COMPLETED';
+                set({
+                    isLoading: false,
+                    premiumUnlocked: isPremium || state.premiumUnlocked,
+                    enrollmentStatusGlobal: isPremium ? 'ENROLLED' : state.enrollmentStatusGlobal
+                });
                 return {
                     isEnrolled: true,
                     status: localEnrollment.status,
@@ -269,27 +297,29 @@ export const useBatchStore = create((set, get) => ({
 
             // Fetch from API
             const query = `
-                query GetUserEnrollments {
-                    userEnrollments {
-                        id
-                        status
-                        enrollmentDate
-                        batch {
-                            id
-                            name
-                            feeAmount
-                        }
-                        payments {
+                query GetMyEnrollments {
+                    me {
+                        batchEnrollments {
                             id
                             status
-                            amount
+                            enrollmentDate
+                            batch {
+                                id
+                                name
+                                feeAmount
+                            }
+                            payments {
+                                id
+                                status
+                                amount
+                            }
                         }
                     }
                 }
             `;
 
             const data = await graphQLRequest(query);
-            const enrollments = data.userEnrollments || [];
+            const enrollments = data?.me?.batchEnrollments || [];
 
             // Find enrollment for this batch
             const enrollment = enrollments.find(e => e.batch.id === batchId);
@@ -297,9 +327,12 @@ export const useBatchStore = create((set, get) => ({
             if (enrollment) {
                 const uiStatus = enrollment.status === 'APPLIED' ? 'PENDING' : enrollment.status;
 
-                // Update local enrollments
+                // Update local enrollments and global state
+                const isPremium = enrollment.status === 'ENROLLED' || enrollment.status === 'COMPLETED';
                 set(state => ({
                     enrollments: [...state.enrollments, enrollment],
+                    premiumUnlocked: isPremium || state.premiumUnlocked,
+                    enrollmentStatusGlobal: isPremium ? 'ENROLLED' : state.enrollmentStatusGlobal,
                     isLoading: false
                 }));
 
@@ -413,41 +446,75 @@ export const useBatchStore = create((set, get) => ({
         }
     },
 
+    // Cancel a pending payment
+    cancelPayment: async (paymentId) => {
+        try {
+            set({ isLoading: true, error: null });
+
+            const query = `
+                mutation CancelPayment($id: ID!) {
+                    cancelPayment(id: $id) {
+                        id
+                        status
+                        updatedAt
+                    }
+                }
+            `;
+
+            const data = await graphQLRequest(query, { id: paymentId });
+            const canceledPayment = data.cancelPayment;
+
+            set(state => ({
+                currentPayment: state.currentPayment?.id === paymentId ? canceledPayment : state.currentPayment,
+                payments: state.payments.map(p => p.id === paymentId ? canceledPayment : p),
+                isLoading: false
+            }));
+
+            await get().persistState();
+
+            return { success: true, payment: canceledPayment };
+        } catch (error) {
+            const errorMsg = error.message || 'Failed to cancel payment';
+            set({ error: errorMsg, isLoading: false });
+            return { success: false, error: errorMsg };
+        }
+    },
+
     // Verify Payment and Unlock Premium
     verifyPaymentAndUnlock: async (enrollmentId) => {
         try {
             set({ isLoading: true, error: null });
 
-            // Call verifyPayment mutation
+            // CRITICAL FIX: Call verifyPayment mutation which does server-side validation with Chapa
             const query = `
-                mutation VerifyPayment($enrollmentId: ID!) {
-                    verifyPayment(enrollmentId: $enrollmentId) {
+            mutation VerifyPayment($enrollmentId: ID!) {
+                verifyPayment(enrollmentId: $enrollmentId) {
+                    id
+                    status
+                    amount
+                    currency
+                    transactionId
+                    paidAt
+                    enrollment {
                         id
                         status
-                        amount
-                        currency
-                        transactionId
-                        receiptUrl
-                        paidAt
-                        enrollment {
+                        batch {
                             id
-                            status
-                            batch {
-                                id
-                                name
-                                feeAmount
-                            }
+                            name
+                            feeAmount
                         }
                     }
                 }
-            `;
+            }
+        `;
 
             const data = await graphQLRequest(query, { enrollmentId });
             const verifiedPayment = data?.verifyPayment;
 
-            // Check if payment was successful
-            if (verifiedPayment?.status === 'COMPLETED') {
-                // Update all relevant state
+            // Check the verification result from backend
+            if (verifiedPayment && verifiedPayment.status === 'COMPLETED') {
+                // Backend confirmed payment - safe to unlock
+
                 set(state => {
                     // Update enrollments with new status
                     const updatedEnrollments = state.enrollments.map(e =>
@@ -455,15 +522,20 @@ export const useBatchStore = create((set, get) => ({
                             ? {
                                 ...e,
                                 status: 'ENROLLED',
-                                payments: [...(e.payments || []), verifiedPayment]
+                                payments: verifiedPayment ? [verifiedPayment] : (e.payments || [])
                             }
                             : e
                     );
 
                     // Update payments
                     const updatedPayments = state.payments.map(p =>
-                        p.id === verifiedPayment.id ? verifiedPayment : p
+                        p.id === verifiedPayment?.id ? verifiedPayment : p
                     );
+
+                    // If payment not in list, add it
+                    if (verifiedPayment && !state.payments.some(p => p.id === verifiedPayment.id)) {
+                        updatedPayments.push(verifiedPayment);
+                    }
 
                     return {
                         premiumUnlocked: true,
@@ -471,7 +543,8 @@ export const useBatchStore = create((set, get) => ({
                         enrollments: updatedEnrollments,
                         payments: updatedPayments,
                         currentPayment: verifiedPayment,
-                        isLoading: false
+                        isLoading: false,
+                        error: null
                     };
                 });
 
@@ -481,104 +554,101 @@ export const useBatchStore = create((set, get) => ({
                 return {
                     success: true,
                     verified: true,
+                    payment: verifiedPayment,
+                    message: 'Payment verified successfully'
+                };
+
+            } else if (verifiedPayment) {
+                // Payment exists but not completed
+                set({
+                    isLoading: false,
+                    error: 'Payment not yet completed'
+                });
+
+                return {
+                    success: true,
+                    verified: false,
+                    status: verifiedPayment.status || 'PENDING',
                     payment: verifiedPayment
                 };
             }
 
-            // Check if enrollment status changed even if payment not directly verified
-            if (verifiedPayment?.enrollment?.status === 'ENROLLED') {
-                set({
-                    premiumUnlocked: true,
-                    enrollmentStatusGlobal: 'ENROLLED',
-                    isLoading: false
-                });
-                await get().persistState();
-                return { success: true, verified: true };
-            }
+            // No payment object returned
+            set({
+                isLoading: false,
+                error: 'Verification failed: No payment record found'
+            });
 
-            // Verification failed
-            set({ isLoading: false });
             return {
                 success: false,
                 verified: false,
-                status: verifiedPayment?.status || 'PENDING'
+                error: 'Failed to find payment record'
             };
 
         } catch (error) {
             console.error("verifyPaymentAndUnlock Error:", error);
             set({
-                error: error.message,
+                error: error.message || 'Verification failed',
                 isLoading: false
             });
             return {
                 success: false,
                 verified: false,
-                error: error.message
+                error: error.message || 'Verification failed'
             };
         }
     },
 
-    // Check Payment Status (comprehensive)
+    // Also fix checkPaymentStatus to not auto-verify
     checkPaymentStatus: async (enrollmentId) => {
         try {
             set({ isLoading: true, error: null });
 
-            // Query for payment status
+            // Query for payment status only - don't auto-verify
             const paymentQuery = `
-                query GetPayments($enrollmentId: ID!) {
-                    payments(enrollmentId: $enrollmentId) {
+            query GetPayments($enrollmentId: ID!) {
+                payments(enrollmentId: $enrollmentId) {
+                    id
+                    status
+                    amount
+                    currency
+                    transactionId
+                    paidAt
+                    receiptUrl
+                    createdAt
+                    updatedAt
+                    enrollment {
                         id
                         status
-                        amount
-                        currency
-                        transactionId
-                        paidAt
-                        receiptUrl
-                        createdAt
-                        updatedAt
                     }
                 }
-            `;
+            }
+        `;
 
             const paymentData = await graphQLRequest(paymentQuery, { enrollmentId });
             const payments = paymentData?.payments || [];
             const completedPayment = payments.find(p => p.status === 'COMPLETED');
 
-            // Also check enrollment status
-            const enrollmentQuery = `
-                query GetEnrollment($id: ID!) {
-                    enrollment(id: $id) {
-                        id
-                        status
-                        enrollmentDate
-                        batch {
-                            id
-                            name
-                            feeAmount
-                        }
-                    }
-                }
-            `;
+            // Check if enrollment already shows premium
+            const hasPremiumEnrollment = payments.some(p =>
+                p.enrollment?.status === 'ENROLLED'
+            );
 
-            const enrollmentData = await graphQLRequest(enrollmentQuery, { id: enrollmentId });
-            const enrollment = enrollmentData?.enrollment;
-
-            // Determine actual status
-            const isEnrolled = enrollment?.status === 'ENROLLED' || enrollment?.status === 'COMPLETED';
-            const hasCompletedPayment = !!completedPayment;
-
-            if (isEnrolled || hasCompletedPayment) {
-                // Auto-unlock if status shows enrolled
-                const verifyResult = await get().verifyPaymentAndUnlock(enrollmentId);
-
-                set({ isLoading: false });
+            // CRITICAL FIX: Don't auto-verify here - just report status
+            if (hasPremiumEnrollment || completedPayment) {
+                set({
+                    premiumUnlocked: true,
+                    enrollmentStatusGlobal: 'ENROLLED',
+                    payments: payments,
+                    currentPayment: completedPayment || payments[0],
+                    isLoading: false
+                });
 
                 return {
                     success: true,
                     status: 'COMPLETED',
-                    enrollment,
                     payment: completedPayment,
-                    verified: verifyResult.verified
+                    verified: true // Already verified
                 };
             }
 
@@ -590,9 +660,9 @@ export const useBatchStore = create((set, get) => ({
 
             return {
                 success: true,
-                status: enrollment?.status || 'PENDING',
+                status: payments[0]?.status || 'PENDING',
                 payments,
-                enrollment
+                payment: payments[0] || null
             };
 
         } catch (error) {
@@ -609,41 +679,71 @@ export const useBatchStore = create((set, get) => ({
         }
     },
 
-    // Cancel Payment
-    cancelPayment: async (paymentId) => {
+    // Fix initiatePayment to properly create payment record
+    initiatePayment: async (enrollmentId) => {
         try {
             set({ isLoading: true, error: null });
 
             const query = `
-                mutation CancelPayment($id: ID!) {
-                    cancelPayment(id: $id) {
+            mutation MakePayment($enrollmentId: ID!) {
+                makePayment(enrollmentId: $enrollmentId) {
+                    id
+                    amount
+                    currency
+                    status
+                    checkoutUrl
+                    transactionId
+                    createdAt
+                    enrollment {
                         id
                         status
                     }
                 }
-            `;
+            }
+        `;
 
-            const data = await graphQLRequest(query, { id: paymentId });
-            const cancelledPayment = data.cancelPayment;
+            const data = await graphQLRequest(query, { enrollmentId });
+            const payment = data.makePayment;
 
-            set(state => ({
-                payments: state.payments.map(p =>
-                    p.id === paymentId ? { ...p, status: 'CANCELED' } : p
-                ),
-                currentPayment: state.currentPayment?.id === paymentId ? cancelledPayment : state.currentPayment,
-                isLoading: false
-            }));
+            // Check if payment is already completed
+            if (payment.status === 'COMPLETED') {
+                set(state => ({
+                    currentPayment: payment,
+                    payments: [...state.payments, payment],
+                    premiumUnlocked: true,
+                    enrollmentStatusGlobal: 'ENROLLED',
+                    isLoading: false
+                }));
+            } else {
+                set(state => ({
+                    currentPayment: payment,
+                    payments: [...state.payments, payment],
+                    isLoading: false
+                }));
+            }
 
             await get().persistState();
 
-            return { success: true, payment: cancelledPayment };
+            return { success: true, payment };
         } catch (error) {
-            const errorMsg = error.message || 'Failed to cancel payment';
+            const errorMsg = error.message || 'Failed to initiate payment';
             set({ error: errorMsg, isLoading: false });
             return { success: false, error: errorMsg };
         }
     },
 
+    // Add a new method to handle webhook notifications
+    handlePaymentWebhook: async (enrollmentId) => {
+        try {
+            // This would be called when your app receives a push notification
+            // or when the webhook server notifies the client via socket
+            const result = await get().verifyPaymentAndUnlock(enrollmentId);
+            return result;
+        } catch (error) {
+            console.error('Webhook handling error:', error);
+            return { success: false, error: error.message };
+        }
+    },
     // Get course schedules
     getCourseSchedules: async (batchCourseId) => {
         try {
@@ -660,24 +760,58 @@ export const useBatchStore = create((set, get) => ({
                         }
                         attendances {
                             id
-                            userId
                             status
-                            attendanceDate
                         }
                     }
                 }
             `;
 
             const data = await graphQLRequest(query, { batchCourseId });
+            return { success: true, schedules: data.courseSchedules || [] };
+        } catch (error) {
+            const errorMsg = error.message || 'Failed to fetch schedules';
+            set({ error: errorMsg, isLoading: false });
+            return { success: false, error: errorMsg };
+        } finally {
+            set({ isLoading: false });
+        }
+    },
+
+    // Aggregates schedules for all courses in a batch
+    getBatchSchedules: async (batchId) => {
+        try {
+            set({ isLoading: true, error: null });
+
+            // Ensure we have batch info (especially courses)
+            let batch = get().currentBatch;
+            if (!batch || batch.id !== batchId) {
+                const res = await get().getBatchById(batchId);
+                if (!res.success) throw new Error(res.error);
+                batch = res.batch;
+            }
+
+            if (!batch || !batch.courses || batch.courses.length === 0) {
+                set({ schedules: [], isLoading: false });
+                return { success: true, schedules: [] };
+            }
+
+            // Fetch schedules for each course
+            const allSchedules = [];
+            for (const course of batch.courses) {
+                const res = await get().getCourseSchedules(course.id);
+                if (res.success) {
+                    allSchedules.push(...res.schedules);
+                }
+            }
 
             set({
-                schedules: data.courseSchedules,
+                schedules: allSchedules,
                 isLoading: false
             });
 
-            return { success: true, schedules: data.courseSchedules };
+            return { success: true, schedules: allSchedules };
         } catch (error) {
-            const errorMsg = error.message || 'Failed to fetch schedules';
+            const errorMsg = error.message || 'Failed to aggregate batch schedules';
             set({ error: errorMsg, isLoading: false });
             return { success: false, error: errorMsg };
         }
@@ -692,9 +826,6 @@ export const useBatchStore = create((set, get) => ({
                 mutation GetMeetingLink($courseScheduleId: ID!) {
                     getCourseMeetingLink(courseScheduleId: $courseScheduleId) {
                         meetingLink
-                        attendance {
-                            status
-                        }
                     }
                 }
             `;
@@ -708,40 +839,12 @@ export const useBatchStore = create((set, get) => ({
                 data: data.getCourseMeetingLink
             };
         } catch (error) {
-            const errorMsg = error.response?.data?.message || 'Failed to get meeting link';
+            const errorMsg = error.message || 'Failed to get meeting link';
             set({ error: errorMsg, isLoading: false });
             return { success: false, error: errorMsg };
         }
     },
 
-    // Get batch meeting link
-    getBatchMeetingLink: async (batchId) => {
-        try {
-            set({ isLoading: true, error: null });
-
-            const query = `
-                mutation GetBatchMeetingLink($batchId: ID!) {
-                    getBatchMeetingLink(batchId: $batchId) {
-                        meetingLink
-                        status
-                    }
-                }
-            `;
-
-            const data = await graphQLRequest(query, { batchId });
-
-            set({ isLoading: false });
-
-            return {
-                success: true,
-                data: data.getBatchMeetingLink
-            };
-        } catch (error) {
-            const errorMsg = error.response?.data?.message || 'Failed to get batch meeting link';
-            set({ error: errorMsg, isLoading: false });
-            return { success: false, error: errorMsg };
-        }
-    },
 
     // Generate AI video recommendations
     generateAiVideos: async (language, level) => {
@@ -836,14 +939,26 @@ export const useBatchStore = create((set, get) => ({
             set({
                 enrollments: updatedEnrollments,
                 premiumUnlocked: hasPremium,
-                enrollmentStatusGlobal: hasPremium ? 'ENROLLED' : null
+                enrollmentStatusGlobal: hasPremium ? 'ENROLLED' : (enrollments[0]?.status || null)
             });
 
             await get().persistState();
-
-            return { success: true, hasPremium };
+            return { success: true };
         } catch (error) {
             console.error('[BatchStore] Sync error:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Set active batch and persist
+    setActiveBatchId: async (batchId) => {
+        try {
+            console.log('[BatchStore] Setting active batch ID:', batchId);
+            set({ activeBatchId: batchId });
+            await get().persistState();
+            return { success: true };
+        } catch (error) {
+            console.error('[BatchStore] Error setting active batch:', error);
             return { success: false, error: error.message };
         }
     },

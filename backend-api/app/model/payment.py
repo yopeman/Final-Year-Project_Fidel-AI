@@ -24,7 +24,7 @@ class Payment(BaseModel):
     method = Column(String(50), nullable=True)
     status = Column(Enum(PaymentStatus), nullable=False)
     paid_at = Column(DateTime(timezone=True), nullable=True)
-    transaction_id = Column(String(500), nullable=True)
+    transaction_id = Column(String(500), nullable=True, unique=True)
     checkout_url = Column(String(500), nullable=True)
     receipt_url = Column(String(500), nullable=True)
 
