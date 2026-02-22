@@ -234,6 +234,7 @@ os.makedirs("static", exist_ok=True)
 
 def get_context_value(request: Request):
     # Use the session from middleware (properly managed lifecycle)
+    print(request.__dict__['_body'])
     db = request.state.db
     context = {"db": db, "pubsub": broadcast}
     context["base_url"] = request.base_url
