@@ -106,8 +106,8 @@ const styles = StyleSheet.create({
     },
     glowBlob: {
         position: 'fixed',
-        width: 300,
-        height: 300,
+        // width: 300,
+        // height: 300,
         borderRadius: 150,
         opacity: 0.6,
     },
