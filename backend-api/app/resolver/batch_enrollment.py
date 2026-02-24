@@ -104,6 +104,7 @@ def resolve_create_enrollment(_, info, batchId: str, studentId: Optional[str] = 
     existing_enrollment = db.query(BatchEnrollment).filter(
         BatchEnrollment.profile_id == profile.id,
         BatchEnrollment.batch_id == batchId,
+        BatchEnrollment.status == EnrollmentStatus.enrolled,
         BatchEnrollment.is_deleted == False
     ).first()
     
