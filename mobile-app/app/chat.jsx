@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useChatStore } from '../src/stores/chatStore';
 import { COLORS, BORDER_RADIUS, SPACING } from '../src/constants';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Audio } from 'expo-av';
+import { Audio } from 'expo-audio';
 import * as FileSystem from 'expo-file-system';
 
 export default function ChatScreen() {
