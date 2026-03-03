@@ -28,8 +28,7 @@ from .resolver.notification import notification, mutation as n_mutation, query a
 from .resolver.schedule import schedule, mutation as s_mutation, query as s_query
 from .resolver.course_schedule import course_schedule, mutation as cs_mutation, query as cs_query
 from .resolver.payment import payment, mutation as p_mutation, query as p_query, payment_webhook as p_webhook
-from .resolver.conversation_interactions import \
-    conversation_interactions as ci_type
+from .resolver.conversation_interactions import conversation_interactions as ci_type
 from .resolver.conversation_interactions import mutation as ci_mutation
 from .resolver.conversation_interactions import query as ci_query
 from .resolver.course import course, mutation as c_mutation, query as c_query
