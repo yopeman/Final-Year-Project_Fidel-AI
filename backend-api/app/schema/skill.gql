@@ -1,0 +1,55 @@
+enum Grade {
+  A_PLUS
+  A
+  A_MINUS
+  B_PLUS
+  B
+  B_MINUS
+  C_PLUS
+  C
+  C_MINUS
+  D
+  F
+  FX
+}
+
+type Skill {
+  id: ID!
+  enrollmentId: ID!
+  instructorId: ID!
+  finalResult: Grade!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  enrollment: BatchEnrollment!
+  instructor: User!
+  speakingSkill: SpeakingSkill
+  readingSkill: ReadingSkill
+  writingSkill: WritingSkill
+  listeningSkill: ListeningSkill
+}
+
+extend type Query {
+  skills(enrollmentId: ID!): [Skill!]!
+  skill(id: ID!): Skill
+}
+
+extend type Mutation {
+  createSkill(input: CreateSkillInput!): Skill!
+  updateSkill(id: ID!, input: UpdateSkillInput!): Skill!
+  deleteSkill(id: ID!): Boolean!
+}
+
+input CreateSkillInput {
+  enrollmentId: ID!
+  instructorId: ID!
+  finalResult: Grade!
+}
+
+input UpdateSkillInput {
+  enrollmentId: ID
+  instructorId: ID
+  finalResult: Grade
+}

@@ -1,0 +1,44 @@
+type WritingSkill {
+  id: ID!
+  skillId: ID!
+  coherence: Grade!
+  grammar: Grade!
+  vocabulary: Grade!
+  punctuation: Grade!
+  finalResult: Grade!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  skill: Skill!
+}
+
+extend type Query {
+  writingSkills(skillId: ID!): [WritingSkill!]!
+  writingSkill(id: ID!): WritingSkill
+}
+
+extend type Mutation {
+  createWritingSkill(input: CreateWritingSkillInput!): WritingSkill!
+  updateWritingSkill(id: ID!, input: UpdateWritingSkillInput!): WritingSkill!
+  deleteWritingSkill(id: ID!): Boolean!
+}
+
+input CreateWritingSkillInput {
+  skillId: ID!
+  coherence: Grade!
+  grammar: Grade!
+  vocabulary: Grade!
+  punctuation: Grade!
+  finalResult: Grade!
+}
+
+input UpdateWritingSkillInput {
+  skillId: ID
+  coherence: Grade
+  grammar: Grade
+  vocabulary: Grade
+  punctuation: Grade
+  finalResult: Grade
+}

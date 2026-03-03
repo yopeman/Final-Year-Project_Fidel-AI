@@ -1,0 +1,41 @@
+type ListeningSkill {
+  id: ID!
+  skillId: ID!
+  comprehension: Grade!
+  retention: Grade!
+  interpretation: Grade!
+  finalResult: Grade!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  skill: Skill!
+}
+
+extend type Query {
+  listeningSkills(skillId: ID!): [ListeningSkill!]!
+  listeningSkill(id: ID!): ListeningSkill
+}
+
+extend type Mutation {
+  createListeningSkill(input: CreateListeningSkillInput!): ListeningSkill!
+  updateListeningSkill(id: ID!, input: UpdateListeningSkillInput!): ListeningSkill!
+  deleteListeningSkill(id: ID!): Boolean!
+}
+
+input CreateListeningSkillInput {
+  skillId: ID!
+  comprehension: Grade!
+  retention: Grade!
+  interpretation: Grade!
+  finalResult: Grade!
+}
+
+input UpdateListeningSkillInput {
+  skillId: ID
+  comprehension: Grade
+  retention: Grade
+  interpretation: Grade
+  finalResult: Grade
+}

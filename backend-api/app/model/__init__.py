@@ -25,7 +25,12 @@ from .module_lessons import ModuleLessons
 from .modules import Modules
 from .notification import Notification
 from .payment import Payment
+from .reading_skill import ReadingSkill
 from .schedule import Schedule
+from .skill import Skill
+from .speaking_skill import SpeakingSkill
 from .student_profile import StudentProfile
 from .user import User
 from .verification_code import VerificationCode
+from .writing_skill import WritingSkill
+from .listening_skill import ListeningSkill
