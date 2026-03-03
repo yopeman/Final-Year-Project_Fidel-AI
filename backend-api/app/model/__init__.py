@@ -25,11 +25,7 @@ from .module_lessons import ModuleLessons
 from .modules import Modules
 from .notification import Notification
 from .payment import Payment
-from .quiz import Quiz
-from .quiz_results import QuizResults
 from .schedule import Schedule
-from .skill_result import SkillResult
-from .skill_tests import SkillTests
 from .student_profile import StudentProfile
 from .user import User
 from .verification_code import VerificationCode
