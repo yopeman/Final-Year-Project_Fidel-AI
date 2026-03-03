@@ -10,7 +10,6 @@ type BatchCourse {
   batch: Batch!
   course: Course!
   schedules: [CourseSchedule!]!
-  quizzes: [Quiz!]!
   instructors: [BatchInstructor!]!
 }
 

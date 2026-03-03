@@ -8,7 +8,6 @@ from ..model.batch_course import BatchCourse
 from ..model.course import Course
 from ..model.batch import Batch
 from ..model.course_schedule import CourseSchedule
-from ..model.quiz import Quiz
 from ..model.batch_instructor import BatchInstructor
 
 
@@ -167,15 +166,10 @@ def resolve_delete_batch_course(_, info, id):
     if not batch_course_obj:
         raise Exception("BatchCourse not found")
 
-    # Check if batch course has associated schedules, quizzes, or instructors
+    # Check if batch course has associated schedules or instructors
     associated_schedules = db.query(CourseSchedule).filter(
         CourseSchedule.batch_course_id == id,
         CourseSchedule.is_deleted == False
-    ).count()
-
-    associated_quizzes = db.query(Quiz).filter(
-        Quiz.batch_course_id == id,
-        Quiz.is_deleted == False
     ).count()
 
     associated_instructors = db.query(BatchInstructor).filter(
@@ -183,8 +177,8 @@ def resolve_delete_batch_course(_, info, id):
         BatchInstructor.is_deleted == False
     ).count()
 
-    if associated_schedules > 0 or associated_quizzes > 0 or associated_instructors > 0:
-        raise Exception("Cannot delete batch course with associated schedules, quizzes, or instructors. Please remove them first.")
+    if associated_schedules > 0 or associated_instructors > 0:
+        raise Exception("Cannot delete batch course with associated schedules or instructors. Please remove them first.")
 
     # Mark as deleted
     batch_course_obj.is_deleted = True
@@ -259,16 +253,6 @@ def resolve_schedules(batch_course_obj, info):
         CourseSchedule.is_deleted == False
     ).all()
     return schedules
-
-
-@batch_course.field("quizzes")
-def resolve_quizzes(batch_course_obj, info):
-    db: Session = info.context["db"]
-    quizzes = db.query(Quiz).filter(
-        Quiz.batch_course_id == batch_course_obj.id,
-        Quiz.is_deleted == False
-    ).all()
-    return quizzes
 
 
 @batch_course.field("instructors")

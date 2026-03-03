@@ -1,4 +1,3 @@
-
 type Notification {
   id: ID!
   userId: ID!
@@ -88,7 +87,6 @@ type BatchCourse {
   batch: Batch!
   course: Course!
   schedules: [CourseSchedule!]!
-  quizzes: [Quiz!]!
   instructors: [BatchInstructor!]!
 }
 
@@ -135,24 +133,8 @@ type BatchEnrollment {
   # Relationships
   profile: StudentProfile!
   batch: Batch!
-  quizResults: [QuizResults!]!
-  skillResults: [SkillResult!]!
   payments: [Payment!]!
   certificates: [Certificate!]!
-}
-
-type SkillResult {
-  id: ID!
-  enrollmentId: ID!
-  skillId: ID!
-  score: Int!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  isDeleted: Boolean!
-  deletedAt: DateTime
-  # Relationships
-  enrollment: BatchEnrollment!
-  skillTest: SkillTests!
 }
 
 type LessonVocabularies {
@@ -204,19 +186,6 @@ type ConversationInteractions {
   conversation: FreeConversation!
 }
 
-type SkillTests {
-  id: ID!
-  evaluatorId: ID!
-  type: SkillTestType!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  isDeleted: Boolean!
-  deletedAt: DateTime
-  # Relationships
-  evaluator: User!
-  results: [SkillResult!]!
-}
-
 type ModuleLessons {
   id: ID!
   moduleId: ID!
@@ -235,20 +204,6 @@ type ModuleLessons {
   onlineArticles: [LessonOnlineArticles!]!
   youtubeVideos: [LessonYouTubeVideos!]!
   interactions: [LessonInteractions!]!
-}
-
-type QuizResults {
-  id: ID!
-  enrollmentId: ID!
-  quizId: ID!
-  score: Int!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  isDeleted: Boolean!
-  deletedAt: DateTime
-  # Relationships
-  enrollment: BatchEnrollment!
-  quiz: Quiz!
 }
 
 type Modules {
@@ -471,21 +426,6 @@ type Schedule {
   deletedAt: DateTime
   # Relationships
   courseSchedules: [CourseSchedule!]!
-}
-
-type Quiz {
-  id: ID!
-  batchCourseId: ID!
-  question: String!
-  answer: String!
-  type: QuizType!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  isDeleted: Boolean!
-  deletedAt: DateTime
-  # Relationships
-  batchCourse: BatchCourse!
-  results: [QuizResults!]!
 }
 
 type FreeConversation {
