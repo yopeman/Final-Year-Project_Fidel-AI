@@ -10,3 +10,13 @@ type Certificate {
   # Relationships
   enrollment: BatchEnrollment!
 }
+
+# extend type Query {
+#   certificates
+#   certificate
+# }
+
+# extend type Mutation {
+#   generateCertificate
+#   deleteCertificate
+# }
