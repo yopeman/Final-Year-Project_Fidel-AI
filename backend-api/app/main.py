@@ -6,6 +6,7 @@ from ariadne.asgi.handlers import GraphQLTransportWSHandler, GraphQLWSHandler
 from broadcaster import Broadcast
 from fastapi import FastAPI, Request, Depends, WebSocket, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from typing import List
@@ -295,3 +296,22 @@ async def upload_course_material(materialId: str, files: List[UploadFile], reque
 async def upload_community_attachments(communityId: str, files: List[UploadFile], request: Request):
     context = {"db": request.state.db, "pubsub": broadcast}
     return await upload_ca(context, communityId, files)
+
+@app.get('/certificates/{certificateId}', response_class=HTMLResponse)
+def get_certificate(certificateId: str, request: Request):
+    from fastapi import HTTPException
+    from .model.certificate import Certificate
+    from sqlalchemy.orm import Session
+    
+    db: Session = request.state.db
+    
+    # Get certificate
+    certificate_obj = db.query(Certificate).filter(
+        Certificate.id == certificateId,
+        Certificate.is_deleted == False
+    ).first()
+    
+    if not certificate_obj:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    
+    return certificate_obj.certificate_html
