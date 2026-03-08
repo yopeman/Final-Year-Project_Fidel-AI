@@ -53,14 +53,12 @@ input CreateSkillInput {
 }
 
 input CreateReadingSkillInput {
-  skillId: ID!
   comprehension: Grade!
   speed: Grade!
   vocabulary: Grade!
 }
 
 input CreateWritingSkillInput {
-  skillId: ID!
   coherence: Grade!
   grammar: Grade!
   vocabulary: Grade!
@@ -68,7 +66,6 @@ input CreateWritingSkillInput {
 }
 
 input CreateSpeakingSkillInput {
-  skillId: ID!
   pronunciation: Grade!
   fluency: Grade!
   grammar: Grade!
@@ -77,7 +74,6 @@ input CreateSpeakingSkillInput {
 }
 
 input CreateListeningSkillInput {
-  skillId: ID!
   comprehension: Grade!
   retention: Grade!
   interpretation: Grade!

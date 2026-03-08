@@ -63,6 +63,7 @@ from .resolver.translator import mutation as t_mutation
 from .resolver.translator import query as t_query
 from .resolver.user import mutation, query, user
 from .resolver.verification_code import verification_code as vc_type
+from .resolver.skill import mutation as sk_mutation, query as sk_query, skill
 from .schema import type_defs
 from .util.auth import create_default_admin, get_current_user
 
@@ -221,6 +222,9 @@ bindables = [
     li_query,
     li_mutation,
     li_type,
+    sk_query,
+    sk_mutation,
+    skill,
     datetime_scalar,
     date_scalar,
     time_scalar,
