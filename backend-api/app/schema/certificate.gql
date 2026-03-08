@@ -11,12 +11,16 @@ type Certificate {
   skill: Skill!
 }
 
-# extend type Query {
-#   certificates
-#   certificate
-# }
+extend type Query {
+  certificates(enrollmentId: ID!): [Certificate!]!
+  certificate(id: ID!): Certificate
+}
 
-# extend type Mutation {
-#   generateCertificate
-#   deleteCertificate
-# }
+extend type Mutation {
+  generateCertificate(input: GenerateCertificateInput!): Certificate!
+  deleteCertificate(id: ID!): Boolean!
+}
+
+input GenerateCertificateInput {
+  skillId: ID!
+}
