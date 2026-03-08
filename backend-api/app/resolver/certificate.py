@@ -165,20 +165,58 @@ def resolve_generate_certificate(_, info, input):
     
     template = Template(template_content)
     
+    # Prepare skill data for template
+    speaking_skill_data = {
+        "pronunciation": {"value": skill.speaking_skill.pronunciation.value if skill.speaking_skill else "N/A"},
+        "fluency": {"value": skill.speaking_skill.fluency.value if skill.speaking_skill else "N/A"},
+        "grammar": {"value": skill.speaking_skill.grammar.value if skill.speaking_skill else "N/A"},
+        "vocabulary": {"value": skill.speaking_skill.vocabulary.value if skill.speaking_skill else "N/A"},
+        "coherence": {"value": skill.speaking_skill.coherence.value if skill.speaking_skill else "N/A"},
+        "final_result": {"value": skill.speaking_skill.final_result.value if skill.speaking_skill else "N/A"}
+    } if skill.speaking_skill else None
+    
+    reading_skill_data = {
+        "comprehension": {"value": skill.reading_skill.comprehension.value if skill.reading_skill else "N/A"},
+        "speed": {"value": skill.reading_skill.speed.value if skill.reading_skill else "N/A"},
+        "vocabulary": {"value": skill.reading_skill.vocabulary.value if skill.reading_skill else "N/A"},
+        "final_result": {"value": skill.reading_skill.final_result.value if skill.reading_skill else "N/A"}
+    } if skill.reading_skill else None
+    
+    writing_skill_data = {
+        "coherence": {"value": skill.writing_skill.coherence.value if skill.writing_skill else "N/A"},
+        "grammar": {"value": skill.writing_skill.grammar.value if skill.writing_skill else "N/A"},
+        "vocabulary": {"value": skill.writing_skill.vocabulary.value if skill.writing_skill else "N/A"},
+        "punctuation": {"value": skill.writing_skill.punctuation.value if skill.writing_skill else "N/A"},
+        "final_result": {"value": skill.writing_skill.final_result.value if skill.writing_skill else "N/A"}
+    } if skill.writing_skill else None
+    
+    listening_skill_data = {
+        "comprehension": {"value": skill.listening_skill.comprehension.value if skill.listening_skill else "N/A"},
+        "retention": {"value": skill.listening_skill.retention.value if skill.listening_skill else "N/A"},
+        "interpretation": {"value": skill.listening_skill.interpretation.value if skill.listening_skill else "N/A"},
+        "final_result": {"value": skill.listening_skill.final_result.value if skill.listening_skill else "N/A"}
+    } if skill.listening_skill else None
+    
+    skill_data = {
+        "final_result": {"value": skill.final_result.value}
+    }
+    
+    certificate_id = uuid.uuid4()
     certificate_html = template.render(
         student_name=student_name,
-        speaking_grade=speaking_grade,
-        reading_grade=reading_grade,
-        writing_grade=writing_grade,
-        listening_grade=listening_grade,
-        final_grade=final_grade,
+        speaking_skill=speaking_skill_data,
+        reading_skill=reading_skill_data,
+        writing_skill=writing_skill_data,
+        listening_skill=listening_skill_data,
+        skill=skill_data,
         issue_date=datetime.utcnow().strftime("%B %d, %Y"),
         formatted_date=datetime.utcnow().strftime("%Y-%m-%d"),
-        certificate_id=str(uuid.uuid4()).upper()[:8]
+        certificate_id=str(certificate_id)
     )
     
     # Create certificate
     certificate_obj = Certificate(
+        id=certificate_id,
         skill_id=skill_id,
         result=final_grade,
         certificate_html=certificate_html
