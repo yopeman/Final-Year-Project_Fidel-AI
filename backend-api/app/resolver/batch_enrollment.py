@@ -347,6 +347,19 @@ def resolve_batch(enrollment, info):
     return batch
 
 
+@batch_enrollment.field("skill")
+def resolve_skill(enrollment, info):
+    db: Session = info.context["db"]
+    
+    # Get the skill for this enrollment
+    skill = db.query(Skill).filter(
+        Skill.enrollment_id == enrollment.id,
+        Skill.is_deleted == False
+    ).first()
+
+    return skill
+
+
 @batch_enrollment.field("payments")
 def resolve_payments(enrollment, info):
     db: Session = info.context["db"]
@@ -355,21 +368,3 @@ def resolve_payments(enrollment, info):
         Payment.is_deleted == False
     ).all()
     return payments
-
-
-@batch_enrollment.field("certificates")
-def resolve_certificates(enrollment, info):
-    db: Session = info.context["db"]
-    
-    # Get all skills for this enrollment, then get their certificates
-    certificates = []
-    skills = db.query(Skill).filter(
-        Skill.enrollment_id == enrollment.id,
-        Skill.is_deleted == False
-    ).all()
-    
-    for skill in skills:
-        if skill.certificate and not skill.certificate.is_deleted:
-            certificates.append(skill.certificate)
-    
-    return certificates

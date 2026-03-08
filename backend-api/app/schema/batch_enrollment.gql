@@ -19,8 +19,8 @@ type BatchEnrollment {
   # Relationships
   profile: StudentProfile!
   batch: Batch!
+  skill: Skill!
   payments: [Payment!]!
-  certificates: [Certificate!]!
 }
 
 input UpdateEnrollmentInput {

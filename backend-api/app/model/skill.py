@@ -29,7 +29,7 @@ class Skill(BaseModel):
     final_result = Column(Enum(Grade), nullable=False)  # Using String to store grade
 
     # Relationships
-    enrollment = relationship("BatchEnrollment", back_populates="skills")
+    enrollment = relationship("BatchEnrollment", back_populates="skill")
     instructor = relationship("User")
     certificate = relationship("Certificate", uselist=False, back_populates="skill")
     speaking_skill = relationship("SpeakingSkill", uselist=False, back_populates="skill")

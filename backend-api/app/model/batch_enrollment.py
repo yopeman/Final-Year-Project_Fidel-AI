@@ -26,5 +26,5 @@ class BatchEnrollment(BaseModel):
     # Relationships
     profile = relationship("StudentProfile", back_populates="batch_enrollments")
     batch = relationship("Batch", back_populates="enrollments")
-    skills = relationship("Skill", back_populates="enrollment")
+    skill = relationship("Skill", back_populates="enrollment")
     payments = relationship("Payment", back_populates="enrollment")
