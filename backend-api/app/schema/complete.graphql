@@ -945,7 +945,7 @@ input UpdateMaterialInput {
 
 type Certificate {
   id: ID!
-  enrollmentId: ID!
+  skillId: ID!
   result: String!
   certificateHtml: String!
   createdAt: DateTime!
@@ -953,7 +953,7 @@ type Certificate {
   isDeleted: Boolean!
   deletedAt: DateTime
   # Relationships
-  enrollment: BatchEnrollment!
+  skill: Skill!
 }
 
 # extend type Query {

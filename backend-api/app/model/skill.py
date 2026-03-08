@@ -31,6 +31,7 @@ class Skill(BaseModel):
     # Relationships
     enrollment = relationship("BatchEnrollment", back_populates="skills")
     instructor = relationship("User")
+    certificate = relationship("Certificate", uselist=False, back_populates="skill")
     speaking_skill = relationship("SpeakingSkill", uselist=False, back_populates="skill")
     reading_skill = relationship("ReadingSkill", uselist=False, back_populates="skill")
     writing_skill = relationship("WritingSkill", uselist=False, back_populates="skill")

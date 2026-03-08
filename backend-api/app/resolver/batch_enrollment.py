@@ -10,6 +10,7 @@ from ..model.student_profile import StudentProfile
 from ..model.batch import Batch
 from ..model.payment import Payment
 from ..model.certificate import Certificate
+from ..model.skill import Skill
 from ..util.email_service import send_notification
 
 
@@ -359,8 +360,16 @@ def resolve_payments(enrollment, info):
 @batch_enrollment.field("certificates")
 def resolve_certificates(enrollment, info):
     db: Session = info.context["db"]
-    certificates = db.query(Certificate).filter(
-        Certificate.enrollment_id == enrollment.id,
-        Certificate.is_deleted == False
+    
+    # Get all skills for this enrollment, then get their certificates
+    certificates = []
+    skills = db.query(Skill).filter(
+        Skill.enrollment_id == enrollment.id,
+        Skill.is_deleted == False
     ).all()
+    
+    for skill in skills:
+        if skill.certificate and not skill.certificate.is_deleted:
+            certificates.append(skill.certificate)
+    
     return certificates

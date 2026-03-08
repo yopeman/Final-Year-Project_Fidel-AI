@@ -28,4 +28,3 @@ class BatchEnrollment(BaseModel):
     batch = relationship("Batch", back_populates="enrollments")
     skills = relationship("Skill", back_populates="enrollment")
     payments = relationship("Payment", back_populates="enrollment")
-    certificates = relationship("Certificate", back_populates="enrollment")
