@@ -34,6 +34,7 @@ type Skill {
 extend type Query {
   skills(enrollmentId: ID!): [Skill!]!
   skill(id: ID!): Skill
+  tutorAssignedStudents(batchId: ID!): [User!]!
 }
 
 extend type Mutation {
@@ -45,11 +46,79 @@ extend type Mutation {
 input CreateSkillInput {
   enrollmentId: ID!
   instructorId: ID!
-  finalResult: Grade!
+  readingSkill: CreateReadingSkillInput!
+  writingSkill: CreateWritingSkillInput!
+  speakingSkill: CreateSpeakingSkillInput!
+  listeningSkill: CreateListeningSkillInput!
+}
+
+input CreateReadingSkillInput {
+  skillId: ID!
+  comprehension: Grade!
+  speed: Grade!
+  vocabulary: Grade!
+}
+
+input CreateWritingSkillInput {
+  skillId: ID!
+  coherence: Grade!
+  grammar: Grade!
+  vocabulary: Grade!
+  punctuation: Grade!
+}
+
+input CreateSpeakingSkillInput {
+  skillId: ID!
+  pronunciation: Grade!
+  fluency: Grade!
+  grammar: Grade!
+  vocabulary: Grade!
+  coherence: Grade!
+}
+
+input CreateListeningSkillInput {
+  skillId: ID!
+  comprehension: Grade!
+  retention: Grade!
+  interpretation: Grade!
 }
 
 input UpdateSkillInput {
   enrollmentId: ID
   instructorId: ID
-  finalResult: Grade
+  readingSkill: UpdateReadingSkillInput
+  writingSkill: UpdateWritingSkillInput
+  speakingSkill: UpdateSpeakingSkillInput
+  listeningSkill: UpdateListeningSkillInput
+}
+
+input UpdateReadingSkillInput {
+  skillId: ID
+  comprehension: Grade
+  speed: Grade
+  vocabulary: Grade
+}
+
+input UpdateWritingSkillInput {
+  skillId: ID
+  coherence: Grade
+  grammar: Grade
+  vocabulary: Grade
+  punctuation: Grade
+}
+
+input UpdateSpeakingSkillInput {
+  skillId: ID
+  pronunciation: Grade
+  fluency: Grade
+  grammar: Grade
+  vocabulary: Grade
+  coherence: Grade
+}
+
+input UpdateListeningSkillInput {
+  skillId: ID
+  comprehension: Grade
+  retention: Grade
+  interpretation: Grade
 }

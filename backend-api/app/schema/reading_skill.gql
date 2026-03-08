@@ -23,19 +23,3 @@ extend type Mutation {
   updateReadingSkill(id: ID!, input: UpdateReadingSkillInput!): ReadingSkill!
   deleteReadingSkill(id: ID!): Boolean!
 }
-
-input CreateReadingSkillInput {
-  skillId: ID!
-  comprehension: Grade!
-  speed: Grade!
-  vocabulary: Grade!
-  finalResult: Grade!
-}
-
-input UpdateReadingSkillInput {
-  skillId: ID
-  comprehension: Grade
-  speed: Grade
-  vocabulary: Grade
-  finalResult: Grade
-}

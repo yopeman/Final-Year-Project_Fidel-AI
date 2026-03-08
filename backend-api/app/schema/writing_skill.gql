@@ -24,21 +24,3 @@ extend type Mutation {
   updateWritingSkill(id: ID!, input: UpdateWritingSkillInput!): WritingSkill!
   deleteWritingSkill(id: ID!): Boolean!
 }
-
-input CreateWritingSkillInput {
-  skillId: ID!
-  coherence: Grade!
-  grammar: Grade!
-  vocabulary: Grade!
-  punctuation: Grade!
-  finalResult: Grade!
-}
-
-input UpdateWritingSkillInput {
-  skillId: ID
-  coherence: Grade
-  grammar: Grade
-  vocabulary: Grade
-  punctuation: Grade
-  finalResult: Grade
-}

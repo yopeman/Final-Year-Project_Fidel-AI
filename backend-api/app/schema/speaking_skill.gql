@@ -25,23 +25,3 @@ extend type Mutation {
   updateSpeakingSkill(id: ID!, input: UpdateSpeakingSkillInput!): SpeakingSkill!
   deleteSpeakingSkill(id: ID!): Boolean!
 }
-
-input CreateSpeakingSkillInput {
-  skillId: ID!
-  pronunciation: Grade!
-  fluency: Grade!
-  grammar: Grade!
-  vocabulary: Grade!
-  coherence: Grade!
-  finalResult: Grade!
-}
-
-input UpdateSpeakingSkillInput {
-  skillId: ID
-  pronunciation: Grade
-  fluency: Grade
-  grammar: Grade
-  vocabulary: Grade
-  coherence: Grade
-  finalResult: Grade
-}
