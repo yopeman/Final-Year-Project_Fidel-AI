@@ -128,26 +128,17 @@ def resolve_get_course_meeting_link(_, info, courseScheduleId: str):
     current_datetime = datetime.combine(now.date(), current_time)
     start_datetime = datetime.combine(now.date(), start_time)
     time_diff_minutes = int((current_datetime - start_datetime).total_seconds() / 60)
-    
+  
     # Determine attendance status based on time
-    status = None
-    meeting_link = None
-    attendance_record = None
+    status = AttendanceStatus.absent
+    meeting_link = meeting_link = f"https://meet.jit.si/{batch.name.replace(' ', '-').lower()}-{batch.id}"
+    attendance_record = None        
     
-    # if -6 > time_diff_minutes:
-    #     raise Exception('Now too early for class')
-
-    # Check if within class time (allowing 5 minutes before and 10 minutes after)
-    if -5 <= time_diff_minutes <= 10:
+    if -60 <= time_diff_minutes <= 15:
         status = AttendanceStatus.present
-        # Generate Jitsi Meet link using batch name/ID
-        meeting_link = f"https://meet.jit.si/{batch.name.replace(' ', '-').lower()}-{batch.id}"
-    elif 11 <= time_diff_minutes <= 20:
+    elif 16 <= time_diff_minutes <= 60:
         status = AttendanceStatus.late
-        # Generate Jitsi Meet link for late students
-        meeting_link = f"https://meet.jit.si/{batch.name.replace(' ', '-').lower()}-{batch.id}"
-    # For absent students (time_diff_minutes > 20 or < -5), no meeting link is generated
-    elif 21 <= time_diff_minutes <= 60:
+    elif 61 <= time_diff_minutes:
         status = AttendanceStatus.absent
     
     # Create or update attendance record
@@ -283,19 +274,6 @@ def resolve_get_batch_meeting_link(_, info, batchId: str):
             active_schedule = schedule
             active_course_schedule = cs
 
-            print('\n'*10,
-                  {
-                      'staring': start_datetime - timedelta(minutes=5),
-                      'current': current_datetime,
-                      'ending': end_datetime
-                  }
-            ,'\n'*10)
-            
-            # if (start_datetime - timedelta(minutes=5)) <= current_datetime <= (end_datetime + timedelta(minutes=10)):
-            #     active_schedule = schedule
-            #     active_course_schedule = cs
-            #     break
-    
     if not active_schedule:
         raise Exception("No active class found for today")
     
@@ -304,24 +282,15 @@ def resolve_get_batch_meeting_link(_, info, batchId: str):
     time_diff_minutes = int((now - start_datetime).total_seconds() / 60)
     
     # Determine attendance status based on time
-    status = None
-    meeting_link = None
-    attendance_record = None
+    status = AttendanceStatus.absent
+    meeting_link = meeting_link = f"https://meet.jit.si/{batch.name.replace(' ', '-').lower()}-{batch.id}"
+    attendance_record = None    
     
-    # if -6 > time_diff_minutes:
-    #     raise Exception('Now too early for class')
-
-    # Check if within class time (allowing 5 minutes before and 10 minutes after)
-    if -5 <= time_diff_minutes <= 10:
+    if -60 <= time_diff_minutes <= 15:
         status = AttendanceStatus.present
-        # Generate Jitsi Meet link using batch name/ID
-        meeting_link = f"https://meet.jit.si/{batch.name.replace(' ', '-').lower()}-{batch.id}"
-    elif 11 <= time_diff_minutes <= 20:
+    elif 16 <= time_diff_minutes <= 60:
         status = AttendanceStatus.late
-        # Generate Jitsi Meet link for late students
-        meeting_link = f"https://meet.jit.si/{batch.name.replace(' ', '-').lower()}-{batch.id}"
-    # For absent students (time_diff_minutes > 20 or < -5), no meeting link is generated
-    elif 21 <= time_diff_minutes <= 60:
+    elif 61 <= time_diff_minutes:
         status = AttendanceStatus.absent
     
     # Create or update attendance record

@@ -24,7 +24,7 @@ class Grade(PyEnum):
 class Skill(BaseModel):
     __tablename__ = "skills"
 
-    enrollment_id = Column(String(36), ForeignKey("batch_enrollments.id"), nullable=False)
+    enrollment_id = Column(String(36), ForeignKey("batch_enrollments.id"), nullable=False, unique=True)
     instructor_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     final_result = Column(Enum(Grade), nullable=False)  # Using String to store grade
 
