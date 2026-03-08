@@ -355,7 +355,7 @@ type Skill {
 extend type Query {
   skills(enrollmentId: ID!): [Skill!]!
   skill(id: ID!): Skill
-  tutorAssignedStudents(batchId: ID!): [User!]!
+  tutorAssignedStudents(batchId: ID!): [BatchEnrollment!]!
   getExamLink(enrollmentId: ID!): String!
 }
 

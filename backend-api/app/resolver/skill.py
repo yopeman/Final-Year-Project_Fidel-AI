@@ -182,14 +182,14 @@ def resolve_tutor_assigned_students(_, info, batchId):
     w = math.ceil(len(all_enrollments_ids) / len(all_instructors_ids))
 
     selected_enrollments = all_enrollments_of_batch[n*w : (n+1)*w]
-    selected_enrollments_ids = [e.id for e in selected_enrollments]
+    # selected_enrollments_ids = [e.id for e in selected_enrollments]
 
-    selected_students = db.query(User).filter(
-        User.id.in_(selected_enrollments_ids),
-        User.is_deleted == False
-    ).all()
+    # selected_students = db.query(User).filter(
+    #     User.id.in_(selected_enrollments_ids),
+    #     User.is_deleted == False
+    # ).all()
     
-    return selected_students
+    return selected_enrollments
 
 
 @query.field("getExamLink")
