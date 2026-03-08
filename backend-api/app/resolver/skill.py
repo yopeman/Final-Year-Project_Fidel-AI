@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from ariadne import MutationType, ObjectType, QueryType
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from ..model.batch_enrollment import BatchEnrollment
 from ..model.listening_skill import ListeningSkill
@@ -11,6 +11,7 @@ from ..model.speaking_skill import SpeakingSkill
 from ..model.skill import Grade, Skill
 from ..model.user import User, UserRole
 from ..model.writing_skill import WritingSkill
+from ..util.email_service import send_notification
 
 query = QueryType()
 mutation = MutationType()
@@ -189,6 +190,35 @@ def resolve_tutor_assigned_students(_, info, batchId):
     ).all()
     
     return selected_students
+
+
+@query.field("getExamLink")
+def resolve_get_exam_link(_, info, enrollmentId):
+    current_user: User = info.context.get("current_user")
+    if not current_user:
+        raise Exception("Not authenticated")
+
+    db: Session = info.context["db"]
+    
+    # Verify enrollment exists
+    enrollment = db.query(BatchEnrollment).filter(
+        BatchEnrollment.id == enrollmentId,
+        BatchEnrollment.is_deleted == False
+    ).options(
+        joinedload(BatchEnrollment.profile)
+    ).first()
+    
+    if not enrollment:
+        raise Exception("Enrollment not found")
+    
+    # Check if user can access this exam link
+    if current_user.role not in [UserRole.admin, UserRole.tutor]:
+        # Students can only view their own exam link
+        if current_user.id != enrollment.profile.user_id:
+            raise Exception("Unauthorized: You can only view your own exam link")
+    
+    # Return the exam link
+    return f"https://meet.jit.si/{enrollmentId}"
 
 
 @mutation.field("createSkill")
@@ -571,6 +601,59 @@ def resolve_delete_skill(_, info, id):
     
     db.commit()
     
+    return True
+
+
+@mutation.field("sendExamLink")
+def resolve_send_exam_link(_, info, input):
+    current_user: User = info.context.get("current_user")
+    if not current_user:
+        raise Exception("Not authenticated")
+
+    db: Session = info.context["db"]
+    
+    # Only tutors and admins can send exam links
+    if current_user.role not in [UserRole.admin, UserRole.tutor]:
+        raise Exception("Unauthorized: Only admins and tutors can send exam links")
+    
+    enrollment_id = input["enrollmentId"]
+    exam_date = input.get("examDate")
+    
+    # Verify enrollment exists
+    enrollment = db.query(BatchEnrollment).filter(
+        BatchEnrollment.id == enrollment_id,
+        BatchEnrollment.is_deleted == False
+    ).first()
+    
+    if not enrollment:
+        raise Exception("Enrollment not found")
+    
+    # Get the student user
+    from ..model.student_profile import StudentProfile
+    student_user = db.query(StudentProfile).filter(
+        StudentProfile.id == enrollment.profile_id,
+        StudentProfile.is_deleted == False
+    ).options(
+        joinedload(StudentProfile.user)
+    ).first()
+    
+    # Create the exam link
+    exam_link = f"https://meet.jit.si/{enrollment_id}"
+    
+    # Format exam date for notification
+    exam_date_str = ""
+    if exam_date:
+        exam_date_str = f" on {exam_date.strftime('%Y-%m-%d at %H:%M')}"
+    
+    # Send notification to student and tutor
+    student_title = "Exam Link Available"
+    student_content = f"Your exam link is ready{exam_date_str}. Please use the following link to join your exam: {exam_link}"
+    send_notification(student_user.user.id, student_title, student_content, db)
+    
+    tutor_title = "Exam Link Sent to Student"
+    tutor_content = f"Exam link has been sent to student {student_user.user.first_name} {student_user.user.last_name}{exam_date_str}. Exam link: {exam_link}"
+    send_notification(current_user.id, tutor_title, tutor_content, db)
+
     return True
 
 

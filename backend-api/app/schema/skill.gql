@@ -35,12 +35,19 @@ extend type Query {
   skills(enrollmentId: ID!): [Skill!]!
   skill(id: ID!): Skill
   tutorAssignedStudents(batchId: ID!): [User!]!
+  getExamLink(enrollmentId: ID!): String!
 }
 
 extend type Mutation {
   createSkill(input: CreateSkillInput!): Skill!
   updateSkill(id: ID!, input: UpdateSkillInput!): Skill!
   deleteSkill(id: ID!): Boolean!
+  sendExamLink(input: SendExamLinkInput!): Boolean
+}
+
+input SendExamLinkInput {
+  enrollmentId: ID!
+  examDate: DateTime!
 }
 
 input CreateSkillInput {
