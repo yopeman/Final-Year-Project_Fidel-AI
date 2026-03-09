@@ -489,7 +489,7 @@ const SkillTestModal = ({
 
                 {/* Tab Content */}
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  {activeTab === 'overview' && (
+                  {!selectedStudent.skill?.certificate && activeTab === 'overview' && (
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -571,49 +571,10 @@ const SkillTestModal = ({
                           </div>
                         </div>
                       </div>
-
-                      {/* Certificate Section */}
-                      {selectedStudent.skill?.certificate && (
-                        <div className="border-t border-gray-200 pt-6">
-                          <h5 className="font-medium text-gray-900 mb-4 flex items-center space-x-2">
-                            <Download className="w-5 h-5 text-green-600" />
-                            <span>Certificate</span>
-                          </h5>
-                          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
-                            <div className="flex items-center justify-between mb-4">
-                              <div>
-                                <h6 className="font-semibold text-gray-900">Certificate of Achievement</h6>
-                                <p className="text-sm text-gray-600">Final Result: {selectedStudent.skill.certificate.result}</p>
-                              </div>
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => handleViewCertificate(selectedStudent.skill.certificate.id)}
-                                  className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  <span>View Certificate</span>
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteCertificate(selectedStudent.skill.certificate.id)}
-                                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                  <span>Delete</span>
-                                </button>
-                              </div>
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Certificate ID: {selectedStudent.skill.certificate.id}
-                              <br />
-                              Generated: {new Date(selectedStudent.skill.certificate.createdAt).toLocaleDateString()}
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
 
-                  {activeTab === 'reading' && (
+                  {!selectedStudent.skill?.certificate && activeTab === 'reading' && (
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <GradeSelector
@@ -652,7 +613,7 @@ const SkillTestModal = ({
                     </div>
                   )}
 
-                  {activeTab === 'writing' && (
+                  {!selectedStudent.skill?.certificate && activeTab === 'writing' && (
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <GradeSelector
@@ -696,7 +657,7 @@ const SkillTestModal = ({
                     </div>
                   )}
 
-                  {activeTab === 'speaking' && (
+                  {!selectedStudent.skill?.certificate && activeTab === 'speaking' && (
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <GradeSelector
@@ -745,7 +706,7 @@ const SkillTestModal = ({
                     </div>
                   )}
 
-                  {activeTab === 'listening' && (
+                  {!selectedStudent.skill?.certificate && activeTab === 'listening' && (
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <GradeSelector
@@ -780,6 +741,45 @@ const SkillTestModal = ({
                           <Save className="w-4 h-4" />
                           <span>{isSubmitting ? 'Saving...' : 'Save Listening Assessment'}</span>
                         </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Certificate Section */}
+                  {selectedStudent.skill?.certificate && (
+                    <div className="border-t border-gray-200 pt-6">
+                      <h5 className="font-medium text-gray-900 mb-4 flex items-center space-x-2">
+                        <Download className="w-5 h-5 text-green-600" />
+                        <span>Certificate</span>
+                      </h5>
+                      <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h6 className="font-semibold text-gray-900">Certificate of Achievement</h6>
+                            <p className="text-sm text-gray-600">Final Result: {selectedStudent.skill.certificate.result}</p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleViewCertificate(selectedStudent.skill.certificate.id)}
+                              className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                            >
+                              <Eye className="w-4 h-4" />
+                              <span>View Certificate</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCertificate(selectedStudent.skill.certificate.id)}
+                              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Certificate ID: {selectedStudent.skill.certificate.id}
+                          <br />
+                          Generated: {new Date(selectedStudent.skill.certificate.createdAt).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
                   )}
