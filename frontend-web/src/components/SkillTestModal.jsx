@@ -209,7 +209,6 @@ const SkillTestModal = ({
     try {
       const input = {
         enrollmentId: selectedStudent.id,
-        instructorId: selectedStudent.skill?.instructorId || 'current-user-id', // Should be replaced with actual user ID
         readingSkill: skillData.readingSkill,
         writingSkill: skillData.writingSkill,
         speakingSkill: skillData.speakingSkill,
