@@ -12,6 +12,7 @@ from ..model.listening_skill import ListeningSkill
 from ..model.reading_skill import ReadingSkill
 from ..model.speaking_skill import SpeakingSkill
 from ..model.skill import Skill
+from ..model.student_profile import StudentProfile
 from ..model.user import User, UserRole
 from ..model.writing_skill import WritingSkill
 from ..util.email_service import send_notification
@@ -124,7 +125,7 @@ def resolve_generate_certificate(_, info, input):
         Skill.id == skill_id,
         Skill.is_deleted == False
     ).options(
-        joinedload(Skill.enrollment).joinedload(BatchEnrollment.profile).joinedload(User.profile),
+        joinedload(Skill.enrollment).joinedload(BatchEnrollment.profile).joinedload(StudentProfile.user),
         joinedload(Skill.speaking_skill),
         joinedload(Skill.reading_skill),
         joinedload(Skill.writing_skill),

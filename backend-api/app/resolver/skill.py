@@ -355,8 +355,6 @@ def resolve_create_skill(_, info, input):
     
     db.commit()
     db.refresh(skill)
-
-    print('=\n'*10, skill.__dict__, '=\n'*10)
     
     return skill
 
