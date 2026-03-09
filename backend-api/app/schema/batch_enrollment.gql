@@ -19,7 +19,7 @@ type BatchEnrollment {
   # Relationships
   profile: StudentProfile!
   batch: Batch!
-  skill: Skill!
+  skill: Skill
   payments: [Payment!]!
 }
 

@@ -9,6 +9,7 @@ from ..model.listening_skill import ListeningSkill
 from ..model.reading_skill import ReadingSkill
 from ..model.speaking_skill import SpeakingSkill
 from ..model.skill import Grade, Skill
+from ..model.certificate import Certificate
 from ..model.user import User, UserRole
 from ..model.writing_skill import WritingSkill
 from ..util.email_service import send_notification
@@ -150,11 +151,11 @@ def resolve_tutor_assigned_students(_, info, batchId):
     if batch_course:
         batch_instructor = db.query(BatchInstructor).filter(
             BatchInstructor.user_id == current_user.id,
-            BatchInstructor.batch_course_id.in_([c.course_id for c in batch_course]),
+            BatchInstructor.batch_course_id.in_([c.id for c in batch_course]),
             BatchInstructor.is_deleted == False
         ).first()
     
-    if not batch_instructor:
+    if not batch_instructor and current_user.role == UserRole.tutor:
         raise Exception("Instructor is not assigned to this batch")
     
     all_course_of_batch = db.query(BatchCourse).filter(
@@ -164,7 +165,7 @@ def resolve_tutor_assigned_students(_, info, batchId):
     
     all_instructors_of_batch = list(set(
         db.query(BatchInstructor).filter(
-            BatchInstructor.batch_course_id.in_([c.course_id for c in all_course_of_batch]),
+            BatchInstructor.batch_course_id.in_([c.id for c in all_course_of_batch]),
             BatchInstructor.is_deleted == False
         ).all()
     ))
@@ -174,7 +175,7 @@ def resolve_tutor_assigned_students(_, info, batchId):
         BatchEnrollment.is_deleted == False
     ).all()
     
-    all_instructors_ids = [i.id for i in all_instructors_of_batch]
+    all_instructors_ids = [i.user_id for i in all_instructors_of_batch]
     all_enrollments_ids = [e.id for e in all_enrollments_of_batch]
 
     import math
@@ -182,12 +183,6 @@ def resolve_tutor_assigned_students(_, info, batchId):
     w = math.ceil(len(all_enrollments_ids) / len(all_instructors_ids))
 
     selected_enrollments = all_enrollments_of_batch[n*w : (n+1)*w]
-    # selected_enrollments_ids = [e.id for e in selected_enrollments]
-
-    # selected_students = db.query(User).filter(
-    #     User.id.in_(selected_enrollments_ids),
-    #     User.is_deleted == False
-    # ).all()
     
     return selected_enrollments
 
@@ -711,6 +706,16 @@ def resolve_listening_skill(skill_obj, info):
         ListeningSkill.skill_id == skill_obj.id
     ).first()
     return listening_skill
+
+
+@skill.field("certificate")
+def resolve_certificate(skill_obj, info):
+    db: Session = info.context["db"]
+    certificate = db.query(Certificate).filter(
+        Certificate.skill_id == skill_obj.id,
+        Certificate.is_deleted == False
+    ).first()
+    return certificate
 
 
 @skill.field("finalResult")

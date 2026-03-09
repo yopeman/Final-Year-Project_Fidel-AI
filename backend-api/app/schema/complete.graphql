@@ -346,6 +346,7 @@ type Skill {
   # Relationships
   enrollment: BatchEnrollment!
   instructor: User!
+  certificate: Certificate
   speakingSkill: SpeakingSkill
   readingSkill: ReadingSkill
   writingSkill: WritingSkill
@@ -503,7 +504,7 @@ type BatchEnrollment {
   # Relationships
   profile: StudentProfile!
   batch: Batch!
-  skill: Skill!
+  skill: Skill
   payments: [Payment!]!
 }
 
