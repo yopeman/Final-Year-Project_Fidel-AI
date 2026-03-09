@@ -825,3 +825,24 @@ export const GENERATE_CERTIFICATE = gql`
     }
   }
 `;
+
+export const GET_CERTIFICATE = gql`
+  query GetCertificate($certificateId: ID!) {
+    certificate(id: $certificateId) {
+      id
+      skillId
+      result
+      certificateHtml
+      createdAt
+      updatedAt
+      isDeleted
+      deletedAt
+    }
+  }
+`;
+
+export const DELETE_CERTIFICATE = gql`
+  mutation DeleteCertificate($id: ID!) {
+    deleteCertificate(id: $id)
+  }
+`;

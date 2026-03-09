@@ -28,8 +28,11 @@ import {
   CREATE_SKILL, 
   UPDATE_SKILL, 
   SEND_EXAM_LINK, 
-  GENERATE_CERTIFICATE 
+  GENERATE_CERTIFICATE,
+  GET_CERTIFICATE,
+  DELETE_CERTIFICATE
 } from '../graphql/tutorBatch';
+import { BASE_URL } from '../lib/apollo-client';
 
 const SkillTestModal = ({ 
   isOpen, 
@@ -76,6 +79,8 @@ const SkillTestModal = ({
   const [updateSkillMutation] = useMutation(UPDATE_SKILL);
   const [sendExamLinkMutation] = useMutation(SEND_EXAM_LINK);
   const [generateCertificateMutation] = useMutation(GENERATE_CERTIFICATE);
+  const [getCertificateQuery] = useLazyQuery(GET_CERTIFICATE);
+  const [deleteCertificateMutation] = useMutation(DELETE_CERTIFICATE);
 
   const [getExamLinkQuery] = useLazyQuery(GET_EXAM_LINK);
 
@@ -274,6 +279,37 @@ const SkillTestModal = ({
     } catch (error) {
       console.error('Error generating certificate:', error);
       alert('Failed to generate certificate. Please try again.');
+    }
+  };
+
+  const handleViewCertificate = async (certificateId) => {
+    if (!certificateId) return;
+    
+    try {
+      window.open(`${BASE_URL}/certificates/${certificateId}`, '_blank');
+    } catch (error) {
+      console.error('Error viewing certificate:', error);
+      alert('Failed to view certificate. Please try again.');
+    }
+  };
+
+  const handleDeleteCertificate = async (certificateId) => {
+    if (!certificateId) return;
+    
+    if (!window.confirm('Are you sure you want to delete this certificate? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      await deleteCertificateMutation({
+        variables: { id: certificateId }
+      });
+      alert('Certificate deleted successfully!');
+      // Refresh the data to update the UI
+      await refetch();
+    } catch (error) {
+      console.error('Error deleting certificate:', error);
+      alert('Failed to delete certificate. Please try again.');
     }
   };
 
@@ -483,17 +519,10 @@ const SkillTestModal = ({
                                 <button
                                   onClick={handleGenerateCertificate}
                                   disabled={!selectedStudent.skill}
-                                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="flex items-center space-x-2 px-4 py-2 w-full bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   <FileCheck className="w-4 h-4" />
-                                  <span>Generate Certificate</span>
-                                </button>
-                                <button
-                                  onClick={handleSubmitSkill}
-                                  className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                  <span>Edit Assessment</span>
+                                  <span className="text-center">Generate Certificate</span>
                                 </button>
                               </div>
                             </div>
@@ -542,6 +571,45 @@ const SkillTestModal = ({
                           </div>
                         </div>
                       </div>
+
+                      {/* Certificate Section */}
+                      {selectedStudent.skill?.certificate && (
+                        <div className="border-t border-gray-200 pt-6">
+                          <h5 className="font-medium text-gray-900 mb-4 flex items-center space-x-2">
+                            <Download className="w-5 h-5 text-green-600" />
+                            <span>Certificate</span>
+                          </h5>
+                          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <h6 className="font-semibold text-gray-900">Certificate of Achievement</h6>
+                                <p className="text-sm text-gray-600">Final Result: {selectedStudent.skill.certificate.result}</p>
+                              </div>
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleViewCertificate(selectedStudent.skill.certificate.id)}
+                                  className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  <span>View Certificate</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCertificate(selectedStudent.skill.certificate.id)}
+                                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Certificate ID: {selectedStudent.skill.certificate.id}
+                              <br />
+                              Generated: {new Date(selectedStudent.skill.certificate.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
