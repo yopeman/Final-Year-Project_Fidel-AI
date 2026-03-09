@@ -21,7 +21,7 @@ import {
   Download,
   ExternalLink
 } from 'lucide-react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useQuery, useMutation, useLazyQuery } from '@apollo/client';
 import { 
   GET_TUTOR_ASSIGNED_STUDENTS, 
   GET_EXAM_LINK, 
@@ -76,6 +76,27 @@ const SkillTestModal = ({
   const [updateSkillMutation] = useMutation(UPDATE_SKILL);
   const [sendExamLinkMutation] = useMutation(SEND_EXAM_LINK);
   const [generateCertificateMutation] = useMutation(GENERATE_CERTIFICATE);
+
+  const [getExamLinkQuery] = useLazyQuery(GET_EXAM_LINK);
+
+  const handleJoinExam = async () => {
+    if (!selectedStudent) return;
+    
+    try {
+      const { data } = await getExamLinkQuery({
+        variables: { enrollmentId: selectedStudent.id }
+      });
+      
+      if (data?.getExamLink) {
+        window.open(data.getExamLink, '_blank');
+      } else {
+        alert('No exam link available for this student.');
+      }
+    } catch (error) {
+      console.error('Error fetching exam link:', error);
+      alert('Failed to fetch exam link. Please try again.');
+    }
+  };
 
   useEffect(() => {
     if (isOpen && onOpen) {
@@ -502,7 +523,14 @@ const SkillTestModal = ({
                               >
                                 <Send className="w-4 h-4" />
                                 <span>Send Exam Link</span>
-                              </button>
+                              </button>                              
+                                <button
+                                  onClick={handleJoinExam}
+                                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                  <span>Join Exam</span>
+                                </button>
                             </div>
                             
                             <div className="bg-gray-50 rounded-lg p-4">
