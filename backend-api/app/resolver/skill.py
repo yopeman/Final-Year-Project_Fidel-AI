@@ -229,7 +229,7 @@ def resolve_create_skill(_, info, input):
         raise Exception("Unauthorized: Only admins and tutors can create skills")
     
     enrollment_id = input["enrollmentId"]
-    instructor_id = input["instructorId"]
+    instructor_id = current_user.id
     
     # Verify enrollment exists
     enrollment = db.query(BatchEnrollment).filter(
@@ -249,48 +249,26 @@ def resolve_create_skill(_, info, input):
     
     if not instructor:
         raise Exception("Instructor not found or not a tutor")
-    
-    # Verify instructor is assigned to this batch
-    from ..model.batch_instructor import BatchInstructor
-    from ..model.batch_course import BatchCourse
-
-    batch_course = db.query(BatchCourse).filter(
-        BatchCourse.batch_id == enrollment.batch_id,
-        BatchCourse.is_deleted == False
-    ).all()
-
-    if batch_course:
-        batch_instructor = db.query(BatchInstructor).filter(
-            BatchInstructor.user_id == instructor_id,
-            BatchInstructor.batch_course_id.in_([c.course_id for c in batch_course]),
-            BatchInstructor.is_deleted == False
-        ).first()
-    
-    if not batch_instructor:
-        raise Exception("Instructor is not assigned to this batch")
-    
+        
     # Verify user creating the skill is the instructor or admin
     if current_user.role == UserRole.tutor and current_user.id != instructor_id:
         raise Exception("Unauthorized: You can only create skills for students you are assigned to")
     
-    # Check if skill already exists for this enrollment
-    existing_skill = db.query(Skill).filter(
-        Skill.enrollment_id == enrollment_id,
-        Skill.is_deleted == False
-    ).first()
-    
-    if existing_skill:
-        raise Exception("Skill already exists for this enrollment")
     
     # Create skill
-    skill = Skill(
-        enrollment_id=enrollment_id,
-        instructor_id=instructor_id,
-        final_result=Grade.F  # Will be calculated below
-    )
+    skill = db.query(Skill).filter(
+        Skill.enrollment_id == enrollment_id
+    ).first()
+
+    if not skill:
+        skill = Skill(
+            enrollment_id=enrollment_id,
+            instructor_id=instructor_id,
+            final_result=Grade.F  # Will be calculated below
+        )
     
-    db.add(skill)
-    db.flush()  # Get the skill ID
+        db.add(skill)
+        db.flush()  # Get the skill ID
     
     # Create speaking skill
     speaking_input = input.get("speakingSkill", {})
@@ -377,6 +355,8 @@ def resolve_create_skill(_, info, input):
     
     db.commit()
     db.refresh(skill)
+
+    print('=\n'*10, skill.__dict__, '=\n'*10)
     
     return skill
 
@@ -417,30 +397,6 @@ def resolve_update_skill(_, info, id, input):
             raise Exception("Enrollment not found")
         
         skill.enrollment_id = enrollment_id
-    
-    if "instructorId" in input:
-        instructor_id = input["instructorId"]
-        instructor = db.query(User).filter(
-            User.id == instructor_id,
-            User.role == UserRole.tutor,
-            User.is_deleted == False
-        ).first()
-        
-        if not instructor:
-            raise Exception("Instructor not found or not a tutor")
-        
-        # Verify instructor is assigned to the batch
-        from ..model.batch_instructor import BatchInstructor
-        batch_instructor = db.query(BatchInstructor).filter(
-            BatchInstructor.user_id == instructor_id,
-            BatchInstructor.batch_id == skill.enrollment.batch_id,
-            BatchInstructor.is_deleted == False
-        ).first()
-        
-        if not batch_instructor:
-            raise Exception("Instructor is not assigned to this batch")
-        
-        skill.instructor_id = instructor_id
     
     # Update speaking skill
     speaking_input = input.get("speakingSkill")
@@ -638,7 +594,7 @@ def resolve_send_exam_link(_, info, input):
     # Format exam date for notification
     exam_date_str = ""
     if exam_date:
-        exam_date_str = f" on {exam_date.strftime('%Y-%m-%d at %H:%M')}"
+        exam_date_str = f" on {exam_date}"
     
     # Send notification to student and tutor
     student_title = "Exam Link Available"
@@ -650,6 +606,16 @@ def resolve_send_exam_link(_, info, input):
     send_notification(current_user.id, tutor_title, tutor_content, db)
 
     return True
+
+
+@skill.field("enrollmentId")
+def resolve_enrollment(skill_obj, info):
+    return skill_obj.enrollment_id
+
+
+@skill.field("instructorId")
+def resolve_enrollment(skill_obj, info):
+    return skill_obj.instructor_id
 
 
 @skill.field("enrollment")

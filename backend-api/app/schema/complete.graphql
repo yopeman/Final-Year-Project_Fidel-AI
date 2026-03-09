@@ -374,7 +374,6 @@ input SendExamLinkInput {
 
 input CreateSkillInput {
   enrollmentId: ID!
-  instructorId: ID!
   readingSkill: CreateReadingSkillInput!
   writingSkill: CreateWritingSkillInput!
   speakingSkill: CreateSpeakingSkillInput!
@@ -410,7 +409,6 @@ input CreateListeningSkillInput {
 
 input UpdateSkillInput {
   enrollmentId: ID
-  instructorId: ID
   readingSkill: UpdateReadingSkillInput
   writingSkill: UpdateWritingSkillInput
   speakingSkill: UpdateSpeakingSkillInput

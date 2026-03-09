@@ -65,6 +65,10 @@ from .resolver.translator import query as t_query
 from .resolver.user import mutation, query, user
 from .resolver.verification_code import verification_code as vc_type
 from .resolver.skill import mutation as sk_mutation, query as sk_query, skill
+from .resolver.reading_skill import reading_skill
+from .resolver.writing_skill import writing_skill
+from .resolver.speaking_skill import speaking_skill
+from .resolver.listening_skill import listening_skill
 from .resolver.certificate import mutation as cert_mutation, query as cert_query, certificate
 from .schema import type_defs
 from .util.auth import create_default_admin, get_current_user
@@ -227,6 +231,10 @@ bindables = [
     sk_query,
     sk_mutation,
     skill,
+    reading_skill,
+    writing_skill,
+    speaking_skill,
+    listening_skill,
     cert_query,
     cert_mutation,
     certificate,
