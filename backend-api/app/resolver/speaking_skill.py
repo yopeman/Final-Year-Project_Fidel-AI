@@ -16,27 +16,27 @@ def resolve_skill_id(speaking_skill_obj, info):
 
 @speaking_skill.field("pronunciation")
 def resolve_pronunciation(speaking_skill_obj, info):
-    return speaking_skill_obj.pronunciation.value if speaking_skill_obj.pronunciation else None
+    return speaking_skill_obj.pronunciation.name if speaking_skill_obj.pronunciation else None
 
 @speaking_skill.field("fluency")
 def resolve_fluency(speaking_skill_obj, info):
-    return speaking_skill_obj.fluency.value if speaking_skill_obj.fluency else None
+    return speaking_skill_obj.fluency.name if speaking_skill_obj.fluency else None
 
 @speaking_skill.field("grammar")
 def resolve_grammar(speaking_skill_obj, info):
-    return speaking_skill_obj.grammar.value if speaking_skill_obj.grammar else None
+    return speaking_skill_obj.grammar.name if speaking_skill_obj.grammar else None
 
 @speaking_skill.field("vocabulary")
 def resolve_vocabulary(speaking_skill_obj, info):
-    return speaking_skill_obj.vocabulary.value if speaking_skill_obj.vocabulary else None
+    return speaking_skill_obj.vocabulary.name if speaking_skill_obj.vocabulary else None
 
 @speaking_skill.field("coherence")
 def resolve_coherence(speaking_skill_obj, info):
-    return speaking_skill_obj.coherence.value if speaking_skill_obj.coherence else None
+    return speaking_skill_obj.coherence.name if speaking_skill_obj.coherence else None
 
 @speaking_skill.field("finalResult")
 def resolve_final_result(speaking_skill_obj, info):
-    return speaking_skill_obj.final_result.value if speaking_skill_obj.final_result else None
+    return speaking_skill_obj.final_result.name if speaking_skill_obj.final_result else None
 
 @speaking_skill.field("createdAt")
 def resolve_created_at(speaking_skill_obj, info):

@@ -16,19 +16,19 @@ def resolve_skill_id(listening_skill_obj, info):
 
 @listening_skill.field("comprehension")
 def resolve_comprehension(listening_skill_obj, info):
-    return listening_skill_obj.comprehension.value if listening_skill_obj.comprehension else None
+    return listening_skill_obj.comprehension.name if listening_skill_obj.comprehension else None
 
 @listening_skill.field("retention")
 def resolve_retention(listening_skill_obj, info):
-    return listening_skill_obj.retention.value if listening_skill_obj.retention else None
+    return listening_skill_obj.retention.name if listening_skill_obj.retention else None
 
 @listening_skill.field("interpretation")
 def resolve_interpretation(listening_skill_obj, info):
-    return listening_skill_obj.interpretation.value if listening_skill_obj.interpretation else None
+    return listening_skill_obj.interpretation.name if listening_skill_obj.interpretation else None
 
 @listening_skill.field("finalResult")
 def resolve_final_result(listening_skill_obj, info):
-    return listening_skill_obj.final_result.value if listening_skill_obj.final_result else None
+    return listening_skill_obj.final_result.name if listening_skill_obj.final_result else None
 
 @listening_skill.field("createdAt")
 def resolve_created_at(listening_skill_obj, info):

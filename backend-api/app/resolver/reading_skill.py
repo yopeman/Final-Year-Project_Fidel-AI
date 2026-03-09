@@ -16,19 +16,19 @@ def resolve_skill_id(reading_skill_obj, info):
 
 @reading_skill.field("comprehension")
 def resolve_comprehension(reading_skill_obj, info):
-    return reading_skill_obj.comprehension.value if reading_skill_obj.comprehension else None
+    return reading_skill_obj.comprehension.name if reading_skill_obj.comprehension else None
 
 @reading_skill.field("speed")
 def resolve_speed(reading_skill_obj, info):
-    return reading_skill_obj.speed.value if reading_skill_obj.speed else None
+    return reading_skill_obj.speed.name if reading_skill_obj.speed else None
 
 @reading_skill.field("vocabulary")
 def resolve_vocabulary(reading_skill_obj, info):
-    return reading_skill_obj.vocabulary.value if reading_skill_obj.vocabulary else None
+    return reading_skill_obj.vocabulary.name if reading_skill_obj.vocabulary else None
 
 @reading_skill.field("finalResult")
 def resolve_final_result(reading_skill_obj, info):
-    return reading_skill_obj.final_result.value if reading_skill_obj.final_result else None
+    return reading_skill_obj.final_result.name if reading_skill_obj.final_result else None
 
 @reading_skill.field("createdAt")
 def resolve_created_at(reading_skill_obj, info):
