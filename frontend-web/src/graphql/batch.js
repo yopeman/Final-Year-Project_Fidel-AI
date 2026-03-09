@@ -90,43 +90,6 @@ export const GET_BATCHES = gql`
           status
           feeAmount
         }
-        quizResults {
-          id
-          enrollmentId
-          quizId
-          score
-          createdAt
-          updatedAt
-          isDeleted
-          deletedAt
-          quiz {
-            id
-            question
-            answer
-            type
-          }
-        }
-        skillResults {
-          id
-          enrollmentId
-          skillId
-          score
-          createdAt
-          updatedAt
-          isDeleted
-          deletedAt
-          skillTest {
-            id
-            evaluatorId
-            type
-            evaluator {
-              id
-              firstName
-              lastName
-              email
-            }
-          }
-        }
         payments {
           id
           enrollmentId
@@ -138,16 +101,6 @@ export const GET_BATCHES = gql`
           transactionId
           checkoutUrl
           receiptUrl
-          createdAt
-          updatedAt
-          isDeleted
-          deletedAt
-        }
-        certificates {
-          id
-          enrollmentId
-          result
-          certificateHtml
           createdAt
           updatedAt
           isDeleted
@@ -334,43 +287,6 @@ export const GET_BATCH = gql`
           status
           feeAmount
         }
-        quizResults {
-          id
-          enrollmentId
-          quizId
-          score
-          createdAt
-          updatedAt
-          isDeleted
-          deletedAt
-          quiz {
-            id
-            question
-            answer
-            type
-          }
-        }
-        skillResults {
-          id
-          enrollmentId
-          skillId
-          score
-          createdAt
-          updatedAt
-          isDeleted
-          deletedAt
-          skillTest {
-            id
-            evaluatorId
-            type
-            evaluator {
-              id
-              firstName
-              lastName
-              email
-            }
-          }
-        }
         payments {
           id
           enrollmentId
@@ -382,16 +298,6 @@ export const GET_BATCH = gql`
           transactionId
           checkoutUrl
           receiptUrl
-          createdAt
-          updatedAt
-          isDeleted
-          deletedAt
-        }
-        certificates {
-          id
-          enrollmentId
-          result
-          certificateHtml
           createdAt
           updatedAt
           isDeleted
@@ -833,43 +739,6 @@ export const GET_ENROLLMENTS = gql`
         status
         feeAmount
       }
-      quizResults {
-        id
-        enrollmentId
-        quizId
-        score
-        createdAt
-        updatedAt
-        isDeleted
-        deletedAt
-        quiz {
-          id
-          question
-          answer
-          type
-        }
-      }
-      skillResults {
-        id
-        enrollmentId
-        skillId
-        score
-        createdAt
-        updatedAt
-        isDeleted
-        deletedAt
-        skillTest {
-          id
-          evaluatorId
-          type
-          evaluator {
-            id
-            firstName
-            lastName
-            email
-          }
-        }
-      }
       payments {
         id
         enrollmentId
@@ -881,16 +750,6 @@ export const GET_ENROLLMENTS = gql`
         transactionId
         checkoutUrl
         receiptUrl
-        createdAt
-        updatedAt
-        isDeleted
-        deletedAt
-      }
-      certificates {
-        id
-        enrollmentId
-        result
-        certificateHtml
         createdAt
         updatedAt
         isDeleted
@@ -944,43 +803,6 @@ export const GET_ENROLLMENT = gql`
         status
         feeAmount
       }
-      quizResults {
-        id
-        enrollmentId
-        quizId
-        score
-        createdAt
-        updatedAt
-        isDeleted
-        deletedAt
-        quiz {
-          id
-          question
-          answer
-          type
-        }
-      }
-      skillResults {
-        id
-        enrollmentId
-        skillId
-        score
-        createdAt
-        updatedAt
-        isDeleted
-        deletedAt
-        skillTest {
-          id
-          evaluatorId
-          type
-          evaluator {
-            id
-            firstName
-            lastName
-            email
-          }
-        }
-      }
       payments {
         id
         enrollmentId
@@ -992,16 +814,6 @@ export const GET_ENROLLMENT = gql`
         transactionId
         checkoutUrl
         receiptUrl
-        createdAt
-        updatedAt
-        isDeleted
-        deletedAt
-      }
-      certificates {
-        id
-        enrollmentId
-        result
-        certificateHtml
         createdAt
         updatedAt
         isDeleted

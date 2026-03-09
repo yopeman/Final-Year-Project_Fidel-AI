@@ -147,60 +147,6 @@ export const GET_BATCH_ENROLLMENTS = gql`
         isDeleted
         deletedAt
       }
-      quizResults {
-        id
-        enrollmentId
-        quizId
-        score
-        createdAt
-        updatedAt
-        isDeleted
-        deletedAt
-        quiz {
-          id
-          question
-          answer
-          type
-          createdAt
-          updatedAt
-          isDeleted
-          deletedAt
-        }
-      }
-      skillResults {
-        id
-        enrollmentId
-        skillId
-        score
-        createdAt
-        updatedAt
-        isDeleted
-        deletedAt
-        skillTest {
-          id
-          evaluatorId
-          type
-          createdAt
-          updatedAt
-          isDeleted
-          deletedAt
-          evaluator {
-            id
-            firstName
-            lastName
-            email
-            password
-            role
-            isVerified
-            accessToken
-            refreshToken
-            createdAt
-            updatedAt
-            isDeleted
-            deletedAt
-          }
-        }
-      }
       payments {
         id
         enrollmentId
@@ -212,16 +158,6 @@ export const GET_BATCH_ENROLLMENTS = gql`
         transactionId
         checkoutUrl
         receiptUrl
-        createdAt
-        updatedAt
-        isDeleted
-        deletedAt
-      }
-      certificates {
-        id
-        enrollmentId
-        result
-        certificateHtml
         createdAt
         updatedAt
         isDeleted
@@ -505,6 +441,386 @@ export const GET_BATCH_STATISTICS = gql`
             deletedAt
           }
         }
+      }
+    }
+  }
+`;
+
+// Skill Test Queries and Mutations
+export const GET_TUTOR_ASSIGNED_STUDENTS = gql`
+  query TutorAssignedStudents($batchId: ID!) {
+    tutorAssignedStudents(batchId: $batchId) {
+      id
+      profileId
+      batchId
+      enrollmentDate
+      completionDate
+      status
+      createdAt
+      updatedAt
+      isDeleted
+      deletedAt
+      profile {
+        user {
+          id
+          firstName
+          lastName
+          email
+          password
+          role
+          isVerified
+          accessToken
+          refreshToken
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+        }
+      }
+      skill {
+        id
+        enrollmentId
+        instructorId
+        finalResult
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+        speakingSkill {
+          id
+          skillId
+          pronunciation
+          fluency
+          grammar
+          vocabulary
+          coherence
+          finalResult
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+        }
+        readingSkill {
+          id
+          skillId
+          comprehension
+          speed
+          vocabulary
+          finalResult
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+        }
+        writingSkill {
+          id
+          skillId
+          coherence
+          grammar
+          vocabulary
+          punctuation
+          finalResult
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+        }
+        listeningSkill {
+          id
+          skillId
+          comprehension
+          retention
+          interpretation
+          finalResult
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+        }
+        certificate {
+          id
+          skillId
+          result
+          createdAt
+          updatedAt
+          isDeleted
+          deletedAt
+        }
+      }
+    }
+  }
+`;
+
+export const GET_EXAM_LINK = gql`
+  query GetExamLink($enrollmentId: ID!) {
+    getExamLink(enrollmentId: $enrollmentId)
+  }
+`;
+
+export const CREATE_SKILL = gql`
+  mutation CreateSkill($input: CreateSkillInput!) {
+    createSkill(input: $input) {
+      id
+      enrollmentId
+      instructorId
+      finalResult
+      createdAt
+      updatedAt
+      isDeleted
+      deletedAt
+      enrollment {
+        id
+        profileId
+        batchId
+        enrollmentDate
+        completionDate
+        status
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+        profile {
+          user {
+            id
+            firstName
+            lastName
+            email
+            password
+            role
+            isVerified
+            accessToken
+            refreshToken
+            createdAt
+            updatedAt
+            isDeleted
+            deletedAt
+          }
+        }
+      }
+      instructor {
+        id
+        firstName
+        lastName
+        email
+        password
+        role
+        isVerified
+        accessToken
+        refreshToken
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+      certificate {
+        id
+        skillId
+        result
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+      speakingSkill {
+        id
+        skillId
+        pronunciation
+        fluency
+        grammar
+        vocabulary
+        coherence
+        finalResult
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+      readingSkill {
+        id
+        skillId
+        comprehension
+        speed
+        vocabulary
+        finalResult
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+      writingSkill {
+        id
+        skillId
+        coherence
+        grammar
+        vocabulary
+        punctuation
+        finalResult
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+      listeningSkill {
+        id
+        skillId
+        comprehension
+        retention
+        interpretation
+        finalResult
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+    }
+  }
+`;
+
+export const UPDATE_SKILL = gql`
+  mutation UpdateSkill($id: ID!, $input: UpdateSkillInput!) {
+    updateSkill(id: $id, input: $input) {
+      id
+      enrollmentId
+      instructorId
+      finalResult
+      createdAt
+      updatedAt
+      isDeleted
+      deletedAt
+      enrollment {
+        id
+        profileId
+        batchId
+        enrollmentDate
+        completionDate
+        status
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+        profile {
+          user {
+            id
+            firstName
+            lastName
+            email
+            password
+            role
+            isVerified
+            accessToken
+            refreshToken
+            createdAt
+            updatedAt
+            isDeleted
+            deletedAt
+          }
+        }
+      }
+      instructor {
+        id
+        firstName
+        lastName
+        email
+        password
+        role
+        isVerified
+        accessToken
+        refreshToken
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+      certificate {
+        id
+        skillId
+        result
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+      speakingSkill {
+        id
+        skillId
+        pronunciation
+        fluency
+        grammar
+        vocabulary
+        coherence
+        finalResult
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+      readingSkill {
+        id
+        skillId
+        comprehension
+        speed
+        vocabulary
+        finalResult
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+      writingSkill {
+        id
+        skillId
+        coherence
+        grammar
+        vocabulary
+        punctuation
+        finalResult
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+      listeningSkill {
+        id
+        skillId
+        comprehension
+        retention
+        interpretation
+        finalResult
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
+      }
+    }
+  }
+`;
+
+export const SEND_EXAM_LINK = gql`
+  mutation SendExamLink($input: SendExamLinkInput!) {
+    sendExamLink(input: $input)
+  }
+`;
+
+export const GENERATE_CERTIFICATE = gql`
+  mutation GenerateCertificate($input: GenerateCertificateInput!) {
+    generateCertificate(input: $input) {
+      id
+      skillId
+      result
+      certificateHtml
+      createdAt
+      updatedAt
+      isDeleted
+      deletedAt
+      skill {
+        id
+        enrollmentId
+        instructorId
+        finalResult
+        createdAt
+        updatedAt
+        isDeleted
+        deletedAt
       }
     }
   }
