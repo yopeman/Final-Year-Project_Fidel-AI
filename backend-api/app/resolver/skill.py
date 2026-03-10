@@ -24,29 +24,28 @@ def calculate_final_grade(grades):
     if not grades:
         return Grade.F
     
-    # Convert grades to numeric values for averaging
+    # Convert grades to numeric values for averaging (matching frontend logic)
     grade_values = {
-        Grade.A_PLUS: 4.0, Grade.A: 4.0, Grade.A_MINUS: 3.7,
-        Grade.B_PLUS: 3.3, Grade.B: 3.0, Grade.B_MINUS: 2.7,
-        Grade.C_PLUS: 2.3, Grade.C: 2.0, Grade.C_MINUS: 1.7,
-        Grade.D: 1.0, Grade.F: 0.0, Grade.FX: 0.0
+        Grade.A_PLUS.name: 100, Grade.A.name: 95, Grade.A_MINUS.name: 90,
+        Grade.B_PLUS.name: 85, Grade.B.name: 80, Grade.B_MINUS.name: 75,
+        Grade.C_PLUS.name: 70, Grade.C.name: 65, Grade.C_MINUS.name: 60,
+        Grade.D.name: 55, Grade.F.name: 0, Grade.FX.name: 0
     }
     
     numeric_grades = [grade_values.get(g, 0.0) for g in grades]
     avg = sum(numeric_grades) / len(numeric_grades)
-    
-    # Convert back to letter grade
-    if avg >= 3.7: return Grade.A_PLUS
-    elif avg >= 3.3: return Grade.A
-    elif avg >= 3.0: return Grade.A_MINUS
-    elif avg >= 2.7: return Grade.B_PLUS
-    elif avg >= 2.3: return Grade.B
-    elif avg >= 2.0: return Grade.B_MINUS
-    elif avg >= 1.7: return Grade.C_PLUS
-    elif avg >= 1.3: return Grade.C
-    elif avg >= 1.0: return Grade.C_MINUS
-    elif avg >= 0.5: return Grade.D
-    else: return Grade.F
+
+    # Convert back to letter grade (matching frontend logic)
+    if avg >= 95: return Grade.A_PLUS
+    if avg >= 90: return Grade.A
+    if avg >= 85: return Grade.A_MINUS
+    if avg >= 80: return Grade.B_PLUS
+    if avg >= 75: return Grade.B
+    if avg >= 70: return Grade.B_MINUS
+    if avg >= 65: return Grade.C_PLUS
+    if avg >= 60: return Grade.C
+    if avg >= 55: return Grade.C_MINUS
+    return Grade.F
 
 
 @query.field("skills")
@@ -343,13 +342,13 @@ def resolve_create_skill(_, info, input):
     # Calculate final skill grade
     final_grades = []
     if speaking_input:
-        final_grades.append(speaking_skill.final_result)
+        final_grades.append(speaking_skill.final_result.name)
     if reading_input:
-        final_grades.append(reading_skill.final_result)
+        final_grades.append(reading_skill.final_result.name)
     if writing_input:
-        final_grades.append(writing_skill.final_result)
+        final_grades.append(writing_skill.final_result.name)
     if listening_input:
-        final_grades.append(listening_skill.final_result)
+        final_grades.append(listening_skill.final_result.name)
     
     skill.final_result = calculate_final_grade(final_grades)
     
@@ -504,13 +503,13 @@ def resolve_update_skill(_, info, id, input):
     # Recalculate final skill grade
     final_grades = []
     if speaking_input or skill.speaking_skill:
-        final_grades.append(skill.speaking_skill.final_result if skill.speaking_skill else Grade.F)
+        final_grades.append(skill.speaking_skill.final_result.name if skill.speaking_skill else Grade.F.value)
     if reading_input or skill.reading_skill:
-        final_grades.append(skill.reading_skill.final_result if skill.reading_skill else Grade.F)
+        final_grades.append(skill.reading_skill.final_result.name if skill.reading_skill else Grade.F.value)
     if writing_input or skill.writing_skill:
-        final_grades.append(skill.writing_skill.final_result if skill.writing_skill else Grade.F)
+        final_grades.append(skill.writing_skill.final_result.name if skill.writing_skill else Grade.F.value)
     if listening_input or skill.listening_skill:
-        final_grades.append(skill.listening_skill.final_result if skill.listening_skill else Grade.F)
+        final_grades.append(skill.listening_skill.final_result.name if skill.listening_skill else Grade.F.value)
     
     skill.final_result = calculate_final_grade(final_grades)
     skill.updated_at = datetime.utcnow()
@@ -684,7 +683,7 @@ def resolve_certificate(skill_obj, info):
 
 @skill.field("finalResult")
 def resolve_final_result(skill_obj, info):
-    return skill_obj.final_result.value if skill_obj.final_result else None
+    return skill_obj.final_result.name if skill_obj.final_result else None
 
 
 @skill.field("createdAt")

@@ -139,15 +139,6 @@ def resolve_generate_certificate(_, info, input):
     if current_user.role == UserRole.tutor and current_user.id != skill.instructor_id:
         raise Exception("Unauthorized: You can only generate certificates for students you are assigned to")
     
-    # Check if certificate already exists for this skill
-    existing_certificate = db.query(Certificate).filter(
-        Certificate.skill_id == skill_id,
-        Certificate.is_deleted == False
-    ).first()
-    
-    if existing_certificate:
-        raise Exception("Certificate already exists for this skill")
-    
     # Get student name
     student_name = f"{skill.enrollment.profile.user.first_name} {skill.enrollment.profile.user.last_name}"
     
@@ -215,17 +206,32 @@ def resolve_generate_certificate(_, info, input):
         certificate_id=str(certificate_id)
     )
     
-    # Create certificate
-    certificate_obj = Certificate(
-        id=certificate_id,
-        skill_id=skill_id,
-        result=final_grade,
-        certificate_html=certificate_html
-    )
-    
-    db.add(certificate_obj)
-    db.commit()
-    db.refresh(certificate_obj)
+    # Check if certificate already exists for this skill and handle with upsert logic
+    certificate_obj = db.query(Certificate).filter(
+        Certificate.skill_id == skill_id
+    ).first()
+
+    if not certificate_obj:
+        # Create certificate
+        certificate_obj = Certificate(
+            id=certificate_id,
+            skill_id=skill_id,
+            result=final_grade,
+            certificate_html=certificate_html
+        )
+        
+        db.add(certificate_obj)
+        db.commit()
+        db.refresh(certificate_obj)
+
+    else:
+        # Update existing certificate
+        certificate_obj.result = final_grade
+        certificate_obj.certificate_html = certificate_html
+        certificate_obj.updated_at = datetime.utcnow()
+
+        db.commit()
+        db.refresh(certificate_obj)
     
     # Send notification to student
     student_title = "Certificate Generated"

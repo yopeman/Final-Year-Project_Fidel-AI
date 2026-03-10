@@ -239,20 +239,6 @@ const LoginPage = () => {
                   <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
                 )}
               </div>
-
-              <div className="flex items-center">
-                <input
-                  id="remember"
-                  type="checkbox"
-                  className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                  disabled={loading}
-                  checked={true}
-                />
-                <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
-                  Remember me
-                </label>
-              </div>
-
               <button
                 type="submit"
                 disabled={loading}
