@@ -44,10 +44,15 @@ import {
   ThumbsUp,
   Heart,
   Paperclip,
-  File as FileIcon
+  File as FileIcon,
+  Book,
+  MessageSquare as MessageSquareIcon,
+  Mic,
+  Headphones
 } from 'lucide-react';
 import { useQuery, useMutation, useApolloClient } from '@apollo/client';
 import { GET_TUTOR_BATCHES, GET_BATCH_ENROLLMENTS, GET_BATCH_ATTENDANCE, UPDATE_ENROLLMENT_STATUS, GET_BATCH_MEETING_LINK } from '../graphql/tutorBatch';
+import SkillTestModal from './SkillTestModal';
 
 const TutorBatches = () => {
   const navigate = useNavigate();
@@ -67,6 +72,9 @@ const TutorBatches = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isFetchingAttendance, setIsFetchingAttendance] = useState(false);
   const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
+  
+  // Skill Test state
+  const [showSkillTestModal, setShowSkillTestModal] = useState(false);
   
 
   // Get tutor's associated batches using the ME query
@@ -533,6 +541,15 @@ const TutorBatches = () => {
                 </button>
                 <button
                   onClick={() => {
+                    setShowSkillTestModal(true);
+                  }}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+                >
+                  <Book className="w-4 h-4" />
+                  <span>Skill Test</span>
+                </button>
+                <button
+                  onClick={() => {
                     setShowBatchDetails(false);
                     setSelectedBatch(null);
                   }}
@@ -908,6 +925,20 @@ const TutorBatches = () => {
           isFetching={isFetchingAttendance}
           isMarking={isMarkingAttendance}
           onOpen={() => handleFetchAttendance(selectedBatchForAttendance.id, selectedDate)}
+        />
+      )}
+
+      {/* Skill Test Modal */}
+      {showSkillTestModal && selectedBatch && (
+        <SkillTestModal
+          isOpen={showSkillTestModal}
+          onClose={() => {
+            setShowSkillTestModal(false);
+          }}
+          batch={selectedBatch}
+          onOpen={() => {
+            // Optional: any initialization logic when modal opens
+          }}
         />
       )}
 
