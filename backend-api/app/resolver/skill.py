@@ -254,7 +254,7 @@ def resolve_create_skill(_, info, input):
         raise Exception("Unauthorized: You can only create skills for students you are assigned to")
     
     
-    # Create skill
+    # Create or get existing skill
     skill = db.query(Skill).filter(
         Skill.enrollment_id == enrollment_id
     ).first()
@@ -269,75 +269,141 @@ def resolve_create_skill(_, info, input):
         db.add(skill)
         db.flush()  # Get the skill ID
     
-    # Create speaking skill
+    # Create or update speaking skill
     speaking_input = input.get("speakingSkill", {})
     if speaking_input:
-        speaking_skill = SpeakingSkill(
-            skill_id=skill.id,
-            pronunciation=speaking_input["pronunciation"],
-            fluency=speaking_input["fluency"],
-            grammar=speaking_input["grammar"],
-            vocabulary=speaking_input["vocabulary"],
-            coherence=speaking_input["coherence"],
-            final_result=calculate_final_grade([
+        speaking_skill = db.query(SpeakingSkill).filter(
+            SpeakingSkill.skill_id == skill.id
+        ).first()
+        
+        if not speaking_skill:
+            speaking_skill = SpeakingSkill(
+                skill_id=skill.id,
+                pronunciation=speaking_input["pronunciation"],
+                fluency=speaking_input["fluency"],
+                grammar=speaking_input["grammar"],
+                vocabulary=speaking_input["vocabulary"],
+                coherence=speaking_input["coherence"],
+                final_result=calculate_final_grade([
+                    speaking_input["pronunciation"],
+                    speaking_input["fluency"],
+                    speaking_input["grammar"],
+                    speaking_input["vocabulary"],
+                    speaking_input["coherence"]
+                ])
+            )
+            db.add(speaking_skill)
+        else:
+            # Update existing speaking skill
+            speaking_skill.pronunciation = speaking_input["pronunciation"]
+            speaking_skill.fluency = speaking_input["fluency"]
+            speaking_skill.grammar = speaking_input["grammar"]
+            speaking_skill.vocabulary = speaking_input["vocabulary"]
+            speaking_skill.coherence = speaking_input["coherence"]
+            speaking_skill.final_result = calculate_final_grade([
                 speaking_input["pronunciation"],
                 speaking_input["fluency"],
                 speaking_input["grammar"],
                 speaking_input["vocabulary"],
                 speaking_input["coherence"]
             ])
-        )
-        db.add(speaking_skill)
     
-    # Create reading skill
+    # Create or update reading skill
     reading_input = input.get("readingSkill", {})
     if reading_input:
-        reading_skill = ReadingSkill(
-            skill_id=skill.id,
-            comprehension=reading_input["comprehension"],
-            speed=reading_input["speed"],
-            vocabulary=reading_input["vocabulary"],
-            final_result=calculate_final_grade([
+        reading_skill = db.query(ReadingSkill).filter(
+            ReadingSkill.skill_id == skill.id
+        ).first()
+        
+        if not reading_skill:
+            reading_skill = ReadingSkill(
+                skill_id=skill.id,
+                comprehension=reading_input["comprehension"],
+                speed=reading_input["speed"],
+                vocabulary=reading_input["vocabulary"],
+                final_result=calculate_final_grade([
+                    reading_input["comprehension"],
+                    reading_input["speed"],
+                    reading_input["vocabulary"]
+                ])
+            )
+            db.add(reading_skill)
+        else:
+            # Update existing reading skill
+            reading_skill.comprehension = reading_input["comprehension"]
+            reading_skill.speed = reading_input["speed"]
+            reading_skill.vocabulary = reading_input["vocabulary"]
+            reading_skill.final_result = calculate_final_grade([
                 reading_input["comprehension"],
                 reading_input["speed"],
                 reading_input["vocabulary"]
             ])
-        )
-        db.add(reading_skill)
     
-    # Create writing skill
+    # Create or update writing skill
     writing_input = input.get("writingSkill", {})
     if writing_input:
-        writing_skill = WritingSkill(
-            skill_id=skill.id,
-            coherence=writing_input["coherence"],
-            grammar=writing_input["grammar"],
-            vocabulary=writing_input["vocabulary"],
-            punctuation=writing_input["punctuation"],
-            final_result=calculate_final_grade([
+        writing_skill = db.query(WritingSkill).filter(
+            WritingSkill.skill_id == skill.id
+        ).first()
+        
+        if not writing_skill:
+            writing_skill = WritingSkill(
+                skill_id=skill.id,
+                coherence=writing_input["coherence"],
+                grammar=writing_input["grammar"],
+                vocabulary=writing_input["vocabulary"],
+                punctuation=writing_input["punctuation"],
+                final_result=calculate_final_grade([
+                    writing_input["coherence"],
+                    writing_input["grammar"],
+                    writing_input["vocabulary"],
+                    writing_input["punctuation"]
+                ])
+            )
+            db.add(writing_skill)
+        else:
+            # Update existing writing skill
+            writing_skill.coherence = writing_input["coherence"]
+            writing_skill.grammar = writing_input["grammar"]
+            writing_skill.vocabulary = writing_input["vocabulary"]
+            writing_skill.punctuation = writing_input["punctuation"]
+            writing_skill.final_result = calculate_final_grade([
                 writing_input["coherence"],
                 writing_input["grammar"],
                 writing_input["vocabulary"],
                 writing_input["punctuation"]
             ])
-        )
-        db.add(writing_skill)
     
-    # Create listening skill
+    # Create or update listening skill
     listening_input = input.get("listeningSkill", {})
     if listening_input:
-        listening_skill = ListeningSkill(
-            skill_id=skill.id,
-            comprehension=listening_input["comprehension"],
-            retention=listening_input["retention"],
-            interpretation=listening_input["interpretation"],
-            final_result=calculate_final_grade([
+        listening_skill = db.query(ListeningSkill).filter(
+            ListeningSkill.skill_id == skill.id
+        ).first()
+        
+        if not listening_skill:
+            listening_skill = ListeningSkill(
+                skill_id=skill.id,
+                comprehension=listening_input["comprehension"],
+                retention=listening_input["retention"],
+                interpretation=listening_input["interpretation"],
+                final_result=calculate_final_grade([
+                    listening_input["comprehension"],
+                    listening_input["retention"],
+                    listening_input["interpretation"]
+                ])
+            )
+            db.add(listening_skill)
+        else:
+            # Update existing listening skill
+            listening_skill.comprehension = listening_input["comprehension"]
+            listening_skill.retention = listening_input["retention"]
+            listening_skill.interpretation = listening_input["interpretation"]
+            listening_skill.final_result = calculate_final_grade([
                 listening_input["comprehension"],
                 listening_input["retention"],
                 listening_input["interpretation"]
             ])
-        )
-        db.add(listening_skill)
     
     # Calculate final skill grade
     final_grades = []
