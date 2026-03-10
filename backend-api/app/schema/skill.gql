@@ -1,0 +1,126 @@
+enum Grade {
+  A_PLUS
+  A
+  A_MINUS
+  B_PLUS
+  B
+  B_MINUS
+  C_PLUS
+  C
+  C_MINUS
+  D
+  F
+  FX
+}
+
+type Skill {
+  id: ID!
+  enrollmentId: ID!
+  instructorId: ID!
+  finalResult: Grade!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  enrollment: BatchEnrollment!
+  instructor: User!
+  certificate: Certificate
+  speakingSkill: SpeakingSkill
+  readingSkill: ReadingSkill
+  writingSkill: WritingSkill
+  listeningSkill: ListeningSkill
+}
+
+extend type Query {
+  skills(enrollmentId: ID!): [Skill!]!
+  skill(id: ID!): Skill
+  tutorAssignedStudents(batchId: ID!): [BatchEnrollment!]!
+  getExamLink(enrollmentId: ID!): String!
+}
+
+extend type Mutation {
+  createSkill(input: CreateSkillInput!): Skill!
+  updateSkill(id: ID!, input: UpdateSkillInput!): Skill!
+  deleteSkill(id: ID!): Boolean!
+  sendExamLink(input: SendExamLinkInput!): Boolean
+}
+
+input SendExamLinkInput {
+  enrollmentId: ID!
+  examDate: DateTime!
+}
+
+input CreateSkillInput {
+  enrollmentId: ID!
+  readingSkill: CreateReadingSkillInput!
+  writingSkill: CreateWritingSkillInput!
+  speakingSkill: CreateSpeakingSkillInput!
+  listeningSkill: CreateListeningSkillInput!
+}
+
+input CreateReadingSkillInput {
+  comprehension: Grade!
+  speed: Grade!
+  vocabulary: Grade!
+}
+
+input CreateWritingSkillInput {
+  coherence: Grade!
+  grammar: Grade!
+  vocabulary: Grade!
+  punctuation: Grade!
+}
+
+input CreateSpeakingSkillInput {
+  pronunciation: Grade!
+  fluency: Grade!
+  grammar: Grade!
+  vocabulary: Grade!
+  coherence: Grade!
+}
+
+input CreateListeningSkillInput {
+  comprehension: Grade!
+  retention: Grade!
+  interpretation: Grade!
+}
+
+input UpdateSkillInput {
+  enrollmentId: ID
+  readingSkill: UpdateReadingSkillInput
+  writingSkill: UpdateWritingSkillInput
+  speakingSkill: UpdateSpeakingSkillInput
+  listeningSkill: UpdateListeningSkillInput
+}
+
+input UpdateReadingSkillInput {
+  skillId: ID
+  comprehension: Grade
+  speed: Grade
+  vocabulary: Grade
+}
+
+input UpdateWritingSkillInput {
+  skillId: ID
+  coherence: Grade
+  grammar: Grade
+  vocabulary: Grade
+  punctuation: Grade
+}
+
+input UpdateSpeakingSkillInput {
+  skillId: ID
+  pronunciation: Grade
+  fluency: Grade
+  grammar: Grade
+  vocabulary: Grade
+  coherence: Grade
+}
+
+input UpdateListeningSkillInput {
+  skillId: ID
+  comprehension: Grade
+  retention: Grade
+  interpretation: Grade
+}

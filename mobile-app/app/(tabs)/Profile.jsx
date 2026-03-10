@@ -50,6 +50,8 @@ export default function ProfileScreen() {
                 durationUnit: profile.durationUnit || 'DAYS',
                 constraints: profile.constraints || ''
             });
+        } else {
+            logout();
         }
     }, [profile]);
 

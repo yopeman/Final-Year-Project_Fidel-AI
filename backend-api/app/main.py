@@ -6,6 +6,7 @@ from ariadne.asgi.handlers import GraphQLTransportWSHandler, GraphQLWSHandler
 from broadcaster import Broadcast
 from fastapi import FastAPI, Request, Depends, WebSocket, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from typing import List
@@ -28,8 +29,7 @@ from .resolver.notification import notification, mutation as n_mutation, query a
 from .resolver.schedule import schedule, mutation as s_mutation, query as s_query
 from .resolver.course_schedule import course_schedule, mutation as cs_mutation, query as cs_query
 from .resolver.payment import payment, mutation as p_mutation, query as p_query, payment_webhook as p_webhook
-from .resolver.conversation_interactions import \
-    conversation_interactions as ci_type
+from .resolver.conversation_interactions import conversation_interactions as ci_type
 from .resolver.conversation_interactions import mutation as ci_mutation
 from .resolver.conversation_interactions import query as ci_query
 from .resolver.course import course, mutation as c_mutation, query as c_query
@@ -64,6 +64,12 @@ from .resolver.translator import mutation as t_mutation
 from .resolver.translator import query as t_query
 from .resolver.user import mutation, query, user
 from .resolver.verification_code import verification_code as vc_type
+from .resolver.skill import mutation as sk_mutation, query as sk_query, skill
+from .resolver.reading_skill import reading_skill
+from .resolver.writing_skill import writing_skill
+from .resolver.speaking_skill import speaking_skill
+from .resolver.listening_skill import listening_skill
+from .resolver.certificate import mutation as cert_mutation, query as cert_query, certificate
 from .schema import type_defs
 from .util.auth import create_default_admin, get_current_user
 
@@ -222,6 +228,16 @@ bindables = [
     li_query,
     li_mutation,
     li_type,
+    sk_query,
+    sk_mutation,
+    skill,
+    reading_skill,
+    writing_skill,
+    speaking_skill,
+    listening_skill,
+    cert_query,
+    cert_mutation,
+    certificate,
     datetime_scalar,
     date_scalar,
     time_scalar,
@@ -288,3 +304,22 @@ async def upload_course_material(materialId: str, files: List[UploadFile], reque
 async def upload_community_attachments(communityId: str, files: List[UploadFile], request: Request):
     context = {"db": request.state.db, "pubsub": broadcast}
     return await upload_ca(context, communityId, files)
+
+@app.get('/certificates/{certificateId}', response_class=HTMLResponse)
+def get_certificate(certificateId: str, request: Request):
+    from fastapi import HTTPException
+    from .model.certificate import Certificate
+    from sqlalchemy.orm import Session
+    
+    db: Session = request.state.db
+    
+    # Get certificate
+    certificate_obj = db.query(Certificate).filter(
+        Certificate.id == certificateId,
+        Certificate.is_deleted == False
+    ).first()
+    
+    if not certificate_obj:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    
+    return certificate_obj.certificate_html

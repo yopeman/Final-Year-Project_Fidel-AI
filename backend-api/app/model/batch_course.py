@@ -14,5 +14,4 @@ class BatchCourse(BaseModel):
     batch = relationship("Batch", back_populates="batch_courses")
     course = relationship("Course", back_populates="batch_courses")
     schedules = relationship("CourseSchedule", back_populates="batch_course")
-    quizzes = relationship("Quiz", back_populates="batch_course")
     instructors = relationship("BatchInstructor", back_populates="batch_course")

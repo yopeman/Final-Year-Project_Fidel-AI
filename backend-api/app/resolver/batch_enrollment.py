@@ -8,10 +8,9 @@ from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
 from ..model.user import User
 from ..model.student_profile import StudentProfile
 from ..model.batch import Batch
-from ..model.quiz_results import QuizResults
-from ..model.skill_result import SkillResult
 from ..model.payment import Payment
 from ..model.certificate import Certificate
+from ..model.skill import Skill
 from ..util.email_service import send_notification
 
 
@@ -348,24 +347,17 @@ def resolve_batch(enrollment, info):
     return batch
 
 
-@batch_enrollment.field("quizResults")
-def resolve_quiz_results(enrollment, info):
+@batch_enrollment.field("skill")
+def resolve_skill(enrollment, info):
     db: Session = info.context["db"]
-    quiz_results = db.query(QuizResults).filter(
-        QuizResults.enrollment_id == enrollment.id,
-        QuizResults.is_deleted == False
-    ).all()
-    return quiz_results
+    
+    # Get the skill for this enrollment
+    skill = db.query(Skill).filter(
+        Skill.enrollment_id == enrollment.id,
+        Skill.is_deleted == False
+    ).first()
 
-
-@batch_enrollment.field("skillResults")
-def resolve_skill_results(enrollment, info):
-    db: Session = info.context["db"]
-    skill_results = db.query(SkillResult).filter(
-        SkillResult.enrollment_id == enrollment.id,
-        SkillResult.is_deleted == False
-    ).all()
-    return skill_results
+    return skill
 
 
 @batch_enrollment.field("payments")
@@ -376,13 +368,3 @@ def resolve_payments(enrollment, info):
         Payment.is_deleted == False
     ).all()
     return payments
-
-
-@batch_enrollment.field("certificates")
-def resolve_certificates(enrollment, info):
-    db: Session = info.context["db"]
-    certificates = db.query(Certificate).filter(
-        Certificate.enrollment_id == enrollment.id,
-        Certificate.is_deleted == False
-    ).all()
-    return certificates

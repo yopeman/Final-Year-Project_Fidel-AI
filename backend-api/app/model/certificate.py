@@ -7,11 +7,11 @@ from .base import BaseModel
 class Certificate(BaseModel):
     __tablename__ = "certificates"
 
-    enrollment_id = Column(
-        String(36), ForeignKey("batch_enrollments.id"), nullable=False
+    skill_id = Column(
+        String(36), ForeignKey("skills.id"), nullable=False, unique=True
     )
     result = Column(Text, nullable=False)
     certificate_html = Column(Text, nullable=False)
 
     # Relationships
-    enrollment = relationship("BatchEnrollment", back_populates="certificates")
+    skill = relationship("Skill", back_populates="certificate")

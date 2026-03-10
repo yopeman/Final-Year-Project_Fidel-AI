@@ -1,0 +1,25 @@
+type ReadingSkill {
+  id: ID!
+  skillId: ID!
+  comprehension: Grade!
+  speed: Grade!
+  vocabulary: Grade!
+  finalResult: Grade!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  skill: Skill!
+}
+
+extend type Query {
+  readingSkills(skillId: ID!): [ReadingSkill!]!
+  readingSkill(id: ID!): ReadingSkill
+}
+
+extend type Mutation {
+  createReadingSkill(input: CreateReadingSkillInput!): ReadingSkill!
+  updateReadingSkill(id: ID!, input: UpdateReadingSkillInput!): ReadingSkill!
+  deleteReadingSkill(id: ID!): Boolean!
+}
