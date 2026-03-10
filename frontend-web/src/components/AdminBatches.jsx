@@ -46,9 +46,11 @@ import {
   DELETE_ENROLLMENT,
   GET_ATTENDANCES
 } from '../graphql/batch';
+import { GET_CERTIFICATES } from '../graphql/certificates';
 import { GET_COURSES } from '../graphql/course';
 import { GET_SCHEDULES } from '../graphql/schedule';
 import { GET_USERS } from '../graphql/auth';
+import { BASE_URL } from '../lib/apollo-client';
 
 const AdminBatches = ({ 
   onBatchAction, 
@@ -128,6 +130,73 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isFetchingAttendance, setIsFetchingAttendance] = useState(false);
   const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
+
+  // Certificates state
+  const [showCertificatesModal, setShowCertificatesModal] = useState(false);
+  const [selectedBatchForCertificates, setSelectedBatchForCertificates] = useState(null);
+  const [certificatesData, setCertificatesData] = useState([]);
+  const [isFetchingCertificates, setIsFetchingCertificates] = useState(false);
+  const [isDeletingCertificate, setIsDeletingCertificate] = useState(false);
+  const [certificateToDelete, setCertificateToDelete] = useState(null);
+  const [showDeleteCertificateConfirm, setShowDeleteCertificateConfirm] = useState(false);
+
+  // Certificate Functions
+  const handleFetchCertificates = async (batchId) => {
+    setIsFetchingCertificates(true);
+    try {
+      const { data } = await client.query({
+        query: GET_CERTIFICATES,
+        variables: { batchId: batchId }
+      });
+      setCertificatesData(data.certificates || []);
+    } catch (err) {
+      console.error('Error fetching certificates:', err);
+      setCertificatesData([]);
+    } finally {
+      setIsFetchingCertificates(false);
+    }
+  };
+
+  const handleViewCertificates = async (batch) => {
+    setSelectedBatchForCertificates(batch);
+    setShowCertificatesModal(true);
+    await handleFetchCertificates(batch.id);
+  };
+
+  const handleDeleteCertificate = async (certificateId) => {
+    setCertificateToDelete(certificateId);
+    setShowDeleteCertificateConfirm(true);
+  };
+
+  const confirmDeleteCertificate = async () => {
+    if (!certificateToDelete) return;
+    
+    setIsDeletingCertificate(true);
+    try {
+      await client.mutate({
+        mutation: `
+          mutation DeleteCertificate {
+            deleteCertificate(id: "${certificateToDelete}")
+          }
+        `
+      });
+      setShowDeleteCertificateConfirm(false);
+      setCertificateToDelete(null);
+      // Refresh the certificates data
+      if (selectedBatchForCertificates) {
+        await handleFetchCertificates(selectedBatchForCertificates.id);
+      }
+    } catch (err) {
+      console.error('Error deleting certificate:', err);
+    } finally {
+      setIsDeletingCertificate(false);
+    }
+  };
+
+  const cancelDeleteCertificate = () => {
+    setShowDeleteCertificateConfirm(false);
+    setCertificateToDelete(null);
+  };
 
   const batches = data?.batches || [];
   const courses = coursesData?.courses || [];
@@ -624,6 +693,13 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
               >
                 <Calendar className="w-4 h-4" />
                 <span>Attendance</span>
+              </button>
+              <button
+                onClick={() => handleViewCertificates(batch)}
+                className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Certificates</span>
               </button>
               <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                 <X className="w-6 h-6" />
@@ -1216,6 +1292,23 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
           onMarkLate={handleMarkLate}
           isFetching={isFetchingAttendance}
           onOpen={() => handleFetchAttendance(selectedBatchForAttendance.id, selectedDate)}
+        />
+      )}
+
+      {/* Certificates Modal */}
+      {showCertificatesModal && selectedBatchForCertificates && (
+        <CertificatesModal
+          isOpen={showCertificatesModal}
+          onClose={() => {
+            setShowCertificatesModal(false);
+            setSelectedBatchForCertificates(null);
+            setCertificatesData([]);
+          }}
+          batch={selectedBatchForCertificates}
+          certificatesData={certificatesData}
+          isFetching={isFetchingCertificates}
+          isDeletingCertificate={isDeletingCertificate}
+          onHandleDeleteCertificate={handleDeleteCertificate}
         />
       )}
     </div>
@@ -2817,6 +2910,225 @@ const AttendanceModal = ({
             className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
           >
             Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+  // Certificates Modal Component
+const CertificatesModal = ({ 
+  isOpen, 
+  onClose, 
+  batch, 
+  certificatesData, 
+  isFetching,
+  onHandleDeleteCertificate,
+  isDeletingCertificate
+}) => {
+  if (!isOpen) return null;
+
+  const handleViewCertificate = (certificateId) => {
+        window.open(`${BASE_URL}/certificates/${certificateId}`, '_blank');    
+  };
+
+  const getSkillResult = (skill) => {
+    if (!skill) return 'N/A';
+    return skill.finalResult || 'N/A';
+  };
+
+  const getFinalResult = (certificate) => {
+    if (!certificate.skill) return 'N/A';
+    
+    // Get the overall final result from the skill
+    return certificate.skill.finalResult || 'N/A';
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
+              <FileText className="w-8 h-8 text-purple-600" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-semibold text-gray-900">Certificates for {batch?.name}</h3>
+              <p className="text-gray-600">Batch certificates and student achievements</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Certificates Table */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reading Skill</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Writing Skill</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Speaking Skill</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Listening Skill</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Result</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {isFetching ? (
+                  <tr>
+                    <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
+                      Loading certificates data...
+                    </td>
+                  </tr>
+                ) : certificatesData.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
+                      No certificates issued for this batch yet.
+                    </td>
+                  </tr>
+                ) : (
+                  certificatesData.map((certificate) => {
+                    const enrollment = certificate.skill?.enrollment;
+                    
+                    // Get skill results directly from the certificate structure
+                    const readingSkill = certificate.skill?.readingSkill;
+                    const writingSkill = certificate.skill?.writingSkill;
+                    const speakingSkill = certificate.skill?.speakingSkill;
+                    const listeningSkill = certificate.skill?.listeningSkill;
+
+                    return (
+                      <tr key={certificate.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {enrollment?.profile?.user?.firstName} {enrollment?.profile?.user?.lastName}
+                          </div>
+                          <div className="text-sm text-gray-500">{enrollment?.profile?.user?.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {getSkillResult(readingSkill)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {getSkillResult(writingSkill)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {getSkillResult(speakingSkill)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {getSkillResult(listeningSkill)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
+                          {getFinalResult(certificate)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(certificate.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleViewCertificate(certificate.id)}
+                              className="text-blue-600 hover:text-blue-900 font-medium flex items-center space-x-2"
+                            >
+                              <Eye className="w-4 h-4" />
+                              <span>View</span>
+                            </button>
+                            <button
+                              onClick={() => onHandleDeleteCertificate(certificate.id)}
+                              disabled={isDeletingCertificate}
+                              className="text-red-600 hover:text-red-900 font-medium flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-6 flex space-x-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Delete Certificate Confirmation Modal Component
+const DeleteCertificateConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Delete Certificate</h3>
+              <p className="text-sm text-gray-600">This action cannot be undone</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <p className="text-sm text-gray-700 mb-4">
+            Are you sure you want to delete this certificate? This will permanently remove the certificate and cannot be recovered.
+          </p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <div className="flex items-start space-x-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-yellow-800">
+                <strong>Warning:</strong> This action will permanently delete the certificate. This cannot be undone.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex space-x-3">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {isDeleting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Deleting...</span>
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Certificate</span>
+              </>
+            )}
           </button>
         </div>
       </div>
