@@ -228,6 +228,7 @@ def resolve_generate_certificate(_, info, input):
         # Update existing certificate
         certificate_obj.result = final_grade
         certificate_obj.certificate_html = certificate_html
+        certificate_obj.is_deleted = False
         certificate_obj.updated_at = datetime.utcnow()
 
         db.commit()
