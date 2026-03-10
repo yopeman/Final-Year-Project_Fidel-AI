@@ -8,7 +8,7 @@ from .skill import Grade
 class WritingSkill(BaseModel):
     __tablename__ = "writing_skills"
 
-    skill_id = Column(String(36), ForeignKey("skills.id"), nullable=False)
+    skill_id = Column(String(36), ForeignKey("skills.id"), nullable=False, unique=True)
     coherence = Column(Enum(Grade), nullable=False)  # Grade
     grammar = Column(Enum(Grade), nullable=False)  # Grade
     vocabulary = Column(Enum(Grade), nullable=False)  # Grade

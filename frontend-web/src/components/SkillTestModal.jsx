@@ -185,7 +185,20 @@ const SkillTestModal = ({
 
   const calculateFinalResult = (skillType) => {
     const skill = skillData[skillType];
-    const grades = Object.values(skill);
+
+    let grades = []
+    if (skill.__typename == 'ReadingSkill') {
+      grades = [skill.comprehension, skill.speed, skill.vocabulary]
+    } else if (skill.__typename == 'WritingSkill') {
+      grades = [skill.coherence, skill.grammar, skill.punctuation, skill.vocabulary]
+    } else if (skill.__typename == 'SpeakingSkill') {
+      grades = [skill.coherence, skill.fluency, skill.grammar, skill.pronunciation, skill.vocabulary]
+    } else if (skill.__typename == 'ListeningSkill') {
+      grades = [skill.comprehension, skill.interpretation, skill.retention]
+    } else {
+      grades = Object.values(skill);
+    }
+
     const gradeValues = {
       'A_PLUS': 100, 'A': 95, 'A_MINUS': 90,
       'B_PLUS': 85, 'B': 80, 'B_MINUS': 75,
@@ -214,10 +227,29 @@ const SkillTestModal = ({
     try {
       const input = {
         enrollmentId: selectedStudent.id,
-        readingSkill: skillData.readingSkill,
-        writingSkill: skillData.writingSkill,
-        speakingSkill: skillData.speakingSkill,
-        listeningSkill: skillData.listeningSkill
+        readingSkill: {
+          comprehension: skillData.readingSkill.comprehension,
+          speed: skillData.readingSkill.speed,
+          vocabulary: skillData.readingSkill.vocabulary
+        },
+        writingSkill: {
+          coherence: skillData.writingSkill.coherence,
+          grammar: skillData.writingSkill.grammar,
+          vocabulary: skillData.writingSkill.vocabulary,
+          punctuation: skillData.writingSkill.punctuation
+        },
+        speakingSkill: {
+          pronunciation: skillData.speakingSkill.pronunciation,
+          fluency: skillData.speakingSkill.fluency,
+          grammar: skillData.speakingSkill.grammar,
+          vocabulary: skillData.speakingSkill.vocabulary,
+          coherence: skillData.speakingSkill.coherence
+        },
+        listeningSkill: {
+          comprehension: skillData.listeningSkill.comprehension,
+          retention: skillData.listeningSkill.retention,
+          interpretation: skillData.listeningSkill.interpretation
+        }
       };
 
       if (selectedStudent.skill) {

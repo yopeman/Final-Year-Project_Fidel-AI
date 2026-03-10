@@ -32,7 +32,7 @@ const NotificationBell = ({ userId }) => {
   const [markAllAsRead] = useMutation(MARK_AS_READ_ALL_NOTIFICATIONS);
   const [deleteNotification] = useMutation(DELETE_NOTIFICATION);
 
-  const notifications = data?.notifications || [];
+  const notifications = data?.myNotifications || [];
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   // Check for new notifications and play sound
@@ -158,7 +158,7 @@ const NotificationBell = ({ userId }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden"
+            className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">

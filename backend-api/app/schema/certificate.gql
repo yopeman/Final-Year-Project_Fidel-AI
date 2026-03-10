@@ -12,7 +12,7 @@ type Certificate {
 }
 
 extend type Query {
-  certificates(enrollmentId: ID!): [Certificate!]!
+  certificates(batchId: ID): [Certificate!]!
   certificate(id: ID!): Certificate
 }
 
