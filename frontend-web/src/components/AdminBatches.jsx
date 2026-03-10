@@ -50,6 +50,7 @@ import { GET_CERTIFICATES } from '../graphql/certificates';
 import { GET_COURSES } from '../graphql/course';
 import { GET_SCHEDULES } from '../graphql/schedule';
 import { GET_USERS } from '../graphql/auth';
+import { DELETE_CERTIFICATE } from '../graphql/tutorBatch';
 import { BASE_URL } from '../lib/apollo-client';
 
 const AdminBatches = ({ 
@@ -84,6 +85,7 @@ const AdminBatches = ({
   const [createEnrollment] = useMutation(CREATE_ENROLLMENT);
   const [updateEnrollment] = useMutation(UPDATE_ENROLLMENT);
   const [deleteEnrollmentMutation] = useMutation(DELETE_ENROLLMENT);
+  const [deleteCertificateMutation] = useMutation(DELETE_CERTIFICATE);
   const { data: usersData } = useQuery(GET_USERS);
   
   // State for activity indicators
@@ -164,38 +166,27 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
   };
 
   const handleDeleteCertificate = async (certificateId) => {
-    setCertificateToDelete(certificateId);
-    setShowDeleteCertificateConfirm(true);
-  };
-
-  const confirmDeleteCertificate = async () => {
-    if (!certificateToDelete) return;
+    const confirmed = window.confirm('Are you sure you want to delete this certificate? This action cannot be undone.');
     
-    setIsDeletingCertificate(true);
-    try {
-      await client.mutate({
-        mutation: `
-          mutation DeleteCertificate {
-            deleteCertificate(id: "${certificateToDelete}")
+    if (confirmed) {
+      setIsDeletingCertificate(true);
+      try {
+        await deleteCertificateMutation({
+          variables: {
+            id: certificateId
           }
-        `
-      });
-      setShowDeleteCertificateConfirm(false);
-      setCertificateToDelete(null);
-      // Refresh the certificates data
-      if (selectedBatchForCertificates) {
-        await handleFetchCertificates(selectedBatchForCertificates.id);
+        });
+        // Refresh the certificates data
+        if (selectedBatchForCertificates) {
+          await handleFetchCertificates(selectedBatchForCertificates.id);
+        }
+      } catch (err) {
+        console.error('Error deleting certificate:', err);
+        alert('Error deleting certificate. Please try again.');
+      } finally {
+        setIsDeletingCertificate(false);
       }
-    } catch (err) {
-      console.error('Error deleting certificate:', err);
-    } finally {
-      setIsDeletingCertificate(false);
     }
-  };
-
-  const cancelDeleteCertificate = () => {
-    setShowDeleteCertificateConfirm(false);
-    setCertificateToDelete(null);
   };
 
   const batches = data?.batches || [];
