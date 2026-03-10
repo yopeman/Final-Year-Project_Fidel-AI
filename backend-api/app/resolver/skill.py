@@ -135,8 +135,8 @@ def resolve_tutor_assigned_students(_, info, batchId):
     db: Session = info.context["db"]
     
     # Only tutors and admins can view assigned students
-    if current_user.role not in [UserRole.admin, UserRole.tutor]:
-        raise Exception("Unauthorized: Only admins and tutors can view assigned students")
+    if current_user.role != UserRole.tutor:
+        raise Exception("Unauthorized: Only tutors can view assigned students")
     
     # Verify instructor is assigned to this batch
     from ..model.batch_instructor import BatchInstructor

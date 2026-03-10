@@ -22,49 +22,79 @@ mutation = MutationType()
 certificate = ObjectType("Certificate")
 
 @query.field("certificates")
-def resolve_certificates(_, info, enrollmentId):
+def resolve_certificates(_, info, batchId: str = None):
     current_user: User = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
 
     db: Session = info.context["db"]
-    
-    # Check if user is tutor, admin, or the student themselves
-    if current_user.role not in [UserRole.admin, UserRole.tutor]:
-        # Students can only view their own certificates
-        enrollment = db.query(BatchEnrollment).filter(
-            BatchEnrollment.id == enrollmentId,
-            BatchEnrollment.is_deleted == False
+    from ..model.skill import Skill
+    from ..model.batch import Batch
+
+    if batchId:
+        batch = db.query(Batch).filter(
+            Batch.id == batchId,
+            Batch.is_deleted == False
         ).first()
-        
-        if not enrollment or current_user.id != enrollment.profile.user_id:
-            raise Exception("Unauthorized: You can only view your own certificates")
-    
-    # Verify enrollment exists and belongs to the same batch as the tutor (if tutor)
-    enrollment = db.query(BatchEnrollment).filter(
-        BatchEnrollment.id == enrollmentId,
-        BatchEnrollment.is_deleted == False
-    ).first()
-    
-    if not enrollment:
-        raise Exception("Enrollment not found")
-    
-    # If user is a tutor, verify they are assigned to this batch
-    if current_user.role == UserRole.tutor:
-        from ..model.batch_instructor import BatchInstructor
-        batch_instructor = db.query(BatchInstructor).filter(
-            BatchInstructor.user_id == current_user.id,
-            BatchInstructor.batch_id == enrollment.batch_id,
-            BatchInstructor.is_deleted == False
-        ).first()
-        
-        if not batch_instructor:
-            raise Exception("Unauthorized: You are not assigned to this batch")
-    
-    certificates = db.query(Certificate).filter(
-        Certificate.skill.has(enrollment_id=enrollmentId),
-        Certificate.is_deleted == False
-    ).all()
+
+        if not batch:
+            raise Exception('Batch not found')
+
+    if current_user.role in [UserRole.admin, UserRole.tutor]:
+        if batchId:
+            skills = db.query(Skill).filter(
+                Skill.enrollment.has(batch_id=batchId),
+                Skill.is_deleted == False
+            ).all()
+            
+            skill_ids = [skill.id for skill in skills]
+            
+            certificates = db.query(Certificate).filter(
+                Certificate.skill_id.in_(skill_ids),
+                Certificate.is_deleted == False
+            ).all()
+        else:
+            certificates = db.query(Certificate).filter(
+                Certificate.is_deleted == False
+            ).all()
+
+    else:
+        if batchId:
+            enrollments = db.query(BatchEnrollment).filter(
+                BatchEnrollment.batch_id == batchId,
+                BatchEnrollment.profile.has(user_id=current_user.id),
+                BatchEnrollment.is_deleted == False
+            ).all()
+
+            skills = db.query(Skill).filter(
+                Skill.enrollment_id.in_([e.id for e in enrollments]),
+                Skill.is_deleted == False
+            ).all()
+
+            skill_ids = [skill.id for skill in skills]
+            
+            certificates = db.query(Certificate).filter(
+                Certificate.skill_id.in_(skill_ids),
+                Certificate.is_deleted == False
+            ).all()
+
+        else:
+            enrollments = db.query(BatchEnrollment).filter(
+                BatchEnrollment.profile.has(user_id=current_user.id),
+                BatchEnrollment.is_deleted == False
+            ).all()
+
+            skills = db.query(Skill).filter(
+                Skill.enrollment_id.in_([e.id for e in enrollments]),
+                Skill.is_deleted == False
+            ).all()
+
+            skill_ids = [skill.id for skill in skills]
+            
+            certificates = db.query(Certificate).filter(
+                Certificate.skill_id.in_(skill_ids),
+                Certificate.is_deleted == False
+            ).all()
     
     return certificates
 
