@@ -245,29 +245,6 @@ const AdminOverview = ({ user, stats, onAction }) => {
           </div>
         </div>
       </motion.div>
-
-      {/* Recent Activity */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="bg-white rounded-lg border border-gray-200"
-      >
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
-        </div>
-        <div className="p-6 space-y-4">
-          {recentActivity.map((activity) => (
-            <div key={activity.id} className="flex items-center space-x-3">
-              <activity.icon className={`w-5 h-5 ${activity.color}`} />
-              <div>
-                <p className="font-medium">{activity.message}</p>
-                <p className="text-sm text-gray-500">{activity.time}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </motion.div>
     </div>
   );
 };
