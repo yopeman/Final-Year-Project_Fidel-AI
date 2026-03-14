@@ -5,6 +5,7 @@ from ariadne import MutationType, ObjectType, QueryType
 from sqlalchemy.orm import Session
 
 from ..model.batch import Batch, BatchLevel, BatchStatus
+from ..model.user import User, UserRole
 from ..model.batch_course import BatchCourse
 from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
 from ..model.student_profile import StudentProfile
@@ -40,12 +41,19 @@ def map_batch_status(status_str: str) -> BatchStatus:
 
 @query.field("batches")
 def resolve_batches(_, info, pagination=None):
-    current_user = info.context.get("current_user")
+    current_user: User = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
 
     db: Session = info.context["db"]
-    query_obj = db.query(Batch).filter(Batch.is_deleted == False)
+
+    if current_user.role == UserRole.student:
+        query_obj = db.query(Batch).filter(
+            Batch.status.in_([BatchStatus.upcoming, BatchStatus.active]),
+            Batch.is_deleted == False
+        )
+    else:
+        query_obj = db.query(Batch).filter(Batch.is_deleted == False)
     
     if pagination:
         page = pagination.get("page", 1)
