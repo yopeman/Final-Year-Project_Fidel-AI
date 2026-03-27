@@ -13,16 +13,26 @@
           extend: {
             colors: {
               primary: {
-                50: '#eff6ff',
-                100: '#dbeafe',
-                200: '#bfdbfe',
-                300: '#93c5fd',
-                400: '#60a5fa',
-                500: '#3b82f6',
-                600: '#2563eb',
-                700: '#1d4ed8',
-                800: '#1e40af',
-                900: '#1e3a8a',
+                DEFAULT: '#FFC107',
+                50: '#fffdf0',
+                100: '#fff7cc',
+                200: '#ffeb99',
+                300: '#ffdf66',
+                400: '#ffd333',
+                500: '#FFC107',
+                600: '#ffb300',
+                700: '#e6a100',
+                800: '#cc8f00',
+                900: '#b37d00',
+              },
+              brand: {
+                green: '#10B981',
+                indigo: '#6366F1',
+                yellowGlow: 'rgba(255, 193, 7, 0.2)',
+              },
+              accent: {
+                secondary: 'rgba(255, 255, 255, 0.6)',
+                muted: 'rgba(255, 255, 255, 0.5)',
               }
             }
           }
@@ -35,18 +45,31 @@
       * {
         font-family: 'Inter', sans-serif;
       }
+      body {
+        background: #080C14;
+        color: #FFFFFF;
+      }
       .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #0A2540 0%, #0D1B2A 50%, #080C14 100%);
+        min-height: 100vh;
       }
       .gradient-text {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #FFC107 0%, #10B981 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
       }
       .glass-effect {
-        background: rgba(255, 255, 255, 0.25);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .glass-premium {
+        background: rgba(13, 27, 42, 0.4);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .yellow-glow {
+        box-shadow: 0 0 20px rgba(255, 193, 7, 0.15);
       }
     </style>
   </head>

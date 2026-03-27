@@ -11,6 +11,7 @@ import {
   Clock,
   RefreshCw
 } from 'lucide-react';
+import useAuthStore from '../store/authStore';
 
 const VerificationPage = () => {
   const navigate = useNavigate();
@@ -218,11 +219,13 @@ const VerificationPage = () => {
 
   const handleGoToLogin = () => {
     localStorage.removeItem('verificationEmail');
+    useAuthStore.getState().logout();
     navigate('/login');
   };
 
   const handleGoToRegister = () => {
     localStorage.removeItem('verificationEmail');
+    useAuthStore.getState().logout();
     navigate('/register');
   };
 

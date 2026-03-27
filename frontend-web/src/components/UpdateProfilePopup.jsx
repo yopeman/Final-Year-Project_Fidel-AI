@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useMutation } from '@apollo/client';
 import { UPDATE_ME_MUTATION, UPDATE_USER_MUTATION } from '../graphql/auth';
+import useAuthStore from '../store/authStore';
 
 const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => {
   
@@ -100,18 +101,15 @@ const UpdateProfilePopup = ({ isOpen, onClose, user, onUpdateUserMutation }) => 
       await updateUser({
         variables: { input }
       });
+      
+      const { updateUser: updateAuthUser } = useAuthStore.getState();
 
-      // Update local storage with new user data
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        localStorage.setItem('user', JSON.stringify({
-          ...userData,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email
-        }));
-      }
+      // Update store with new user data
+      updateAuthUser({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email
+      });
 
       onClose();
     } catch (err) {

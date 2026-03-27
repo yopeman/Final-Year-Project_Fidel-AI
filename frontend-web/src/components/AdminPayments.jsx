@@ -22,15 +22,21 @@ import {
 } from 'lucide-react';
 import { GET_PAYMENTS, CANCEL_PAYMENT, DELETE_PAYMENT } from '../graphql/payment';
 
+import useFinanceStore from '../store/financeStore';
+
 const AdminPayments = ({ 
   onPaymentAction, 
   onEditPayment, 
   onViewPayment, 
   onDeletePayment 
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterBatch, setFilterBatch] = useState('all');
+  const { 
+    filters, 
+    setFilters, 
+    getFilteredTransactions, 
+    getPaymentStats,
+    setTransactions 
+  } = useFinanceStore();
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -39,7 +45,7 @@ const AdminPayments = ({
   const { data, loading, error, refetch } = useQuery(GET_PAYMENTS, {
     variables: { 
       enrollmentId: null,
-      status: filterStatus === 'all' ? null : filterStatus 
+      status: filters.status === 'all' ? null : filters.status 
     }
   });
 
@@ -48,18 +54,14 @@ const AdminPayments = ({
 
   const payments = data?.payments || [];
 
-  // Filter and sort payments
-  const filteredPayments = payments
-    .filter(payment => {
-      const matchesSearch = payment.enrollment.profile.user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           payment.enrollment.profile.user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           payment.enrollment.profile.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           payment.enrollment.batch.name.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesBatch = filterBatch === 'all' || payment.enrollment.batch.id === filterBatch;
-      
-      return matchesSearch && matchesBatch;
-    })
+  // Sync payments to store
+  useEffect(() => {
+    if (payments.length > 0) {
+      setTransactions(payments);
+    }
+  }, [payments, setTransactions]);
+
+  const filteredPayments = getFilteredTransactions()
     .sort((a, b) => {
       const aValue = a[sortBy];
       const bValue = b[sortBy];
@@ -70,6 +72,9 @@ const AdminPayments = ({
         return aValue < bValue ? 1 : -1;
       }
     });
+
+
+  // Get unique batches for filter
 
   // Get unique batches for filter
   const batches = [...new Map(payments.map(p => [p.enrollment.batch.id, p.enrollment.batch])).values()];
@@ -115,23 +120,7 @@ const AdminPayments = ({
     }).format(amount);
   };
 
-  const getPaymentStats = () => {
-    const totalPayments = payments.length;
-    const completedPayments = payments.filter(p => p.status === 'COMPLETED').length;
-    const pendingPayments = payments.filter(p => p.status === 'PENDING').length;
-    const failedPayments = payments.filter(p => p.status === 'FAILED').length;
-    const totalRevenue = payments
-      .filter(p => p.status === 'COMPLETED')
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    return {
-      totalPayments,
-      completedPayments,
-      pendingPayments,
-      failedPayments,
-      totalRevenue
-    };
-  };
+  // Stats calculation removed (moved to effect)
 
   const stats = getPaymentStats();
 
@@ -235,15 +224,15 @@ const AdminPayments = ({
               <input
                 type="text"
                 placeholder="Search payments by user or batch..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={filters.search}
+                onChange={(e) => setFilters({ search: e.target.value })}
                 className="w-full pl-12 pr-6 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
               />
             </div>
             
             <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              value={filters.status}
+              onChange={(e) => setFilters({ status: e.target.value })}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="all">All Status</option>
@@ -253,8 +242,8 @@ const AdminPayments = ({
             </select>
 
             <select
-              value={filterBatch}
-              onChange={(e) => setFilterBatch(e.target.value)}
+              value={filters.batch}
+              onChange={(e) => setFilters({ batch: e.target.value })}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="all">All Batches</option>

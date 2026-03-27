@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client';
 import { motion } from 'framer-motion';
 import { 
@@ -24,28 +25,45 @@ import UpdateProfilePopup from '../components/UpdateProfilePopup';
 import NotificationBell from '../components/NotificationBell';
 import TutorCourses from '../components/TutorCourses';
 import TutorBatches from '../components/TutorBatches';
+import useAuthStore from '../store/authStore';
+import useTutorStore from '../store/tutorStore';
+import useSessionStore from '../store/sessionStore';
+import useFinanceStore from '../store/financeStore';
+import usePerformanceStore from '../store/performanceStore';
 
 const TutorDashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [showUpdatePopup, setShowUpdatePopup] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const { user: storedUser, logout } = useAuthStore();
+  const { profile, setProfile } = useTutorStore();
+  const { sessions, setSessions, activeSession, getTotalStudents, getActiveSessionsCount } = useSessionStore();
+  const { tutorEarnings, withdrawalRequests } = useFinanceStore();
+  const { studentEvaluations, setEvaluations } = usePerformanceStore();
+  const navigate = useNavigate();
 
   const [deleteMe] = useMutation(DELETE_ME_MUTATION);
 
   const { data, loading, error } = useQuery(GET_CURRENT_USER);
 
   const user = data?.me;
+  const [activeTab, setActiveTab] = useState('overview');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  useEffect(() => {
+    if (user) {
+      setProfile(user);
+    }
+  }, [user, setProfile]);
 
   const handleDeleteProfile = async () => {
     try {
       setDeleting(true);
       await deleteMe();
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      logout();
+      navigate('/login', { replace: true });
     } catch (err) {
       console.error('Error deleting profile:', err);
       setDeleting(false);
@@ -53,36 +71,26 @@ const TutorDashboard = () => {
   };
 
   useEffect(() => {
-    // Check if user is authenticated and has tutor role
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (!token || !storedUser) {
-      window.location.href = '/login';
+    // Check if user is authenticated and has tutor role using store
+    if (!storedUser) {
+      navigate('/login', { replace: true });
       return;
     }
 
-    try {
-      const userData = JSON.parse(storedUser);
-      if (userData.role !== 'TUTOR') {
-        // Redirect to appropriate dashboard based on role
-        switch (userData.role) {
-          case 'ADMIN':
-            window.location.href = '/admin/dashboard';
-            break;
-          case 'STUDENT':
-            window.location.href = '/student/dashboard';
-            break;
-          default:
-            window.location.href = '/dashboard';
-        }
+    if (storedUser.role !== 'TUTOR') {
+      // Redirect to appropriate dashboard based on role
+      switch (storedUser.role) {
+        case 'ADMIN':
+          navigate('/admin/dashboard', { replace: true });
+          break;
+        case 'STUDENT':
+          navigate('/student/dashboard', { replace: true });
+          break;
+        default:
+          navigate('/dashboard', { replace: true });
       }
-    } catch (err) {
-      console.error('Error parsing user:', err);
-      localStorage.clear();
-      window.location.href = '/login';
     }
-  }, []);
+  }, [storedUser, navigate]);
 
   const mockStudents = [
     {
@@ -197,9 +205,8 @@ const TutorDashboard = () => {
               </span>
               <button 
                 onClick={() => {
-                  localStorage.removeItem('token');
-                  localStorage.removeItem('user');
-                  window.location.href = '/login';
+                  logout();
+                  navigate('/login', { replace: true });
                 }}
                 className="text-gray-600 hover:text-gray-900"
               >
@@ -293,7 +300,7 @@ const TutorDashboard = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-blue-100 text-sm">Total Students</p>
-                        <p className="text-2xl font-bold">15</p>
+                        <p className="text-2xl font-bold">{getTotalStudents()}</p>
                       </div>
                       <Users className="w-8 h-8 opacity-80" />
                     </div>
@@ -302,8 +309,8 @@ const TutorDashboard = () => {
                   <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-green-100 text-sm">Active Sessions</p>
-                        <p className="text-2xl font-bold">8</p>
+                        <p className="text-green-100 text-sm">Active Batches</p>
+                        <p className="text-2xl font-bold">{getActiveSessionsCount() || sessions.filter(s => s.status === 'ACTIVE').length}</p>
                       </div>
                       <Clock className="w-8 h-8 opacity-80" />
                     </div>
@@ -312,8 +319,8 @@ const TutorDashboard = () => {
                   <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-purple-100 text-sm">This Week</p>
-                        <p className="text-2xl font-bold">12h</p>
+                        <p className="text-purple-100 text-sm">Total Earnings</p>
+                        <p className="text-2xl font-bold">${tutorEarnings || 0}</p>
                       </div>
                       <Calendar className="w-8 h-8 opacity-80" />
                     </div>

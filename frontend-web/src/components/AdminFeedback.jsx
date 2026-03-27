@@ -20,15 +20,15 @@ import {
 } from 'lucide-react';
 import { GET_FEEDBACKS, MARK_AS_READ_FEEDBACK_MUTATION, MARK_AS_READ_ALL_FEEDBACKS_MUTATION, DELETE_FEEDBACK_MUTATION } from '../graphql/feedback';
 
+import useSystemStore from '../store/systemStore';
+
 const AdminFeedback = ({ 
   onFeedbackAction, 
   onEditFeedback, 
   onViewFeedback, 
   onDeleteFeedback 
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRead, setFilterRead] = useState('all');
-  const [filterRating, setFilterRating] = useState('all');
+  const { filters, setFilters, getFilteredFeedback, setFeedback } = useSystemStore();
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -44,22 +44,14 @@ const AdminFeedback = ({
 
   const feedbacks = data?.feedbacks || [];
 
-  // Filter feedbacks based on search and filters
-  const filteredFeedbacks = feedbacks.filter(feedback => {
-    const matchesSearch = feedback.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         feedback.user?.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         feedback.user?.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         feedback.context?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRead = filterRead === 'all' || 
-                       (filterRead === 'read' && feedback.isRead) ||
-                       (filterRead === 'unread' && !feedback.isRead);
-    
-    const matchesRating = filterRating === 'all' || 
-                         feedback.rate.toString() === filterRating;
+  // Sync feedback to store
+  useEffect(() => {
+    if (feedbacks.length > 0) {
+      setFeedback(feedbacks);
+    }
+  }, [feedbacks, setFeedback]);
 
-    return matchesSearch && matchesRead && matchesRating;
-  });
+  const filteredFeedbacks = getFilteredFeedback();
 
   const handleMarkAsRead = async (feedbackId) => {
     try {
@@ -181,8 +173,8 @@ const AdminFeedback = ({
             <input
               type="text"
               placeholder="Search feedback..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={filters.search}
+              onChange={(e) => setFilters({ search: e.target.value })}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
@@ -190,8 +182,8 @@ const AdminFeedback = ({
           {/* Read Status Filter */}
           <div>
             <select
-              value={filterRead}
-              onChange={(e) => setFilterRead(e.target.value)}
+              value={filters.read}
+              onChange={(e) => setFilters({ read: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="all">All Status</option>
@@ -203,8 +195,8 @@ const AdminFeedback = ({
           {/* Rating Filter */}
           <div>
             <select
-              value={filterRating}
-              onChange={(e) => setFilterRating(e.target.value)}
+              value={filters.rating}
+              onChange={(e) => setFilters({ rating: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="all">All Ratings</option>

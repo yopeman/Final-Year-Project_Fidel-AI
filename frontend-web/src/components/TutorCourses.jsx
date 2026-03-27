@@ -27,10 +27,10 @@ import { useQuery, useMutation } from '@apollo/client';
 import { GET_COURSES } from '../graphql/course';
 import { ME_QUERY } from '../graphql/instructor';
 import { BASE_URL } from '../lib/apollo-client';
+import useContentStore from '../store/contentStore';
 
 const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const { filters, setFilters, setCourses } = useContentStore();
   const [showCourseDetails, setShowCourseDetails] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedBatchCourse, setSelectedBatchCourse] = useState(null);
@@ -75,15 +75,21 @@ const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
     });
   }, [meData, coursesData]);
 
+  useEffect(() => {
+    if (tutorCourses.length > 0) {
+      setCourses(tutorCourses);
+    }
+  }, [tutorCourses, setCourses]);
+
   const filteredCourses = tutorCourses.filter(course => {
-    const matchesSearch = course.courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.courseDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.batchName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = course.courseName.toLowerCase().includes(filters.search.toLowerCase()) ||
+                         course.courseDescription.toLowerCase().includes(filters.search.toLowerCase()) ||
+                         course.batchName.toLowerCase().includes(filters.search.toLowerCase());
     
-    const matchesStatus = filterStatus === 'all' || 
-      (filterStatus === 'ACTIVE' && course.batch?.status === 'ACTIVE') ||
-      (filterStatus === 'UPCOMING' && course.batch?.status === 'UPCOMING') ||
-      (filterStatus === 'COMPLETED' && course.batch?.status === 'COMPLETED');
+    const matchesStatus = filters.status === 'all' || 
+      (filters.status === 'ACTIVE' && course.batch?.status === 'ACTIVE') ||
+      (filters.status === 'UPCOMING' && course.batch?.status === 'UPCOMING') ||
+      (filters.status === 'COMPLETED' && course.batch?.status === 'COMPLETED');
 
     return matchesSearch && matchesStatus;
   });
@@ -172,15 +178,15 @@ const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
             <input
               type="text"
               placeholder="Search courses, batches, or materials..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={filters.search}
+              onChange={(e) => setFilters({ search: e.target.value })}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
           <div>
             <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              value={filters.status}
+              onChange={(e) => setFilters({ status: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="all">All Status</option>

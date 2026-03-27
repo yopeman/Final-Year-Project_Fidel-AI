@@ -25,10 +25,30 @@ import {
   FileText,
   User,
   Clock as ClockIcon,
-  Calendar as CalendarLucide
-} from 'lucide-react';
+  Calendar as CalendarLucide,
+  Layers, Award, Settings, Edit2, Hash } from 'lucide-react';
 import AddSchedulePopup from './AddSchedulePopup';
 import DeleteSchedulePopup from './DeleteSchedulePopup';
+import ViewBatchModal, { getStatusColor, getLevelColor } from './ViewBatchModal';
+import { 
+  CreateBatchModal, 
+  EditBatchModal, 
+  DeleteConfirmationModal 
+} from './BatchManagementModals';
+import { 
+  AssignCourseModal, 
+  DeleteCourseConfirmationModal, 
+  ViewCourseDetailsModal, 
+  AddInstructorModal, 
+  DeleteInstructorConfirmationModal
+} from './BatchCourseModals';
+import { 
+  EnrollStudentModal, 
+  UpdateEnrollmentModal, 
+  DeleteEnrollmentConfirmationModal, 
+  AttendanceModal, 
+  CertificatesModal 
+} from './BatchStudentModals';
 import { 
   GET_BATCHES, 
   CREATE_BATCH, 
@@ -53,15 +73,15 @@ import { GET_USERS } from '../graphql/auth';
 import { DELETE_CERTIFICATE } from '../graphql/tutorBatch';
 import { BASE_URL } from '../lib/apollo-client';
 
+import useBatchStore from '../store/batchStore';
+
 const AdminBatches = ({ 
   onBatchAction, 
   onEditBatch, 
   onViewBatch, 
   onDeleteBatch 
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterLevel, setFilterLevel] = useState('all');
+  const { filters, setFilters, getFilteredBatches, setBatches } = useBatchStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -193,15 +213,14 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
   const courses = coursesData?.courses || [];
   const schedules = schedulesData?.schedules || [];
 
-  // Filter batches based on search and filters
-  const filteredBatches = batches.filter(batch => {
-    const matchesSearch = batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         batch.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || batch.status === filterStatus;
-    const matchesLevel = filterLevel === 'all' || batch.level === filterLevel;
-    
-    return matchesSearch && matchesStatus && matchesLevel;
-  });
+  // Sync batches to store
+  useEffect(() => {
+    if (batches.length > 0) {
+      setBatches(batches);
+    }
+  }, [batches, setBatches]);
+
+  const filteredBatches = getFilteredBatches();
 
   const handleCreateBatch = async (batchData) => {
     try {
@@ -612,404 +631,142 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
   const handleMarkAbsent = (studentId) => {
     handleMarkAttendance(studentId, 'ABSENT');
   };
-
   const handleMarkLate = (studentId) => {
     handleMarkAttendance(studentId, 'LATE');
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'ACTIVE': return 'bg-green-100 text-green-800';
-      case 'UPCOMING': return 'bg-blue-100 text-blue-800';
-      case 'COMPLETED': return 'bg-gray-100 text-gray-800';
-      case 'CANCELLED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getLevelColor = (level) => {
-    switch (level) {
-      case 'BEGINNER': return 'bg-purple-100 text-purple-800';
-      case 'BASIC': return 'bg-blue-100 text-blue-800';
-      case 'INTERMEDIATE': return 'bg-yellow-100 text-yellow-800';
-      case 'ADVANCED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // View Batch Details Modal Component
-  const ViewBatchModal = ({ 
-    isOpen, 
-    onClose, 
-    batch, 
-    details, 
-    onAssignCourse, 
-    onDeleteCourse, 
-    onViewCourseDetails,
-    onEnrollStudent,
-    onUpdateEnrollment,
-    onDeleteEnrollment
-  }) => {
-    if (!isOpen) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                <GraduationCap className="w-8 h-8 text-indigo-600" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-semibold text-gray-900">{batch.name}</h3>
-                <p className="text-gray-600">{batch.description}</p>
-                <div className="flex items-center space-x-2 mt-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLevelColor(batch.level)}`}>
-                    {batch.level}
-                  </span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(batch.status)}`}>
-                    {batch.status}
-                  </span>
-                  <span className="text-xs text-gray-500">{batch.language}</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => {
-                  setSelectedBatchForAttendance(batch);
-                  setShowAttendanceModal(true);
-                }}
-                className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-              >
-                <Calendar className="w-4 h-4" />
-                <span>Attendance</span>
-              </button>
-              <button
-                onClick={() => handleViewCertificates(batch)}
-                className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
-              >
-                <FileText className="w-4 h-4" />
-                <span>Certificates</span>
-              </button>
-              <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2 flex items-center space-x-2">
-                <CalendarIcon className="w-4 h-4" />
-                <span>Schedule</span>
-              </h4>
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex justify-between">
-                  <span>Start Date:</span>
-                  <span>{batch.startDate ? new Date(batch.startDate).toLocaleDateString() : 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>End Date:</span>
-                  <span>{batch.endDate ? new Date(batch.endDate).toLocaleDateString() : 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Fee Amount:</span>
-                  <span>${batch.feeAmount}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2 flex items-center space-x-2">
-                <Users className="w-4 h-4" />
-                <span>Capacity</span>
-              </h4>
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex justify-between">
-                  <span>Max Students:</span>
-                  <span>{batch.maxStudents}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Enrolled:</span>
-                  <span>{batch.enrollments?.length || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Available:</span>
-                  <span>{batch.maxStudents - (batch.enrollments?.length || 0)}</span>
-                </div>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <div 
-                  className="bg-indigo-600 h-2 rounded-full" 
-                  style={{ width: `${((batch.enrollments?.length || 0) / batch.maxStudents) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium text-gray-900 flex items-center space-x-2">
-                  <BookOpen className="w-4 h-4" />
-                  <span>Courses</span>
-                </h4>
-                <button
-                  onClick={() => onAssignCourse(batch.id)}
-                  className="flex items-center space-x-2 px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>Assign Course</span>
-                </button>
-              </div>
-              {batch.batchCourses && batch.batchCourses.length > 0 ? (
-                <div className="grid grid-cols-1 gap-2">
-                  {batch.batchCourses.map((bc) => (
-                    <div key={bc.id} className="bg-white rounded p-3 flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-sm">{bc.course?.name}</div>
-                        <div className="text-xs text-gray-500 mt-1">{bc.course?.description}</div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => onViewCourseDetails(bc)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="View Course Details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onDeleteCourse(bc.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Delete Course Assignment"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">No courses assigned</p>
-              )}
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium text-gray-900 flex items-center space-x-2">
-                  <UserPlus className="w-4 h-4" />
-                  <span>Enrollments</span>
-                </h4>
-                <button
-                  onClick={() => onEnrollStudent(batch.id)}
-                  className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-                >
-                  <UserPlus className="w-3 h-3" />
-                  <span>Enroll Student</span>
-                </button>
-              </div>
-              {details?.enrollments && details.enrollments.length > 0 ? (
-                <div className="grid grid-cols-1 gap-2">
-                  {details.enrollments.map((enrollment) => (
-                    <div key={enrollment.id} className="bg-white rounded p-3 border border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-sm">
-                            {enrollment.profile?.user?.firstName} {enrollment.profile?.user?.lastName}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">{enrollment.profile?.user?.email}</div>
-                          <div className="flex justify-between text-xs text-gray-500 mt-2">
-                            <span>Status: {enrollment.status}</span>
-                            <span>Enrolled: {new Date(enrollment.enrollmentDate).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => onUpdateEnrollment(enrollment)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Update Enrollment"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => onDeleteEnrollment(enrollment.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete Enrollment"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">No enrollments yet</p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Batch Management</h2>
-            <p className="text-gray-600 mt-1">Manage batches, courses, and enrollments</p>
-          </div>
+    <div className="space-y-8 pb-12">
+      {/* Search and Filters */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col lg:flex-row gap-4 mb-8"
+      >
+        <div className="flex-1 relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-accent-muted w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search batches by name or level..."
+            value={filters.search}
+            onChange={(e) => setFilters({ search: e.target.value })}
+            className="w-full pl-12 pr-4 py-3 glass-premium border border-white/10 rounded-xl text-white placeholder:text-accent-muted focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-medium"
+          />
+        </div>
+        <div className="flex gap-4">
+          <select
+            value={filters.status}
+            onChange={(e) => setFilters({ status: e.target.value })}
+            className="flex-1 lg:flex-none px-4 py-3 glass-premium border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-primary transition-all cursor-pointer font-bold"
+          >
+            <option value="all">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="UPCOMING">Upcoming</option>
+            <option value="COMPLETED">Completed</option>
+          </select>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center space-x-2"
+            className="flex items-center space-x-2 px-6 py-3 bg-primary text-black font-black uppercase tracking-wider rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/20 active:scale-95"
           >
-            <Plus className="w-4 h-4" />
-            <span>Create Batch</span>
+            <Plus className="w-5 h-5" />
+            <span className="hidden sm:inline">New Batch</span>
           </button>
         </div>
+      </motion.div>
 
-        {/* Filters */}
-        <div className="mt-4 flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search batches..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-          </div>
-          <div className="flex gap-2">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="UPCOMING">Upcoming</option>
-              <option value="ACTIVE">Active</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-            <select
-              value={filterLevel}
-              onChange={(e) => setFilterLevel(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="all">All Levels</option>
-              <option value="BEGINNER">Beginner</option>
-              <option value="BASIC">Basic</option>
-              <option value="INTERMEDIATE">Intermediate</option>
-              <option value="ADVANCED">Advanced</option>
-            </select>
-          </div>
+      {/* Batches Content */}
+      <div className="glass-premium rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
+        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
+          <h3 className="text-lg font-bold text-white tracking-tight">Academic Batches</h3>
+          <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-bold text-accent-secondary">
+            {filteredBatches.length} Active
+          </span>
         </div>
-      </div>
 
-      {/* Batch List */}
-      <div className="bg-white rounded-lg shadow-sm">
         {loading ? (
-          <div className="p-6 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading batches...</p>
-          </div>
-        ) : error ? (
-          <div className="p-6 text-center">
-            <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Batches</h3>
-            <p className="text-gray-600">Please try again.</p>
+          <div className="p-20 text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-accent-secondary font-medium">Synchronizing batch data...</p>
           </div>
         ) : filteredBatches.length === 0 ? (
-          <div className="p-6 text-center">
-            <GraduationCap className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Batches Found</h3>
-            <p className="text-gray-600">Create your first batch to get started.</p>
+          <div className="p-20 text-center">
+            <div className="w-20 h-20 bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/10">
+              <GraduationCap className="w-10 h-10 text-accent-muted" />
+            </div>
+            <h4 className="text-white font-bold text-lg mb-2">No Batches Found</h4>
+            <p className="text-accent-secondary font-medium">Adjust your filters or create a new batch.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Courses</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Schedule</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-white/10 bg-white/[0.02]">
+                  <th className="px-8 py-5 text-[10px] font-black text-accent-secondary uppercase tracking-[0.2em]">Batch Identifier</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-accent-secondary uppercase tracking-[0.2em] text-center">Level & Stack</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-accent-secondary uppercase tracking-[0.2em] text-center">Enrollment Status</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-accent-secondary uppercase tracking-[0.2em] text-center">Timeline</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-accent-secondary uppercase tracking-[0.2em] text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-white/5">
                 {filteredBatches.map((batch) => (
-                  <tr key={batch.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{batch.name}</div>
-                        <div className="text-sm text-gray-500">{batch.description}</div>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <span className="text-xs text-gray-500">{batch.language}</span>
-                          <span className="text-xs text-gray-500">•</span>
-                          <span className="text-xs text-gray-500">Fee: ${batch.feeAmount}</span>
+                  <tr key={batch.id} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="px-8 py-6">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 group-hover:border-primary/20 transition-all duration-300">
+                          <BookOpen className="w-6 h-6 text-accent-secondary group-hover:text-primary transition-colors" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-white text-lg mb-1">{batch.name}</div>
+                          <span className={`${getStatusColor(batch.status)}`}>
+                            {batch.status}
+                          </span>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLevelColor(batch.level)}`}>
-                        {batch.level}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(batch.status)}`}>
-                        {batch.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {batch.enrollments?.length || 0} / {batch.maxStudents}
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                        <div 
-                          className="bg-indigo-600 h-2 rounded-full" 
-                          style={{ width: `${((batch.enrollments?.length || 0) / batch.maxStudents) * 100}%` }}
-                        ></div>
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col items-center space-y-2">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getLevelColor(batch.level)}`}>
+                          {batch.level}
+                        </span>
+                        <div className="text-sm font-medium text-accent-secondary flex items-center">
+                          <MapPin className="w-3.5 h-3.5 mr-1.5 opacity-60" />
+                          {batch.language}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{batch.batchCourses?.length || 0}</div>
-                      <div className="text-xs text-gray-500">
-                        {batch.batchCourses?.map(bc => bc.course?.name).join(', ') || 'No courses'}
+                    <td className="px-8 py-6">
+                      <div className="max-w-[140px] mx-auto">
+                        <div className="flex justify-between items-end text-xs font-bold mb-2">
+                          <span className="text-accent-secondary">Capacity</span>
+                          <span className="text-white">{batch.enrollments?.length || 0} <span className="text-accent-muted font-medium">/ {batch.maxStudents}</span></span>
+                        </div>
+                        <div className="w-full bg-white/10 rounded-full h-1.5 p-[1px] border border-white/5">
+                          <div 
+                            className="bg-primary h-full rounded-full yellow-glow transition-all duration-1000" 
+                            style={{ width: `${Math.min(((batch.enrollments?.length || 0) / batch.maxStudents) * 100, 100)}%` }}
+                          ></div>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {batch.startDate ? new Date(batch.startDate).toLocaleDateString() : 'N/A'}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {batch.endDate ? `to ${new Date(batch.endDate).toLocaleDateString()}` : ''}
+                    <td className="px-8 py-6 text-center">
+                      <div className="inline-flex flex-col items-center p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:border-white/10 transition-colors">
+                        <div className="text-sm font-black text-white">
+                          {batch.startDate ? new Date(batch.startDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD'}
+                        </div>
+                        <div className="text-[10px] font-bold text-accent-muted uppercase tracking-widest mt-1">
+                          {batch.endDate ? `Ends ${new Date(batch.endDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}` : 'Ongoing'}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
+                    <td className="px-8 py-6">
+                      <div className="flex items-center justify-end space-x-2">
                         <button
                           onClick={() => handleViewBatchDetails(batch)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="View Details"
+                          className="p-3 bg-white/5 border border-white/10 text-accent-secondary rounded-xl hover:text-white hover:bg-white/10 hover:border-white/20 transition-all active:scale-95"
+                          title="Detailed Analytics"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => {
@@ -1017,29 +774,18 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
                             setShowEditModal(true);
                           }}
                           disabled={isUpdating}
-                          className="text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Edit Batch"
+                          className="p-3 bg-white/5 border border-white/10 text-accent-secondary rounded-xl hover:text-primary hover:bg-primary/5 hover:border-primary/20 transition-all active:scale-95"
+                          title="Modify Constraints"
                         >
-                          {isUpdating ? (
-                            <div className="flex items-center space-x-2">
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                              <span>Updating...</span>
-                            </div>
-                          ) : (
-                            <Edit className="w-4 h-4" />
-                          )}
+                          <Edit className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleDeleteBatch(batch.id)}
                           disabled={isDeleting}
-                          className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Delete Batch"
+                          className="p-3 bg-white/5 border border-white/10 text-accent-secondary rounded-xl hover:text-red-400 hover:bg-red-400/5 hover:border-red-400/20 transition-all active:scale-95"
+                          title="Terminate Batch"
                         >
-                          {isDeleting ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
                     </td>
@@ -1051,2078 +797,244 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
         )}
       </div>
 
-      {/* Create Batch Modal */}
-      {showCreateModal && (
-        <CreateBatchModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSubmit={handleCreateBatch}
-          courses={courses}
-        />
-      )}
-
-      {/* Edit Batch Modal */}
-      {showEditModal && selectedBatch && (
-        <EditBatchModal
-          isOpen={showEditModal}
-          onClose={() => {
-            setShowEditModal(false);
-            setSelectedBatch(null);
-          }}
-          onSubmit={handleUpdateBatch}
-          batch={selectedBatch}
-          courses={courses}
-          isUpdating={isUpdating}
-        />
-      )}
-
-      {/* View Batch Details Modal */}
-      {showViewModal && selectedBatch && (
-        <ViewBatchModal
-          isOpen={showViewModal}
-          onClose={() => {
-            setShowViewModal(false);
-            setSelectedBatch(null);
-            setBatchDetails(null);
-          }}
-          batch={selectedBatch}
-          details={batchDetails}
-          onAssignCourse={(batchId) => {
-            setSelectedBatchForCourse(batchId);
-            setShowAssignCourseModal(true);
-          }}
-          onDeleteCourse={handleDeleteCourse}
-          onViewCourseDetails={(courseDetails) => {
-            setSelectedCourseDetails(courseDetails);
-            setShowCourseDetailsModal(true);
-          }}
-          onEnrollStudent={(batchId) => {
-            setSelectedBatchForEnrollment(batchId);
-            setShowEnrollStudentModal(true);
-          }}
-          onUpdateEnrollment={(enrollment) => {
-            setSelectedEnrollment(enrollment);
-            setShowUpdateEnrollmentModal(true);
-          }}
-          onDeleteEnrollment={(enrollmentId) => {
-            setEnrollmentToDelete(enrollmentId);
-            setShowDeleteEnrollmentConfirm(true);
-          }}
-        />
-      )}
-
-      {/* Assign Course Modal */}
-      {showAssignCourseModal && selectedBatchForCourse && (
-        <AssignCourseModal
-          isOpen={showAssignCourseModal}
-          onClose={() => {
-            setShowAssignCourseModal(false);
-            setSelectedBatchForCourse(null);
-          }}
-          onSubmit={handleAssignCourse}
-          batchId={selectedBatchForCourse}
-          courses={courses}
-          isAssigning={isAssigningCourse}
-        />
-      )}
-
-      {/* Delete Course Confirmation Modal */}
-      {showDeleteCourseConfirm && (
-        <DeleteCourseConfirmationModal
-          isOpen={showDeleteCourseConfirm}
-          onClose={cancelDeleteCourse}
-          onConfirm={confirmDeleteCourse}
-          isDeleting={isDeletingCourse}
-        />
-      )}
-
-      {/* Add Instructor Modal */}
-      {showAddInstructorModal && selectedCourseForInstructor && (
-        <AddInstructorModal
-          isOpen={showAddInstructorModal}
-          onClose={() => {
-            setShowAddInstructorModal(false);
-            setSelectedCourseForInstructor(null);
-          }}
-          onSubmit={handleAddInstructor}
-          batchCourseId={selectedCourseForInstructor}
-          users={usersData?.users || []}
-          isAdding={isAddingInstructor}
-          zIndex={60}
-        />
-      )}
-
-      {/* Delete Instructor Confirmation Modal */}
-      {showDeleteInstructorConfirm && (
-        <DeleteInstructorConfirmationModal
-          isOpen={showDeleteInstructorConfirm}
-          onClose={cancelDeleteInstructor}
-          onConfirm={confirmDeleteInstructor}
-          isDeleting={isDeletingInstructor}
-          zIndex={60}
-        />
-      )}
-
-      {/* Add Schedule Popup */}
-      {showAddScheduleModal && selectedCourseForSchedule && (
-        <AddSchedulePopup
-          isOpen={showAddScheduleModal}
-          onClose={() => {
-            setShowAddScheduleModal(false);
-            setSelectedCourseForSchedule(null);
-          }}
-          onSubmit={handleAddSchedule}
-          batchCourseId={selectedCourseForSchedule}
-          schedules={schedules}
-          isAdding={isAddingSchedule}
-          zIndex={60}
-        />
-      )}
-
-      {/* Delete Schedule Popup */}
-      {showDeleteScheduleConfirm && (
-        <DeleteSchedulePopup
-          isOpen={showDeleteScheduleConfirm}
-          onClose={cancelDeleteSchedule}
-          onConfirm={confirmDeleteSchedule}
-          isDeleting={isDeletingSchedule}
-          zIndex={60}
-        />
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <DeleteConfirmationModal
-          isOpen={showDeleteConfirm}
-          onClose={cancelDelete}
-          onConfirm={confirmDeleteBatch}
-          isDeleting={isDeleting}
-          zIndex={60}
-        />
-      )}
-
-      {/* View Course Details Modal */}
-      {showCourseDetailsModal && selectedCourseDetails && (
-        <ViewCourseDetailsModal
-          isOpen={showCourseDetailsModal}
-          onClose={() => {
-            setShowCourseDetailsModal(false);
-            setSelectedCourseDetails(null);
-          }}
-          courseDetails={selectedCourseDetails}
-          onAddInstructor={(batchCourseId) => {
-            setSelectedCourseForInstructor(batchCourseId);
-            setShowAddInstructorModal(true);
-          }}
-          onDeleteInstructor={handleDeleteInstructor}
-          onAddSchedule={(batchCourseId) => {
-            setSelectedCourseForSchedule(batchCourseId);
-            setShowAddScheduleModal(true);
-          }}
-          onDeleteSchedule={handleDeleteSchedule}
-          zIndex={60}
-        />
-      )}
-
-      {/* Enroll Student Modal */}
-      {showEnrollStudentModal && selectedBatchForEnrollment && (
-        <EnrollStudentModal
-          isOpen={showEnrollStudentModal}
-          onClose={() => {
-            setShowEnrollStudentModal(false);
-            setSelectedBatchForEnrollment(null);
-          }}
-          onSubmit={handleEnrollStudent}
-          batchId={selectedBatchForEnrollment}
-          users={usersData?.users || []}
-          isEnrolling={isEnrolling}
-        />
-      )}
-
-      {/* Update Enrollment Modal */}
-      {showUpdateEnrollmentModal && selectedEnrollment && (
-        <UpdateEnrollmentModal
-          isOpen={showUpdateEnrollmentModal}
-          onClose={() => {
-            setShowUpdateEnrollmentModal(false);
-            setSelectedEnrollment(null);
-          }}
-          onSubmit={handleUpdateEnrollment}
-          enrollment={selectedEnrollment}
-          isUpdating={isUpdatingEnrollment}
-        />
-      )}
-
-      {/* Delete Enrollment Confirmation Modal */}
-      {showDeleteEnrollmentConfirm && (
-        <DeleteEnrollmentConfirmationModal
-          isOpen={showDeleteEnrollmentConfirm}
-          onClose={cancelDeleteEnrollment}
-          onConfirm={confirmDeleteEnrollment}
-          isDeleting={isDeletingEnrollment}
-        />
-      )}
-
-      {/* Attendance Modal */}
-      {showAttendanceModal && selectedBatchForAttendance && (
-        <AttendanceModal
-          isOpen={showAttendanceModal}
-          onClose={() => {
-            setShowAttendanceModal(false);
-            setSelectedBatchForAttendance(null);
-          }}
-          batch={selectedBatchForAttendance}
-          selectedDate={selectedDate}
-          onDateChange={(date) => {
-            setSelectedDate(date);
-            handleFetchAttendance(selectedBatchForAttendance.id, date);
-          }}
-          attendanceData={attendanceData}
-          onMarkPresent={handleMarkPresent}
-          onMarkAbsent={handleMarkAbsent}
-          onMarkLate={handleMarkLate}
-          isFetching={isFetchingAttendance}
-          onOpen={() => handleFetchAttendance(selectedBatchForAttendance.id, selectedDate)}
-        />
-      )}
-
-      {/* Certificates Modal */}
-      {showCertificatesModal && selectedBatchForCertificates && (
-        <CertificatesModal
-          isOpen={showCertificatesModal}
-          onClose={() => {
-            setShowCertificatesModal(false);
-            setSelectedBatchForCertificates(null);
-            setCertificatesData([]);
-          }}
-          batch={selectedBatchForCertificates}
-          certificatesData={certificatesData}
-          isFetching={isFetchingCertificates}
-          isDeletingCertificate={isDeletingCertificate}
-          onHandleDeleteCertificate={handleDeleteCertificate}
-        />
-      )}
-    </div>
-  );
-};
-
-// Create Batch Modal Component
-const CreateBatchModal = ({ isOpen, onClose, onSubmit, courses }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    level: 'BEGINNER',
-    language: 'English',
-    startDate: '',
-    endDate: '',
-    maxStudents: '',
-    feeAmount: ''
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Create New Batch</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Batch Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              rows="3"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
-              <select
-                value={formData.level}
-                onChange={(e) => setFormData({...formData, level: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="BEGINNER">Beginner</option>
-                <option value="BASIC">Basic</option>
-                <option value="INTERMEDIATE">Intermediate</option>
-                <option value="ADVANCED">Advanced</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
-              <input
-                type="text"
-                value={formData.language}
-                onChange={(e) => setFormData({...formData, language: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-              <input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({...formData, endDate: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Max Students</label>
-              <input
-                type="number"
-                value={formData.maxStudents}
-                onChange={(e) => setFormData({...formData, maxStudents: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fee Amount</label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.feeAmount}
-                onChange={(e) => setFormData({...formData, feeAmount: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            >
-              Create Batch
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Edit Batch Modal Component
-const EditBatchModal = ({ isOpen, onClose, onSubmit, batch, courses, isUpdating }) => {
-  const [formData, setFormData] = useState({
-    name: batch?.name || '',
-    description: batch?.description || '',
-    level: batch?.level || 'BEGINNER',
-    language: batch?.language || 'English',
-    startDate: batch?.startDate ? batch.startDate.split('T')[0] : '',
-    endDate: batch?.endDate ? batch.endDate.split('T')[0] : '',
-    maxStudents: batch?.maxStudents || '',
-    feeAmount: batch?.feeAmount || '',
-    status: batch?.status || 'UPCOMING'
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(batch.id, formData);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Edit Batch</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Batch Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              rows="3"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
-              <select
-                value={formData.level}
-                onChange={(e) => setFormData({...formData, level: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="BEGINNER">Beginner</option>
-                <option value="BASIC">Basic</option>
-                <option value="INTERMEDIATE">Intermediate</option>
-                <option value="ADVANCED">Advanced</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({...formData, status: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="UPCOMING">Upcoming</option>
-                <option value="ACTIVE">Active</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-              <input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({...formData, endDate: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Max Students</label>
-              <input
-                type="number"
-                value={formData.maxStudents}
-                onChange={(e) => setFormData({...formData, maxStudents: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fee Amount</label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.feeAmount}
-                onChange={(e) => setFormData({...formData, feeAmount: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isUpdating}
-              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              {isUpdating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Updating...</span>
-                </>
-              ) : (
-                <span>Update Batch</span>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// View Batch Details Modal Component
-const ViewBatchModal = ({ 
-  isOpen, 
-  onClose, 
-  batch, 
-  details, 
-  onAssignCourse, 
-  onDeleteCourse, 
-  onViewCourseDetails,
-  onEnrollStudent,
-  onUpdateEnrollment,
-  onDeleteEnrollment
-}) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-              <GraduationCap className="w-8 h-8 text-indigo-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900">{batch.name}</h3>
-              <p className="text-gray-600">{batch.description}</p>
-              <div className="flex items-center space-x-2 mt-2">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLevelColor(batch.level)}`}>
-                  {batch.level}
-                </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(batch.status)}`}>
-                  {batch.status}
-                </span>
-                <span className="text-xs text-gray-500">{batch.language}</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => {
-                setSelectedBatchForAttendance(batch);
-                setShowAttendanceModal(true);
-              }}
-              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Attendance</span>
-            </button>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-2 flex items-center space-x-2">
-              <CalendarIcon className="w-4 h-4" />
-              <span>Schedule</span>
-            </h4>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex justify-between">
-                <span>Start Date:</span>
-                <span>{batch.startDate ? new Date(batch.startDate).toLocaleDateString() : 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>End Date:</span>
-                <span>{batch.endDate ? new Date(batch.endDate).toLocaleDateString() : 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Fee Amount:</span>
-                <span>${batch.feeAmount}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-2 flex items-center space-x-2">
-              <Users className="w-4 h-4" />
-              <span>Capacity</span>
-            </h4>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex justify-between">
-                <span>Max Students:</span>
-                <span>{batch.maxStudents}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Enrolled:</span>
-                <span>{batch.enrollments?.length || 0}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Available:</span>
-                <span>{batch.maxStudents - (batch.enrollments?.length || 0)}</span>
-              </div>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div 
-                className="bg-indigo-600 h-2 rounded-full" 
-                style={{ width: `${((batch.enrollments?.length || 0) / batch.maxStudents) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-gray-900 flex items-center space-x-2">
-                <BookOpen className="w-4 h-4" />
-                <span>Courses</span>
-              </h4>
-              <button
-                onClick={() => onAssignCourse(batch.id)}
-                className="flex items-center space-x-2 px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
-              >
-                <Plus className="w-3 h-3" />
-                <span>Assign Course</span>
-              </button>
-            </div>
-            {batch.batchCourses && batch.batchCourses.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2">
-                {batch.batchCourses.map((bc) => (
-                  <div key={bc.id} className="bg-white rounded p-3 flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm">{bc.course?.name}</div>
-                      <div className="text-xs text-gray-500 mt-1">{bc.course?.description}</div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => onViewCourseDetails(bc)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="View Course Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => onDeleteCourse(bc.id)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Delete Course Assignment"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No courses assigned</p>
-            )}
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-gray-900 flex items-center space-x-2">
-                <UserPlus className="w-4 h-4" />
-                <span>Enrollments</span>
-              </h4>
-              <button
-                onClick={() => onEnrollStudent(batch.id)}
-                className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-              >
-                <UserPlus className="w-3 h-3" />
-                <span>Enroll Student</span>
-              </button>
-            </div>
-            {details?.enrollments && details.enrollments.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2">
-                {details.enrollments.map((enrollment) => (
-                  <div key={enrollment.id} className="bg-white rounded p-3 border border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-sm">
-                          {enrollment.profile?.user?.firstName} {enrollment.profile?.user?.lastName}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">{enrollment.profile?.user?.email}</div>
-                        <div className="flex justify-between text-xs text-gray-500 mt-2">
-                          <span>Status: {enrollment.status}</span>
-                          <span>Enrolled: {new Date(enrollment.enrollmentDate).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => onUpdateEnrollment(enrollment)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Update Enrollment"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onDeleteEnrollment(enrollment.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Delete Enrollment"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No enrollments yet</p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex space-x-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Assign Course Modal Component
-const AssignCourseModal = ({ isOpen, onClose, onSubmit, batchId, courses, isAssigning }) => {
-  const [selectedCourseId, setSelectedCourseId] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (selectedCourseId) {
-      onSubmit(batchId, selectedCourseId);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Assign Course to Batch</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Course</label>
-            <select
-              value={selectedCourseId}
-              onChange={(e) => setSelectedCourseId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            >
-              <option value="">Select a course...</option>
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.name} - {course.description}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-blue-800">
-                <strong>Note:</strong> This will assign the selected course to the batch. Students enrolled in this batch will have access to this course.
-              </div>
-            </div>
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isAssigning}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isAssigning || !selectedCourseId}
-              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              {isAssigning ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Assigning...</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  <span>Assign Course</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Delete Course Confirmation Modal Component
-const DeleteCourseConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Delete Course Assignment</h3>
-              <p className="text-sm text-gray-600">This action cannot be undone</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="mb-6">
-          <p className="text-sm text-gray-700 mb-4">
-            Are you sure you want to delete this course assignment? This will remove the course from the batch and may affect enrolled students.
-          </p>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-yellow-800">
-                <strong>Warning:</strong> This action will remove the course from the batch. Students will lose access to this course.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex space-x-3">
-          <button
-            onClick={onClose}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            {isDeleting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Deleting...</span>
-              </>
-            ) : (
-              <>
-                <Trash2 className="w-4 h-4" />
-                <span>Delete Assignment</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Helper functions for status colors
-const getStatusColor = (status) => {
-  switch (status) {
-    case 'ACTIVE': return 'bg-green-100 text-green-800';
-    case 'UPCOMING': return 'bg-blue-100 text-blue-800';
-    case 'COMPLETED': return 'bg-gray-100 text-gray-800';
-    case 'CANCELLED': return 'bg-red-100 text-red-800';
-    default: return 'bg-gray-100 text-gray-800';
-  }
-};
-
-const getLevelColor = (level) => {
-  switch (level) {
-    case 'BEGINNER': return 'bg-purple-100 text-purple-800';
-    case 'BASIC': return 'bg-blue-100 text-blue-800';
-    case 'INTERMEDIATE': return 'bg-yellow-100 text-yellow-800';
-    case 'ADVANCED': return 'bg-red-100 text-red-800';
-    default: return 'bg-gray-100 text-gray-800';
-  }
-};
-
-// View Course Details Modal Component
-const ViewCourseDetailsModal = ({ 
-  isOpen, 
-  onClose, 
-  courseDetails, 
-  onAddInstructor, 
-  onDeleteInstructor, 
-  onAddSchedule, 
-  onDeleteSchedule 
-}) => {
-  if (!isOpen || !courseDetails) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-              <BookOpen className="w-8 h-8 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900">{courseDetails.course?.name}</h3>
-              <p className="text-gray-600">{courseDetails.course?.description}</p>
-              <div className="flex items-center space-x-2 mt-2">
-                <span className="text-xs text-gray-500">Batch: {courseDetails.batch?.name}</span>
-              </div>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* Batch Instructors */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-gray-900 flex items-center space-x-2">
-                <User className="w-4 h-4" />
-                <span>Batch Instructors</span>
-              </h4>
-              <button
-                onClick={() => onAddInstructor(courseDetails.id)}
-                className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-              >
-                <UserPlus className="w-3 h-3" />
-                <span>Add Instructor</span>
-              </button>
-            </div>
-            {courseDetails.instructors && courseDetails.instructors.length > 0 ? (
-              <div className="space-y-3">
-                {courseDetails.instructors.map((instructor) => (
-                  <div key={instructor.id} className="bg-white rounded-lg p-3 border border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-sm">
-                          {instructor.user?.firstName} {instructor.user?.lastName}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">{instructor.user?.email}</div>
-                        <div className="text-xs text-blue-600 mt-1 font-medium">{instructor.role}</div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => onDeleteInstructor(instructor.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Remove Instructor"
-                        >
-                          <UserX className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No instructors assigned</p>
-            )}
-          </div>
-
-          {/* Course Schedule */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-gray-900 flex items-center space-x-2">
-                <CalendarLucide className="w-4 h-4" />
-                <span>Course Schedule</span>
-              </h4>
-              <button
-                onClick={() => onAddSchedule(courseDetails.id)}
-                className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-              >
-                <CalendarLucide className="w-3 h-3" />
-                <span>Add Schedule</span>
-              </button>
-            </div>
-            {courseDetails.schedules && courseDetails.schedules.length > 0 ? (
-              <div className="space-y-3">
-                {courseDetails.schedules.map((scheduleItem) => (
-                  <div key={scheduleItem.id} className="bg-white rounded-lg p-3 border border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-sm">
-                          {scheduleItem.schedule?.dayOfWeek}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {scheduleItem.schedule?.startTime} - {scheduleItem.schedule?.endTime}
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => onDeleteSchedule(scheduleItem.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Remove Schedule"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No schedule assigned</p>
-            )}
-          </div>
-        </div>
-
-        {/* Additional Course Information */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
-            <FileText className="w-4 h-4" />
-            <span>Course Information</span>
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-            <div>
-              <span className="font-medium">Course ID:</span>
-              <span className="ml-2">{courseDetails.course?.id}</span>
-            </div>
-            <div>
-              <span className="font-medium">Batch ID:</span>
-              <span className="ml-2">{courseDetails.batch?.id}</span>
-            </div>
-            <div>
-              <span className="font-medium">Assignment Date:</span>
-              <span className="ml-2">{new Date(courseDetails.createdAt).toLocaleDateString()}</span>
-            </div>
-            <div>
-              <span className="font-medium">Status:</span>
-              <span className="ml-2">
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Active</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex space-x-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Delete Confirmation Modal Component
-const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Delete Batch</h3>
-              <p className="text-sm text-gray-600">This action cannot be undone</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="mb-6">
-          <p className="text-sm text-gray-700 mb-4">
-            Are you sure you want to delete this batch? This will permanently remove the batch and all associated data including courses, enrollments, and schedules.
-          </p>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-yellow-800">
-                <strong>Warning:</strong> This action is irreversible. Please make sure this is the intended batch before proceeding.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex space-x-3">
-          <button
-            onClick={onClose}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            {isDeleting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Deleting...</span>
-              </>
-            ) : (
-              <>
-                <Trash2 className="w-4 h-4" />
-                <span>Delete Batch</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Add Instructor Modal Component
-const AddInstructorModal = ({ isOpen, onClose, onSubmit, batchCourseId, users, isAdding, zIndex = 50 }) => {
-  const [selectedUserId, setSelectedUserId] = useState('');
-  const [role, setRole] = useState('MAIN');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (selectedUserId && role) {
-      onSubmit(batchCourseId, selectedUserId, role);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex }}>
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Add Instructor to Course</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select User</label>
-            <select
-              value={selectedUserId}
-              onChange={(e) => setSelectedUserId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            >
-              <option value="">Select a user...</option>
-              {users
-                .filter(user => user.role === 'TUTOR')
-                .map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.firstName} {user.lastName} - {user.email}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="MAIN">Main Instructor</option>
-              <option value="ASSISTANT">Assistant Instructor</option>
-            </select>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-blue-800">
-                <strong>Note:</strong> This will assign the selected user as an instructor for this course. They will have access to manage course content and students.
-              </div>
-            </div>
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isAdding}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isAdding || !selectedUserId}
-              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              {isAdding ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Adding...</span>
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4" />
-                  <span>Add Instructor</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Delete Instructor Confirmation Modal Component
-const DeleteInstructorConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting, zIndex = 50 }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex }}>
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Delete Instructor</h3>
-              <p className="text-sm text-gray-600">This action cannot be undone</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="mb-6">
-          <p className="text-sm text-gray-700 mb-4">
-            Are you sure you want to remove this instructor from the course? This will revoke their access to manage this course.
-          </p>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-yellow-800">
-                <strong>Warning:</strong> This action will remove the instructor's access to this course. Students will no longer be able to interact with this instructor for this course.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex space-x-3">
-          <button
-            onClick={onClose}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            {isDeleting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Deleting...</span>
-              </>
-            ) : (
-              <>
-                <UserX className="w-4 h-4" />
-                <span>Remove Instructor</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Add Schedule Modal Component
-const AddScheduleModal = ({ isOpen, onClose, onSubmit, batchCourseId, schedules, isAdding }) => {
-  const [selectedScheduleId, setSelectedScheduleId] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (selectedScheduleId) {
-      onSubmit(batchCourseId, selectedScheduleId);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Add Schedule to Course</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Schedule</label>
-            <select
-              value={selectedScheduleId}
-              onChange={(e) => setSelectedScheduleId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            >
-              <option value="">Select a schedule...</option>
-              {schedules.map((schedule) => (
-                <option key={schedule.id} value={schedule.id}>
-                  {schedule.dayOfWeek} - {schedule.startTime} to {schedule.endTime}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-blue-800">
-                <strong>Note:</strong> This will assign the selected schedule to this course. Students enrolled in this course will attend classes according to this schedule.
-              </div>
-            </div>
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isAdding}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isAdding || !selectedScheduleId}
-              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              {isAdding ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Adding...</span>
-                </>
-              ) : (
-                <>
-                  <CalendarLucide className="w-4 h-4" />
-                  <span>Add Schedule</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Delete Schedule Confirmation Modal Component
-const DeleteScheduleConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Delete Schedule</h3>
-              <p className="text-sm text-gray-600">This action cannot be undone</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="mb-6">
-          <p className="text-sm text-gray-700 mb-4">
-            Are you sure you want to remove this schedule from the course? This will affect the class timing for enrolled students.
-          </p>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-yellow-800">
-                <strong>Warning:</strong> This action will remove the schedule from this course. Students will no longer have classes at this time.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex space-x-3">
-          <button
-            onClick={onClose}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            {isDeleting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Deleting...</span>
-              </>
-            ) : (
-              <>
-                <Trash2 className="w-4 h-4" />
-                <span>Delete Schedule</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Enroll Student Modal Component
-const EnrollStudentModal = ({ isOpen, onClose, onSubmit, batchId, users, isEnrolling }) => {
-  const [selectedUserId, setSelectedUserId] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (selectedUserId) {
-      onSubmit(batchId, selectedUserId);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Enroll Student</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Student</label>
-            <select
-              value={selectedUserId}
-              onChange={(e) => setSelectedUserId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            >
-              <option value="">Select a student...</option>
-              {users
-                .filter(user => user.role === 'STUDENT')
-                .map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.firstName} {user.lastName} - {user.email}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-green-800">
-                <strong>Note:</strong> This will enroll the selected student in this batch. They will have access to all assigned courses.
-              </div>
-            </div>
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isEnrolling}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isEnrolling || !selectedUserId}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              {isEnrolling ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Enrolling...</span>
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4" />
-                  <span>Enroll Student</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Update Enrollment Modal Component
-const UpdateEnrollmentModal = ({ isOpen, onClose, onSubmit, enrollment, isUpdating }) => {
-  const [status, setStatus] = useState(enrollment?.status || 'ACTIVE');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(enrollment.id, status);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Update Enrollment</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Student</label>
-            <div className="px-3 py-2 bg-gray-100 rounded-lg">
-              {enrollment?.profile?.user?.firstName} {enrollment?.profile?.user?.lastName}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Current Status</label>
-            <div className="px-3 py-2 bg-gray-100 rounded-lg">
-              {enrollment?.status}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">New Status</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="DROPPED">Dropped</option>
-            </select>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-blue-800">
-                <strong>Note:</strong> This will update the enrollment status for this student in the batch.
-              </div>
-            </div>
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isUpdating}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isUpdating}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              {isUpdating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Updating...</span>
-                </>
-              ) : (
-                <>
-                  <UserCheck className="w-4 h-4" />
-                  <span>Update Enrollment</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Delete Enrollment Confirmation Modal Component
-const DeleteEnrollmentConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Delete Enrollment</h3>
-              <p className="text-sm text-gray-600">This action cannot be undone</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="mb-6">
-          <p className="text-sm text-gray-700 mb-4">
-            Are you sure you want to delete this enrollment? This will remove the student from the batch and revoke their access to all courses.
-          </p>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-yellow-800">
-                <strong>Warning:</strong> This action will remove the student's access to this batch and all its courses. This cannot be undone.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex space-x-3">
-          <button
-            onClick={onClose}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            {isDeleting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Deleting...</span>
-              </>
-            ) : (
-              <>
-                <Trash2 className="w-4 h-4" />
-                <span>Delete Enrollment</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Attendance Modal Component
-const AttendanceModal = ({ 
-  isOpen, 
-  onClose, 
-  batch, 
-  selectedDate, 
-  onDateChange, 
-  attendanceData, 
-  onMarkPresent, 
-  onMarkAbsent, 
-  onMarkLate, 
-  isFetching,
-  onOpen
-}) => {
-  useEffect(() => {
-    if (isOpen && onOpen) {
-      onOpen();
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-              <Calendar className="w-8 h-8 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900">Attendance for {batch?.name}</h3>
-              <p className="text-gray-600">Date: {new Date(selectedDate).toLocaleDateString()}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Date Selector */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => onDateChange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+      {/* Modals Section */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <CreateBatchModal
+            isOpen={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            onSubmit={handleCreateBatch}
+            courses={courses}
           />
-        </div>
+        )}
 
-        {/* Attendance Table */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {isFetching ? (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                      Loading attendance data...
-                    </td>
-                  </tr>
-                ) : attendanceData.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                      No students enrolled in this batch for the selected date.
-                    </td>
-                  </tr>
-                ) : (
-                  attendanceData.map((attendance) => (
-                    <tr key={attendance.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {attendance.user?.firstName} {attendance.user?.lastName}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{attendance.user?.role}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{attendance.user?.email}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          attendance.status === 'PRESENT' ? 'bg-green-100 text-green-800' :
-                          attendance.status === 'ABSENT' ? 'bg-red-100 text-red-800' :
-                          attendance.status === 'LATE' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {attendance.status || 'NOT_MARKED'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {showEditModal && selectedBatch && (
+          <EditBatchModal
+            isOpen={showEditModal}
+            onClose={() => {
+              setShowEditModal(false);
+              setSelectedBatch(null);
+            }}
+            onSubmit={handleUpdateBatch}
+            batch={selectedBatch}
+            courses={courses}
+            isUpdating={isUpdating}
+          />
+        )}
 
-        <div className="mt-6 flex space-x-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+        {showViewModal && selectedBatch && (
+          <ViewBatchModal
+            isOpen={showViewModal}
+            onClose={() => {
+              setShowViewModal(false);
+              setSelectedBatch(null);
+              setBatchDetails(null);
+            }}
+            batch={selectedBatch}
+            details={batchDetails}
+            onAssignCourse={(batchId) => {
+              setSelectedBatchForCourse(batchId);
+              setShowAssignCourseModal(true);
+            }}
+            onDeleteCourse={handleDeleteCourse}
+            onViewCourseDetails={(courseDetails) => {
+              setSelectedCourseDetails(courseDetails);
+              setShowCourseDetailsModal(true);
+            }}
+            onEnrollStudent={(batchId) => {
+              setSelectedBatchForEnrollment(batchId);
+              setShowEnrollStudentModal(true);
+            }}
+            onUpdateEnrollment={(enrollment) => {
+              setSelectedEnrollment(enrollment);
+              setShowUpdateEnrollmentModal(true);
+            }}
+            onDeleteEnrollment={(enrollmentId) => {
+              setEnrollmentToDelete(enrollmentId);
+              setShowDeleteEnrollmentConfirm(true);
+            }}
+          />
+        )}
 
-  // Certificates Modal Component
-const CertificatesModal = ({ 
-  isOpen, 
-  onClose, 
-  batch, 
-  certificatesData, 
-  isFetching,
-  onHandleDeleteCertificate,
-  isDeletingCertificate
-}) => {
-  if (!isOpen) return null;
+        {showAssignCourseModal && selectedBatchForCourse && (
+          <AssignCourseModal
+            isOpen={showAssignCourseModal}
+            onClose={() => {
+              setShowAssignCourseModal(false);
+              setSelectedBatchForCourse(null);
+            }}
+            onSubmit={handleAssignCourse}
+            batchId={selectedBatchForCourse}
+            courses={courses}
+            isAssigning={isAssigningCourse}
+          />
+        )}
 
-  const handleViewCertificate = (certificateId) => {
-        window.open(`${BASE_URL}/certificates/${certificateId}`, '_blank');    
-  };
+        {showDeleteCourseConfirm && (
+          <DeleteCourseConfirmationModal
+            isOpen={showDeleteCourseConfirm}
+            onClose={cancelDeleteCourse}
+            onConfirm={confirmDeleteCourse}
+            isDeleting={isDeletingCourse}
+          />
+        )}
 
-  const getSkillResult = (skill) => {
-    if (!skill) return 'N/A';
-    return skill.finalResult || 'N/A';
-  };
+        {showAddInstructorModal && selectedCourseForInstructor && (
+          <AddInstructorModal
+            isOpen={showAddInstructorModal}
+            onClose={() => {
+              setShowAddInstructorModal(false);
+              setSelectedCourseForInstructor(null);
+            }}
+            onSubmit={handleAddInstructor}
+            batchCourseId={selectedCourseForInstructor}
+            users={usersData?.users || []}
+            isAdding={isAddingInstructor}
+            zIndex={60}
+          />
+        )}
 
-  const getFinalResult = (certificate) => {
-    if (!certificate.skill) return 'N/A';
-    
-    // Get the overall final result from the skill
-    return certificate.skill.finalResult || 'N/A';
-  };
+        {showDeleteInstructorConfirm && (
+          <DeleteInstructorConfirmationModal
+            isOpen={showDeleteInstructorConfirm}
+            onClose={cancelDeleteInstructor}
+            onConfirm={confirmDeleteInstructor}
+            isDeleting={isDeletingInstructor}
+            zIndex={60}
+          />
+        )}
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
-              <FileText className="w-8 h-8 text-purple-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-semibold text-gray-900">Certificates for {batch?.name}</h3>
-              <p className="text-gray-600">Batch certificates and student achievements</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+        {showAddScheduleModal && selectedCourseForSchedule && (
+          <AddSchedulePopup
+            isOpen={showAddScheduleModal}
+            onClose={() => {
+              setShowAddScheduleModal(false);
+              setSelectedCourseForSchedule(null);
+            }}
+            onSubmit={handleAddSchedule}
+            batchCourseId={selectedCourseForSchedule}
+            schedules={schedules}
+            isAdding={isAddingSchedule}
+            zIndex={60}
+          />
+        )}
 
-        {/* Certificates Table */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reading Skill</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Writing Skill</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Speaking Skill</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Listening Skill</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Result</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {isFetching ? (
-                  <tr>
-                    <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
-                      Loading certificates data...
-                    </td>
-                  </tr>
-                ) : certificatesData.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
-                      No certificates issued for this batch yet.
-                    </td>
-                  </tr>
-                ) : (
-                  certificatesData.map((certificate) => {
-                    const enrollment = certificate.skill?.enrollment;
-                    
-                    // Get skill results directly from the certificate structure
-                    const readingSkill = certificate.skill?.readingSkill;
-                    const writingSkill = certificate.skill?.writingSkill;
-                    const speakingSkill = certificate.skill?.speakingSkill;
-                    const listeningSkill = certificate.skill?.listeningSkill;
+        {showDeleteScheduleConfirm && (
+          <DeleteSchedulePopup
+            isOpen={showDeleteScheduleConfirm}
+            onClose={cancelDeleteSchedule}
+            onConfirm={confirmDeleteSchedule}
+            isDeleting={isDeletingSchedule}
+            zIndex={60}
+          />
+        )}
 
-                    return (
-                      <tr key={certificate.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {enrollment?.profile?.user?.firstName} {enrollment?.profile?.user?.lastName}
-                          </div>
-                          <div className="text-sm text-gray-500">{enrollment?.profile?.user?.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {getSkillResult(readingSkill)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {getSkillResult(writingSkill)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {getSkillResult(speakingSkill)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {getSkillResult(listeningSkill)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
-                          {getFinalResult(certificate)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(certificate.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleViewCertificate(certificate.id)}
-                              className="text-blue-600 hover:text-blue-900 font-medium flex items-center space-x-2"
-                            >
-                              <Eye className="w-4 h-4" />
-                              <span>View</span>
-                            </button>
-                            <button
-                              onClick={() => onHandleDeleteCertificate(certificate.id)}
-                              disabled={isDeletingCertificate}
-                              className="text-red-600 hover:text-red-900 font-medium flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              <span>Delete</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {showDeleteConfirm && (
+          <DeleteConfirmationModal
+            isOpen={showDeleteConfirm}
+            onClose={cancelDelete}
+            onConfirm={confirmDeleteBatch}
+            isDeleting={isDeleting}
+            zIndex={60}
+          />
+        )}
 
-        <div className="mt-6 flex space-x-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+        {showCourseDetailsModal && selectedCourseDetails && (
+          <ViewCourseDetailsModal
+            isOpen={showCourseDetailsModal}
+            onClose={() => {
+              setShowCourseDetailsModal(false);
+              setSelectedCourseDetails(null);
+            }}
+            courseDetails={selectedCourseDetails}
+            onAddInstructor={(batchCourseId) => {
+              setSelectedCourseForInstructor(batchCourseId);
+              setShowAddInstructorModal(true);
+            }}
+            onDeleteInstructor={handleDeleteInstructor}
+            onAddSchedule={(batchCourseId) => {
+              setSelectedCourseForSchedule(batchCourseId);
+              setShowAddScheduleModal(true);
+            }}
+            onDeleteSchedule={handleDeleteSchedule}
+            zIndex={60}
+          />
+        )}
 
-// Delete Certificate Confirmation Modal Component
-const DeleteCertificateConfirmationModal = ({ isOpen, onClose, onConfirm, isDeleting }) => {
-  if (!isOpen) return null;
+        {showEnrollStudentModal && selectedBatchForEnrollment && (
+          <EnrollStudentModal
+            isOpen={showEnrollStudentModal}
+            onClose={() => {
+              setShowEnrollStudentModal(false);
+              setSelectedBatchForEnrollment(null);
+            }}
+            onSubmit={handleEnrollStudent}
+            batchId={selectedBatchForEnrollment}
+            users={usersData?.users || []}
+            isEnrolling={isEnrolling}
+          />
+        )}
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Delete Certificate</h3>
-              <p className="text-sm text-gray-600">This action cannot be undone</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+        {showUpdateEnrollmentModal && selectedEnrollment && (
+          <UpdateEnrollmentModal
+            isOpen={showUpdateEnrollmentModal}
+            onClose={() => {
+              setShowUpdateEnrollmentModal(false);
+              setSelectedEnrollment(null);
+            }}
+            onSubmit={handleUpdateEnrollment}
+            enrollment={selectedEnrollment}
+            isUpdating={isUpdatingEnrollment}
+          />
+        )}
 
-        <div className="mb-6">
-          <p className="text-sm text-gray-700 mb-4">
-            Are you sure you want to delete this certificate? This will permanently remove the certificate and cannot be recovered.
-          </p>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <div className="flex items-start space-x-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-yellow-800">
-                <strong>Warning:</strong> This action will permanently delete the certificate. This cannot be undone.
-              </div>
-            </div>
-          </div>
-        </div>
+        {showDeleteEnrollmentConfirm && (
+          <DeleteEnrollmentConfirmationModal
+            isOpen={showDeleteEnrollmentConfirm}
+            onClose={cancelDeleteEnrollment}
+            onConfirm={confirmDeleteEnrollment}
+            isDeleting={isDeletingEnrollment}
+          />
+        )}
 
-        <div className="flex space-x-3">
-          <button
-            onClick={onClose}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            {isDeleting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Deleting...</span>
-              </>
-            ) : (
-              <>
-                <Trash2 className="w-4 h-4" />
-                <span>Delete Certificate</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+        {showAttendanceModal && selectedBatchForAttendance && (
+          <AttendanceModal
+            isOpen={showAttendanceModal}
+            onClose={() => {
+              setShowAttendanceModal(false);
+              setSelectedBatchForAttendance(null);
+            }}
+            batch={selectedBatchForAttendance}
+            selectedDate={selectedDate}
+            onDateChange={(date) => {
+              setSelectedDate(date);
+              handleFetchAttendance(selectedBatchForAttendance.id, date);
+            }}
+            attendanceData={attendanceData}
+            onMarkPresent={handleMarkPresent}
+            onMarkAbsent={handleMarkAbsent}
+            onMarkLate={handleMarkLate}
+            isFetching={isFetchingAttendance}
+            onOpen={() => handleFetchAttendance(selectedBatchForAttendance.id, selectedDate)}
+          />
+        )}
+
+        {showCertificatesModal && selectedBatchForCertificates && (
+          <CertificatesModal
+            isOpen={showCertificatesModal}
+            onClose={() => {
+              setShowCertificatesModal(false);
+              setSelectedBatchForCertificates(null);
+              setCertificatesData([]);
+            }}
+            batch={selectedBatchForCertificates}
+            certificatesData={certificatesData}
+            isFetching={isFetchingCertificates}
+            isDeletingCertificate={isDeletingCertificate}
+            onHandleDeleteCertificate={handleDeleteCertificate}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

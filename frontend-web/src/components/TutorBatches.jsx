@@ -53,11 +53,14 @@ import {
 import { useQuery, useMutation, useApolloClient } from '@apollo/client';
 import { GET_TUTOR_BATCHES, GET_BATCH_ENROLLMENTS, GET_BATCH_ATTENDANCE, UPDATE_ENROLLMENT_STATUS, GET_BATCH_MEETING_LINK } from '../graphql/tutorBatch';
 import SkillTestModal from './SkillTestModal';
+import useBatchStore from '../store/batchStore';
+import useSessionStore from '../store/sessionStore';
+import usePerformanceStore from '../store/performanceStore';
 
 const TutorBatches = () => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const { filters, setFilters, setBatches } = useBatchStore();
+  const { setSessions, setAttendance, markAttendance, attendance: storeAttendance } = useSessionStore();
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [showBatchDetails, setShowBatchDetails] = useState(false);
   const [showEnrollmentModal, setShowEnrollmentModal] = useState(false);
@@ -132,13 +135,26 @@ const TutorBatches = () => {
   }, [meData]);
 
   const filteredBatches = tutorBatches.filter(batch => {
-    const matchesSearch = batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         batch.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = batch.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+                         batch.description?.toLowerCase().includes(filters.search.toLowerCase());
     
-    const matchesStatus = filterStatus === 'all' || batch.status === filterStatus;
+    const matchesStatus = filters.status === 'all' || batch.status === filters.status;
 
     return matchesSearch && matchesStatus;
   });
+
+  useEffect(() => {
+    if (tutorBatches.length > 0) {
+      setBatches(tutorBatches);
+      setSessions(tutorBatches);
+    }
+  }, [tutorBatches, setBatches, setSessions]);
+
+  useEffect(() => {
+    if (batchAttendanceData?.attendances) {
+      setAttendance(selectedBatch?.id, batchAttendanceData.attendances);
+    }
+  }, [batchAttendanceData, selectedBatch, setAttendance]);
 
   const handleViewBatch = (batch) => {
     setSelectedBatch(batch);
@@ -299,15 +315,8 @@ const TutorBatches = () => {
       // Find the student in the current attendance data
       const studentIndex = attendanceData.findIndex(s => s.id === studentId);
       if (studentIndex !== -1) {
-        const updatedAttendance = [...attendanceData];
-        updatedAttendance[studentIndex] = {
-          ...updatedAttendance[studentIndex],
-          status: status,
-          attendanceDate: selectedDate
-        };
-        setAttendanceData(updatedAttendance);
-
-        // In a real implementation, this would be a GraphQL mutation
+        // Use store action
+        markAttendance(selectedBatch?.id, studentId, status);
         console.log(`Marked student ${studentId} as ${status} for date ${selectedDate}`);
       }
     } catch (err) {
@@ -359,15 +368,15 @@ const TutorBatches = () => {
             <input
               type="text"
               placeholder="Search batches or descriptions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={filters.search}
+              onChange={(e) => setFilters({ search: e.target.value })}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
           <div>
             <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              value={filters.status}
+              onChange={(e) => setFilters({ status: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="all">All Status</option>

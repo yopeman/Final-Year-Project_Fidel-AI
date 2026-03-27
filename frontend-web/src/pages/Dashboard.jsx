@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Clock, 
   AlertTriangle, 
@@ -19,12 +20,16 @@ import { useQuery, useMutation } from '@apollo/client';
 import { GET_CURRENT_USER, UPDATE_ME_MUTATION, DELETE_ME_MUTATION } from '../graphql/auth';
 import UpdateProfilePopup from '../components/UpdateProfilePopup';
 import NotificationBell from '../components/NotificationBell';
+import useAuthStore from '../store/authStore';
 
 const Dashboard = () => {
   const [timeRemaining, setTimeRemaining] = useState('');
   const [showUpdatePopup, setShowUpdatePopup] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  const { user: storedUser, logout } = useAuthStore();
+  const navigate = useNavigate(); // I need to import this if not present
   
   const [deleteMe] = useMutation(DELETE_ME_MUTATION);
   
@@ -36,8 +41,7 @@ const Dashboard = () => {
     try {
       setDeleting(true);
       await deleteMe();
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      logout();
       window.location.href = '/login';
     } catch (err) {
       console.error('Error deleting profile:', err);
@@ -46,34 +50,24 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    // Check if user is authenticated but not verified
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    
-    if (!token || !user) {
-      window.location.href = '/login';
+    // Check if user is authenticated but not verified using store
+    if (!storedUser) {
+      navigate('/login', { replace: true });
       return;
     }
 
-    try {
-      const userData = JSON.parse(user);
-      // If user is verified, redirect to appropriate dashboard
-      if (userData.isVerified) {
-        switch (userData.role) {
-          case 'ADMIN':
-            window.location.href = '/admin/dashboard';
-            break;
-          case 'TUTOR':
-            window.location.href = '/tutor/dashboard';
-            break;
-          default:
-            break;
-        }
+    // If user is verified, redirect to appropriate dashboard based on role
+    if (storedUser.isVerified) {
+      switch (storedUser.role) {
+        case 'ADMIN':
+          navigate('/admin/dashboard', { replace: true });
+          break;
+        case 'TUTOR':
+          navigate('/tutor/dashboard', { replace: true });
+          break;
+        default:
+          break;
       }
-    } catch (err) {
-      console.error('Error parsing user:', err);
-      localStorage.clear();
-      window.location.href = '/login';
     }
 
     // Set up timer for countdown
@@ -90,8 +84,7 @@ const Dashboard = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    logout();
     window.location.href = '/login';
   };
 

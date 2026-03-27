@@ -45,14 +45,19 @@ import { uploadCommunityAttachments, formatFileSize, getFileIcon, validateFile }
 import { BASE_URL } from '../lib/apollo-client';
 
 
+import useAuthStore from '../store/authStore';
+
 const CommunityPage = () => {
   const { batchId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const currentUserId = user?.id;
+  
   const [newPost, setNewPost] = useState('');
   const [editingPost, setEditingPost] = useState(null);
   const [editingContent, setEditingContent] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [showFileInput, setShowFileInput] = useState(null); // Changed to track which post has file input open
+  const [showFileInput, setShowFileInput] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
@@ -84,9 +89,6 @@ const CommunityPage = () => {
   const { data: subscriptionData } = useSubscription(COMMUNITY_UPDATED, {
     variables: { batchId },
   });
-
-  // Get current user ID from localStorage
-  const currentUserId = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).id : null;
 
   const [postCommunity] = useMutation(POST_COMMUNITY);
   const [updateCommunity] = useMutation(UPDATE_COMMUNITY);
@@ -754,7 +756,7 @@ const CommunityPage = () => {
                             {comment.isEdited && (
                               <span className="text-xs text-gray-500">(edited)</span>
                             )}
-                            {comment.userId === localStorage.getItem('user') && (
+                            {comment.userId === currentUserId && (
                               <div className="flex space-x-1">
                                 <button
                                   onClick={() => {

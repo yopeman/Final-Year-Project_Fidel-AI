@@ -33,6 +33,7 @@ import {
   DELETE_CERTIFICATE
 } from '../graphql/tutorBatch';
 import { BASE_URL } from '../lib/apollo-client';
+import usePerformanceStore from '../store/performanceStore';
 
 const SkillTestModal = ({ 
   isOpen, 
@@ -40,6 +41,7 @@ const SkillTestModal = ({
   batch, 
   onOpen 
 }) => {
+  const { studentEvaluations, updateEvaluation, setEvaluations } = usePerformanceStore();
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [skillData, setSkillData] = useState({
@@ -112,6 +114,22 @@ const SkillTestModal = ({
   if (!isOpen) return null;
 
   const students = data?.tutorAssignedStudents || [];
+
+  useEffect(() => {
+    if (students.length > 0) {
+      setEvaluations(students.map(s => ({
+        studentId: s.id,
+        batchId: batch?.id,
+        scores: s.skill ? {
+          reading: s.skill.readingSkill?.finalResult,
+          writing: s.skill.writingSkill?.finalResult,
+          speaking: s.skill.speakingSkill?.finalResult,
+          listening: s.skill.listeningSkill?.finalResult
+        } : null,
+        remarks: s.skill?.remarks || ''
+      })));
+    }
+  }, [students, batch, setEvaluations]);
   
   const handleStudentSelect = (student) => {
     setSelectedStudent(student);
