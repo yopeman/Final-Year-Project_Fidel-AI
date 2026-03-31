@@ -219,9 +219,9 @@ const ChatScreen = () => {
                             <Text style={styles.statusText}>AI Tutor Online</Text>
                         </View>
                     </View>
-                    <TouchableOpacity style={styles.menuButton}>
+                    {/* <TouchableOpacity style={styles.menuButton}>
                         <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </View>
 
                 <ScrollView
