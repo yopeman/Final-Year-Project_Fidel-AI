@@ -284,7 +284,7 @@ const HomeScreen = () => {
                             <Text style={styles.heroProgressValue}>{Math.round(overallProgress)}%</Text>
                             <View style={styles.heroStatRow}>
                                 <Ionicons name="flame" size={14} color="#F59E0B" />
-                                <Text style={styles.heroStatText}>{progress?.streakDays || 0} day streak</Text>
+                                <Text style={styles.heroStatText}>{progress?.streakDays || 1} day streak</Text>
                                 <View style={styles.dotSep} />
                                 <Ionicons name="checkmark-circle" size={14} color={COLORS.primary} />
                                 <Text style={styles.heroStatText}>{progress?.completedLessons || 0} lessons</Text>

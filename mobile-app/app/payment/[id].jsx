@@ -557,12 +557,12 @@ export default function PaymentScreen() {
                         ) : (
                             <>
                                 <Ionicons name="checkmark-circle-outline" size={20} color="#1A1A2E" />
-                                <Text style={styles.verifyText}>I Have Completed Payment</Text>
+                                <Text style={styles.verifyText}>Check Payment Status</Text>
                             </>
                         )}
                     </TouchableOpacity>
 
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                         style={[styles.statusCheckBtn, verifying && styles.statusCheckBtnDisabled]}
                         onPress={handleManualVerification}
                         disabled={verifying}
@@ -576,10 +576,10 @@ export default function PaymentScreen() {
                                 <Text style={styles.statusCheckText}>Check Payment Status</Text>
                             </>
                         )}
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
 
                     {/* DEV-ONLY test button — ENHANCED visibility */}
-                    {__DEV__ && (
+                    {/* {__DEV__ && (
                         <TouchableOpacity
                             style={[styles.devTestBtn, { backgroundColor: '#3B3B3B', paddingVertical: 12, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: '#EF4444' }]}
                             onPress={forceUnlockDev}
@@ -590,7 +590,7 @@ export default function PaymentScreen() {
                                 EMERGENCY BYPASS: Force Unlock Premium
                             </Text>
                         </TouchableOpacity>
-                    )}
+                    )} */}
 
                     <TouchableOpacity onPress={() => router.back()} style={styles.cancelBtn}>
                         <Text style={styles.cancelText}>Cancel</Text>
