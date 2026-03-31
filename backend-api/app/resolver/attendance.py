@@ -131,7 +131,7 @@ def resolve_get_course_meeting_link(_, info, courseScheduleId: str):
   
     # Determine attendance status based on time
     status = AttendanceStatus.absent
-    meeting_link = meeting_link = f"https://meet.jit.si/{batch.name.replace(' ', '-').lower()}-{batch.id}"
+    meeting_link = f"https://meet.jit.si/{batch.id}"
     attendance_record = None        
     
     if -60 <= time_diff_minutes <= 15:
@@ -283,7 +283,7 @@ def resolve_get_batch_meeting_link(_, info, batchId: str):
     
     # Determine attendance status based on time
     status = AttendanceStatus.absent
-    meeting_link = meeting_link = f"https://meet.jit.si/{batch.name.replace(' ', '-').lower()}-{batch.id}"
+    meeting_link = f"https://meet.jit.si/{batch.id}"
     attendance_record = None    
     
     if -60 <= time_diff_minutes <= 15:

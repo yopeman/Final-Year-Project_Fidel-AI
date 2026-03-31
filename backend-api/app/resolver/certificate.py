@@ -16,6 +16,7 @@ from ..model.student_profile import StudentProfile
 from ..model.user import User, UserRole
 from ..model.writing_skill import WritingSkill
 from ..util.email_service import send_notification
+from ..config.settings import settings
 
 query = QueryType()
 mutation = MutationType()
@@ -263,15 +264,18 @@ def resolve_generate_certificate(_, info, input):
 
         db.commit()
         db.refresh(certificate_obj)
+
+    # Generated certificate link
+    certificate_link = f"{settings.backend_url}/certificates/{certificate_id}"
     
     # Send notification to student
     student_title = "Certificate Generated"
-    student_content = f"Congratulations! Your certificate has been generated successfully. You can view it in your profile."
+    student_content = f"Congratulations! Your certificate has been generated successfully. You can view it here: {certificate_link}"
     send_notification(skill.enrollment.profile.user.id, student_title, student_content, db)
     
     # Send notification to tutor/admin
     tutor_title = "Certificate Generated"
-    tutor_content = f"Certificate has been generated for student {student_name}."
+    tutor_content = f"Certificate has been generated for student {student_name}. You can view it here: {certificate_link}"
     send_notification(current_user.id, tutor_title, tutor_content, db)
     
     return certificate_obj

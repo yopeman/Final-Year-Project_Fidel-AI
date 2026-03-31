@@ -13,6 +13,7 @@ from ..model.certificate import Certificate
 from ..model.user import User, UserRole
 from ..model.writing_skill import WritingSkill
 from ..util.email_service import send_notification
+from ..config.settings import settings
 
 query = QueryType()
 mutation = MutationType()
@@ -652,7 +653,7 @@ def resolve_send_exam_link(_, info, input):
     ).first()
     
     # Create the exam link
-    exam_link = f"https://meet.jit.si/{enrollment_id}"
+    exam_link = f"{settings.frontend_url}/exam/{enrollment_id}?link=https://meet.jit.si/{enrollment_id}"
     
     # Format exam date for notification
     exam_date_str = ""
@@ -665,7 +666,7 @@ def resolve_send_exam_link(_, info, input):
     send_notification(student_user.user.id, student_title, student_content, db)
     
     tutor_title = "Exam Link Sent to Student"
-    tutor_content = f"Exam link has been sent to student {student_user.user.first_name} {student_user.user.last_name}{exam_date_str}. Exam link: {exam_link}"
+    tutor_content = f"Exam link has been sent to student {student_user.user.first_name} {student_user.user.last_name}{exam_date_str}."
     send_notification(current_user.id, tutor_title, tutor_content, db)
 
     return True

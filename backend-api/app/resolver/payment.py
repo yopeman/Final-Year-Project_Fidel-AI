@@ -118,7 +118,7 @@ def resolve_make_payment(_, info, enrollmentId: str):
         first_name=current_user.first_name,
         last_name=current_user.last_name,
         tx_ref=transaction_id,
-        callback_url=f'{settings.base_url}/webhook'
+        callback_url=f'{settings.backend_url}/webhook'
     )
 
     # Create new payment
