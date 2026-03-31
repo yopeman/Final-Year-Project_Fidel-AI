@@ -3,7 +3,6 @@ from typing import List
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import PromptTemplate
-from langchain_ollama import ChatOllama
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from youtube_search import YoutubeSearch
@@ -14,6 +13,7 @@ from ...model.lesson_youtube_videos import LessonYouTubeVideos
 from ...model.module_lessons import ModuleLessons
 from ...model.modules import Modules
 from ...model.student_profile import StudentProfile
+from . import llm
 from .prompts import (
     INSTALL_LEARNING_PLAN_PROMPT,
     LESSON_CONTENT_GENERATION_PROMPT,
@@ -77,8 +77,7 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
     )
 
     response: ModuleResponse = (
-        ChatOllama(model="llama3.1:8b")
-        .with_structured_output(ModuleResponse)
+        llm.with_structured_output(ModuleResponse)
         .invoke([HumanMessage(content=prompts)])
     )
 
@@ -171,7 +170,7 @@ def _generate_content(
     )
 
     response: str = (
-        ChatOllama(model="smollm2:135m").invoke([HumanMessage(content=prompts)]).content
+        llm.invoke([HumanMessage(content=prompts)]).content
     )
 
     return response
@@ -196,8 +195,7 @@ def _generate_vocabularies(
     )
 
     response: VocabularyResponse = (
-        ChatOllama(model="llama3.1:8b")
-        .with_structured_output(VocabularyResponse)
+        llm.with_structured_output(VocabularyResponse)
         .invoke([HumanMessage(content=prompts)])
     )
 

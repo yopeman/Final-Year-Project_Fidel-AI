@@ -5,12 +5,12 @@ from fastapi import UploadFile
 from faster_whisper import WhisperModel
 from gtts import gTTS
 from langchain_core.prompts import PromptTemplate
-from langchain_ollama import ChatOllama
 
 from ...model.conversation_interactions import ConversationInteractions
 from ...model.free_conversation import FreeConversation
 from ...model.student_profile import StudentProfile
 from .normalize_text_for_tts import normalize_text_for_tts
+from . import llm
 from .prompts import (
     TOPIC_SUMMARY_PROMPT,
     TOPIC_GENERATION_PROMPT,
@@ -27,7 +27,6 @@ def ai_topic_summary(idea: str) -> str:
     if not idea or not idea.strip():
         raise ValueError("Idea cannot be empty")
 
-    llm = ChatOllama(model="smollm2:135m")
     prompts = PromptTemplate.from_template(TOPIC_SUMMARY_PROMPT)
     chain = prompts | llm
     response = chain.invoke({"idea": idea})
@@ -41,7 +40,6 @@ def ai_generated_topic(profile: StudentProfile) -> str:
     if not profile:
         raise ValueError("Student profile is required")
 
-    llm = ChatOllama(model="smollm2:135m")
     prompts = PromptTemplate.from_template(TOPIC_GENERATION_PROMPT)
     chain = prompts | llm
     response = chain.invoke(
@@ -86,7 +84,6 @@ def ask_on_conversation(
             interactions.append(f"AI: {interaction.ai_text}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
-    llm = ChatOllama(model="smollm2:135m")
     prompts = PromptTemplate.from_template(CONVERSATION_RESPONSE_PROMPT)
     try:
         chain = prompts | llm
@@ -154,7 +151,6 @@ def generate_possible_talk(
             interactions.append(f"Student: {interaction.ai_text}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
-    llm = ChatOllama(model="smollm2:135m")
     prompts = PromptTemplate.from_template(CONVERSATION_RESPONSE_PROMPT)
     try:
         chain = prompts | llm

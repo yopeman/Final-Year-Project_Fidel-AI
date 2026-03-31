@@ -1,12 +1,12 @@
 from typing import List
 
 from langchain_core.prompts import PromptTemplate
-from langchain_ollama import ChatOllama
 
 from ...model.lesson_interactions import LessonInteractions
 from ...model.module_lessons import ModuleLessons
 from ...model.modules import Modules
 from ...model.student_profile import StudentProfile
+from . import llm
 from .prompts import LESSON_QA_PROMPT
 
 
@@ -41,7 +41,6 @@ def ask_on_lesson(
             interactions.append(f"Teacher: {interaction.ai_answer}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
-    llm = ChatOllama(model="smollm2:135m")
     prompts = PromptTemplate.from_template(LESSON_QA_PROMPT)
 
     try:

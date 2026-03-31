@@ -1,9 +1,9 @@
 import logging
 
 from langchain_core.prompts import PromptTemplate
-from langchain_ollama import ChatOllama
 
 from ...model.student_profile import StudentProfile
+from . import llm
 from .prompts import LEARNING_PLAN_GENERATION_PROMPT, LEARNING_PLAN_UPDATE_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,6 @@ def generate_learning_plan(profile: StudentProfile) -> str:
         str: The generated learning plan structured in modules and lessons.
     """
 
-    llm = ChatOllama(model="smollm2:135m")
     prompts = PromptTemplate.from_template(LEARNING_PLAN_GENERATION_PROMPT)
 
     chain = prompts | llm
@@ -53,7 +52,6 @@ def update_learning_plan(profile: StudentProfile, improvements: str) -> str:
         str: The updated learning plan structured in modules and lessons.
     """
 
-    llm = ChatOllama(model="smollm2:135m")
     prompts = PromptTemplate.from_template(LEARNING_PLAN_UPDATE_PROMPT)
 
     chain = prompts | llm
