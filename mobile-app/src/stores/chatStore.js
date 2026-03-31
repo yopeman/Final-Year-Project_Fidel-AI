@@ -82,6 +82,29 @@ export const useChatStore = create(
                 }
             },
 
+            // Ask AI within a lesson context (LessonInteraction)
+            askAiInLesson: async (lessonId, question) => {
+                try {
+                    set({ isLoading: true, error: null });
+
+                    const response = await aiAPI.createLessonInteraction(lessonId, question);
+                    const interaction = response.data.message;
+
+                    // Update messages list with the interaction
+                    const currentMessages = get().messages;
+                    set({
+                        messages: [...currentMessages, interaction],
+                        isLoading: false
+                    });
+
+                    return { success: true, message: interaction };
+                } catch (error) {
+                    const errorMsg = error.message || error.response?.data?.message || 'Failed to ask AI in lesson';
+                    set({ error: errorMsg, isLoading: false });
+                    return { success: false, error: errorMsg };
+                }
+            },
+
             // Get conversation topics (PossibleTalk)
             getTopics: async (conversationId) => {
                 try {
@@ -94,16 +117,16 @@ export const useChatStore = create(
                 }
             },
 
-            generateIdea: async () => {
-                try {
-                    set({ isLoading: true, error: null });
-                    const response = await aiAPI.generateIdea();
-                    return { success: true, idea: response.data.ideas };
-                } catch (error) {
-                    set({ isLoading: false });
-                    return { success: false, error: error.message || 'Failed to generate idea' };
-                }
-            },
+            // generateIdea: async () => {
+            //     try {
+            //         set({ isLoading: true, error: null });
+            //         const response = await aiAPI.generateIdea();
+            //         return { success: true, idea: response.data.ideas };
+            //     } catch (error) {
+            //         set({ isLoading: false });
+            //         return { success: false, error: error.message || 'Failed to generate idea' };
+            //     }
+            // },
 
             setCurrentConversation: (conversation) => set({ currentConversation: conversation }),
 

@@ -463,16 +463,16 @@ export const aiAPI = {
         const res = await graphQLRequest(query, { conversationId });
         return { data: { interactions: res.data.conversationInteractions } };
     },
-    possibleTalk: async (conversationId) => {
-        // This is a mutation in schema: possibleTalk(conversationId: ID!): String!
-        const query = `
-            mutation possibleTalk($conversationId: ID!) {
-                possibleTalk(conversationId: $conversationId)
-            }
-         `;
-        const res = await graphQLRequest(query, { conversationId });
-        return { data: { topic: res.data.possibleTalk } };
-    },
+    // possibleTalk: async (conversationId) => {
+    //     // This is a mutation in schema: possibleTalk(conversationId: ID!): String!
+    //     const query = `
+    //         mutation possibleTalk($conversationId: ID!) {
+    //             possibleTalk(conversationId: $conversationId)
+    //         }
+    //      `;
+    //     const res = await graphQLRequest(query, { conversationId });
+    //     return { data: { topic: res.data.possibleTalk } };
+    // },
     createLessonInteraction: async (lessonId, message) => {
         const query = `
             mutation createLessonInteraction($input: CreateLessonInteractionInput!) {

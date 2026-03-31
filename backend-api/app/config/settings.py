@@ -14,7 +14,8 @@ class Settings(BaseSettings):
     jwt_refresh_token_expire_days: int
 
     chapa_secret: str
-    base_url: str
+    backend_url: str
+    frontend_url: str
 
     # Email settings
     smtp_server: str
