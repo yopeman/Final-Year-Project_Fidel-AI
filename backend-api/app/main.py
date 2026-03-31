@@ -70,6 +70,7 @@ from .resolver.writing_skill import writing_skill
 from .resolver.speaking_skill import speaking_skill
 from .resolver.listening_skill import listening_skill
 from .resolver.certificate import mutation as cert_mutation, query as cert_query, certificate
+from .resolver.analytics import query as analytics_query
 from .schema import type_defs
 from .util.auth import create_default_admin, get_current_user
 
@@ -143,6 +144,7 @@ bindables = [
     query,
     mutation,
     user,
+    analytics_query,
     a_query,
     a_mutation,
     attendance,

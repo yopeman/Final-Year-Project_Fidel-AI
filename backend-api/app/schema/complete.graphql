@@ -900,8 +900,166 @@ input PaginationInput {
   limit: Int
 }
 
+type OverviewStats {
+  totalUsers: Int!
+  totalStudents: Int!
+  totalTutors: Int!
+  totalBatches: Int!
+  activeBatches: Int!
+  totalEnrollments: Int!
+  activeEnrollments: Int!
+  totalRevenue: Float!
+}
+
+type UserByRole {
+  role: String!
+  count: Int!
+}
+
+type DailyRegistration {
+  date: String!
+  count: Int!
+}
+
+type UserAnalytics {
+  newUsersLast30Days: Int!
+  newUsersLast7Days: Int!
+  verifiedUsers: Int!
+  unverifiedUsers: Int!
+  verificationRate: Float!
+  usersByRole: [UserByRole!]!
+  dailyRegistrations: [DailyRegistration!]!
+}
+
+type BatchStatusCount {
+  status: String!
+  count: Int!
+}
+
+type BatchLevelCount {
+  level: String!
+  count: Int!
+}
+
+type BatchLanguageCount {
+  language: String!
+  count: Int!
+}
+
+type BatchAnalytics {
+  batchesByStatus: [BatchStatusCount!]!
+  batchesByLevel: [BatchLevelCount!]!
+  batchesByLanguage: [BatchLanguageCount!]!
+  newBatchesLast30Days: Int!
+  upcomingBatches: Int!
+  averageBatchFee: Float!
+}
+
+type EnrollmentStatusCount {
+  status: String!
+  count: Int!
+}
+
+type DailyEnrollment {
+  date: String!
+  count: Int!
+}
+
+type EnrollmentAnalytics {
+  enrollmentsByStatus: [EnrollmentStatusCount!]!
+  newEnrollmentsLast30Days: Int!
+  newEnrollmentsThisMonth: Int!
+  newEnrollmentsLastMonth: Int!
+  completionRate: Float!
+  dailyEnrollments: [DailyEnrollment!]!
+}
+
+type PaymentStatusCount {
+  status: String!
+  count: Int!
+  total: Float!
+}
+
+type DailyRevenue {
+  date: String!
+  revenue: Float!
+}
+
+type PaymentAnalytics {
+  paymentsByStatus: [PaymentStatusCount!]!
+  revenueLast30Days: Float!
+  revenueThisMonth: Float!
+  revenueLastMonth: Float!
+  monthlyGrowth: Float!
+  averagePayment: Float!
+  dailyRevenue: [DailyRevenue!]!
+}
+
+type FeedbackAnalytics {
+  total: Int!
+  newLast30Days: Int!
+}
+
+type CommunityAnalytics {
+  totalComments: Int!
+  newCommentsLast30Days: Int!
+  totalReactions: Int!
+  newReactionsLast30Days: Int!
+}
+
+type AttendanceAnalytics {
+  totalRecords: Int!
+  last30Days: Int!
+}
+
+type NotificationAnalytics {
+  total: Int!
+  newLast30Days: Int!
+}
+
+type CourseMaterialAnalytics {
+  total: Int!
+  newLast30Days: Int!
+}
+
+type EngagementAnalytics {
+  feedback: FeedbackAnalytics!
+  community: CommunityAnalytics!
+  attendance: AttendanceAnalytics!
+  notifications: NotificationAnalytics!
+  courseMaterials: CourseMaterialAnalytics!
+}
+
+type PerformanceAnalytics {
+  capacityUtilization: Float!
+  studentTutorRatio: Float!
+  totalCapacity: Int!
+  totalEnrolled: Int!
+}
+
+type GrowthMetrics {
+  userGrowthRate: Float!
+  enrollmentGrowthRate: Float!
+  activeUsersLast30Days: Int!
+  totalUsersToday: Int!
+  totalEnrollmentsToday: Int!
+}
+
+type Analytics {
+  overview: OverviewStats!
+  userAnalytics: UserAnalytics!
+  batchAnalytics: BatchAnalytics!
+  enrollmentAnalytics: EnrollmentAnalytics!
+  paymentAnalytics: PaymentAnalytics
+  engagementAnalytics: EngagementAnalytics!
+  performanceAnalytics: PerformanceAnalytics!
+  growthMetrics: GrowthMetrics!
+  generatedAt: String!
+}
+
 type Query {
   _: String
+  analytics: Analytics
 }
 
 type Mutation {
