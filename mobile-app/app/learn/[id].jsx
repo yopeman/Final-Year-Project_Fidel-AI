@@ -69,7 +69,7 @@ export default function LessonScreen() {
     const { currentLesson, getLesson, completeLesson, isLoading } = useLearningStore();
     const { askAiInLesson } = useChatStore();
 
-    const [activeTab, setActiveTab] = useState('vocab');
+    const [activeTab, setActiveTab] = useState('article');
     const [selectedVideo, setSelectedVideo] = useState(null);
     const [readingMode, setReadingMode] = useState('comfortable');
     const [chatMessages, setChatMessages] = useState([]);
@@ -433,8 +433,8 @@ export default function LessonScreen() {
 
     const renderTabContent = () => {
         switch (activeTab) {
-            case 'vocab': return renderVocab();
             case 'article': return renderArticle();
+            case 'vocab': return renderVocab();
             case 'video': return renderVideo();
             case 'ai': return renderAI();
             default: return null;
@@ -442,8 +442,8 @@ export default function LessonScreen() {
     };
 
     const tabs = [
-        { key: 'vocab', label: 'Vocab', icon: 'bookmark' },
         { key: 'article', label: 'Read', icon: 'document-text' },
+        { key: 'vocab', label: 'Vocab', icon: 'bookmark' },
         { key: 'video', label: 'Watch', icon: 'videocam' },
         { key: 'ai', label: 'Ask AI', icon: 'sparkles' },
     ];
