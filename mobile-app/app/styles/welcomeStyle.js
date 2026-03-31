@@ -1,0 +1,137 @@
+import { StyleSheet, Dimensions } from 'react-native';
+import { COLORS } from '../../src/constants/theme';
+const { width, height } = Dimensions.get('window');
+export default StyleSheet.create({
+    container: {
+        flex: 1,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+    gradient: {
+        flex: 1,
+    },
+    glowBlob: {
+        position: 'fixed',
+        // width: 300,
+        // height: 300,
+        borderRadius: 150,
+        opacity: 0.6,
+    },
+    content: {
+        flex: 1,
+        paddingHorizontal: 24,
+        paddingTop: height * 0.15,
+        paddingBottom: 50,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    topSection: {
+        alignItems: 'center',
+    },
+    logoBadge: {
+        width: 80,
+        height: 80,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,193,7,0.3)',
+    },
+    appTitle: {
+        fontSize: 40,
+        fontWeight: '900',
+        color: '#fff',
+        letterSpacing: -1,
+    },
+    tagline: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: COLORS.primary,
+        marginTop: 8,
+        letterSpacing: 0.5,
+    },
+    middleSection: {
+        alignItems: 'center',
+        width: '100%',
+    },
+    description: {
+        fontSize: 16,
+        lineHeight: 24,
+        color: 'rgba(255,255,255,0.6)',
+        textAlign: 'center',
+        marginBottom: 30,
+        paddingHorizontal: 10,
+    },
+    featureRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    featureItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        gap: 6,
+    },
+    featureIconWrap: {
+        width: 24,
+        height: 24,
+        borderRadius: 6,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    featureText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    buttonContainer: {
+        width: '100%',
+        gap: 20,
+    },
+    getStartedBtn: {
+        width: '100%',
+        borderRadius: 20,
+        overflow: 'hidden',
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+        elevation: 8,
+    },
+    btnGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 18,
+        gap: 12,
+    },
+    getStartedText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '900',
+        letterSpacing: 0.5,
+    },
+    loginBtn: {
+        alignItems: 'center',
+        paddingVertical: 10,
+    },
+    loginText: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    loginLink: {
+        color: COLORS.primary,
+        fontWeight: '800',
+    },
+});
