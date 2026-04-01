@@ -42,7 +42,7 @@ const AddSchedulePopup = ({
         <div className="px-8 py-6 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-primary/10 to-transparent">
           <div className="flex items-center space-x-4">
             <div className="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center border border-primary/30 shadow-[0_0_20px_rgba(255,193,7,0.2)]">
-              <CalendarIcon className="w-7 h-7 text-primary" />
+              <Calendar className="w-7 h-7 text-primary" />
             </div>
             <div>
               <h3 className="text-2xl font-black text-white tracking-tight">Add Course Slot</h3>
@@ -139,7 +139,7 @@ const AddSchedulePopup = ({
                 </>
               ) : (
                 <>
-                  <CalendarIcon className="w-5 h-5" />
+                  <Calendar className="w-5 h-5" />
                   <span>Assign Schedule</span>
                 </>
               )}

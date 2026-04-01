@@ -125,228 +125,247 @@ const AdminReports = ({ onGenerateReport }) => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in duration-700">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex justify-between items-center"
-      >
-        <div>
-          <h3 className="text-lg font-medium text-gray-900">System Reports</h3>
-          <p className="text-sm text-gray-600">Access and generate comprehensive system reports</p>
+      <div className="glass-premium rounded-3xl border border-white/10 p-8 shadow-2xl bg-gradient-to-br from-[#080C14] to-[#0D1B2A]/50 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-primary/10 transition-all duration-1000"></div>
+        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+          <div className="flex items-center space-x-5">
+            <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center border border-primary/30 shadow-[0_0_20px_rgba(255,193,7,0.2)]">
+              <BarChart3 className="w-8 h-8 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-4xl font-black text-white tracking-tighter">System Reports</h2>
+              <p className="text-accent-secondary mt-1 font-medium flex items-center">
+                <span className="inline-block w-2 h-2 rounded-full bg-primary mr-2 animate-pulse"></span>
+                Access and generate comprehensive system metrics
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => onGenerateReport('custom')}
+            className="group px-8 py-4 bg-primary text-[#080C14] rounded-2xl font-black uppercase tracking-wider hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,193,7,0.2)] flex items-center space-x-3 active:scale-95"
+          >
+            <Download className="w-5 h-5 transition-transform group-hover:-translate-y-1" />
+            <span>Produce Report</span>
+          </button>
         </div>
-        <button 
-          onClick={() => onGenerateReport('custom')}
-          className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          <span>Generate Report</span>
-        </button>
-      </motion.div>
+      </div>
 
-      {/* Report Categories */}
+      {/* System Health Summary */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        className="grid grid-cols-1 md:grid-cols-4 gap-6"
       >
-        {reportTypes.map((report, index) => (
-          <motion.div
-            key={report.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + index * 0.1 }}
-            className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className={`w-12 h-12 bg-gradient-to-br ${report.color} rounded-lg flex items-center justify-center`}>
-                  <report.icon className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900">{report.title}</h4>
-                  <span className="text-sm text-gray-500">{report.frequency}</span>
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                <button 
-                  onClick={() => onGenerateReport(report.id)}
-                  className="flex items-center space-x-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
-                >
-                  <Eye className="w-4 h-4" />
-                  <span>View</span>
-                </button>
-                <button 
-                  onClick={() => onGenerateReport(report.id, 'download')}
-                  className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Export</span>
-                </button>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 mb-4">{report.description}</p>
-            <div className="space-y-2">
-              {report.details.map((detail, detailIndex) => (
-                <div key={detailIndex} className="flex items-center space-x-2 text-xs text-gray-500">
-                  <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
-                  <span>{detail}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        ))}
+        <div className="glass-premium rounded-3xl border border-white/10 p-6 flex items-center justify-between shadow-xl bg-white/5 backdrop-blur-md group hover:bg-white/10 transition-all">
+          <div>
+            <p className="text-[11px] font-black text-accent-muted uppercase tracking-[0.2em]">Archived Reports</p>
+            <p className="text-3xl font-black text-white mt-1 group-hover:text-blue-400 transition-colors tracking-tight">1,234</p>
+          </div>
+          <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
+            <BarChart3 className="w-7 h-7 text-blue-400" />
+          </div>
+        </div>
+
+        <div className="glass-premium rounded-3xl border border-white/10 p-6 flex items-center justify-between shadow-xl bg-white/5 backdrop-blur-md group hover:bg-white/10 transition-all">
+          <div>
+            <p className="text-[11px] font-black text-accent-muted uppercase tracking-[0.2em]">Latest Sync</p>
+            <p className="text-2xl font-black text-white mt-2 tracking-tight group-hover:text-green-400 transition-colors">2 Hrs Ago</p>
+          </div>
+          <div className="w-14 h-14 bg-green-500/10 rounded-2xl flex items-center justify-center border border-green-500/20 group-hover:scale-110 transition-transform">
+            <Clock className="w-7 h-7 text-green-400" />
+          </div>
+        </div>
+
+        <div className="glass-premium rounded-3xl border border-white/10 p-6 flex items-center justify-between shadow-xl bg-white/5 backdrop-blur-md group hover:bg-white/10 transition-all">
+          <div>
+            <p className="text-[11px] font-black text-accent-muted uppercase tracking-[0.2em]">Volume Capacity</p>
+            <p className="text-3xl font-black text-white mt-1 tracking-tight group-hover:text-purple-400 transition-colors">45%</p>
+          </div>
+          <div className="w-14 h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform">
+            <Database className="w-7 h-7 text-purple-400" />
+          </div>
+        </div>
+
+        <div className="glass-premium rounded-3xl border border-white/10 p-6 flex items-center justify-between shadow-xl bg-green-500/5 backdrop-blur-md border-green-500/20 group hover:bg-green-500/10 transition-all cursor-crosshair">
+          <div>
+            <p className="text-[11px] font-black text-green-400/70 uppercase tracking-[0.2em] animate-pulse">Diagnostics</p>
+            <p className="text-3xl font-black text-green-400 mt-1 tracking-tight">Optimal</p>
+          </div>
+          <div className="w-14 h-14 bg-green-500/20 rounded-2xl flex items-center justify-center border border-green-500/30 group-hover:scale-110 transition-transform animate-pulse">
+            <Shield className="w-7 h-7 text-green-400" />
+          </div>
+        </div>
       </motion.div>
 
       {/* Quick Actions */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="bg-white rounded-lg border border-gray-200 p-6"
+        transition={{ delay: 0.2 }}
+        className="glass-premium rounded-3xl border border-white/10 p-8 shadow-xl bg-white/5 backdrop-blur-md"
       >
-        <h4 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex items-center space-x-3 mb-6 border-b border-white/10 pb-4">
+          <Activity className="w-6 h-6 text-brand-indigo" />
+          <h4 className="text-xl font-black text-white tracking-widest uppercase">Rapid Execution Links</h4>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {quickActions.map((action, index) => (
             <motion.button
               key={action.title}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 + index * 0.1 }}
+              transition={{ delay: 0.3 + index * 0.1 }}
               onClick={() => onGenerateReport(action.action)}
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all"
+              className="group flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left space-y-4 sm:space-y-0 sm:space-x-4 p-6 bg-white/5 border border-white/10 rounded-2xl hover:border-brand-indigo/50 hover:bg-brand-indigo/10 transition-all hover:shadow-[0_0_20px_rgba(79,70,229,0.1)] relative overflow-hidden w-full"
             >
-              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <action.icon className="w-5 h-5 text-indigo-600" />
+              <div className="absolute top-0 right-0 w-16 h-16 bg-brand-indigo/10 blur-xl rounded-full group-hover:bg-brand-indigo/20 transition-all"></div>
+              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 group-hover:bg-brand-indigo/20 group-hover:border-brand-indigo/30 transition-all relative z-10 shrink-0">
+                <action.icon className="w-6 h-6 text-brand-indigo" />
               </div>
-              <div className="text-left">
-                <h5 className="font-medium text-gray-900">{action.title}</h5>
-                <p className="text-sm text-gray-600">{action.description}</p>
+              <div className="relative z-10 w-full text-left">
+                <h5 className="font-bold text-white text-lg tracking-tight group-hover:text-brand-indigo transition-colors">{action.title}</h5>
+                <p className="text-sm text-accent-secondary mt-1 leading-relaxed line-clamp-2 w-full">{action.description}</p>
               </div>
             </motion.button>
           ))}
         </div>
       </motion.div>
 
-      {/* System Health Summary */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="grid grid-cols-1 md:grid-cols-4 gap-4"
-      >
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Reports Generated</p>
-              <p className="text-2xl font-bold text-gray-900">1,234</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-blue-600" />
+      {/* Report Categories */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="glass-premium rounded-3xl border border-white/10 p-8 shadow-xl bg-white/5">
+            <h3 className="text-xl font-black text-white mb-6 uppercase tracking-widest border-b border-white/10 pb-4">
+              Intelligence Categories
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {reportTypes.map((report, index) => (
+                <motion.div
+                  key={report.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4 + index * 0.05 }}
+                  className="bg-[#080C14]/40 border border-white/10 rounded-3xl p-6 hover:border-white/20 transition-all group overflow-hidden relative"
+                >
+                  <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${report.color} opacity-5 blur-2xl rounded-full group-hover:opacity-10 transition-all duration-700`}></div>
+                  <div className="relative z-10 flex flex-col h-full">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={`w-12 h-12 bg-gradient-to-br ${report.color} rounded-xl flex items-center justify-center shadow-lg`}>
+                        <report.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase text-accent-muted tracking-widest">
+                        {report.frequency}
+                      </span>
+                    </div>
+                    
+                    <h4 className="text-lg font-bold text-white mb-2">{report.title}</h4>
+                    <p className="text-sm text-accent-secondary mb-6 flex-1">{report.description}</p>
+                    
+                    <div className="grid grid-cols-2 gap-2 mb-6 opacity-60">
+                      {report.details.slice(0, 2).map((detail, detailIndex) => (
+                        <div key={detailIndex} className="flex items-center space-x-2 text-[10px] uppercase font-bold text-accent-muted tracking-wide truncate">
+                          <div className="w-1.5 h-1.5 bg-primary/40 rounded-full shrink-0"></div>
+                          <span className="truncate">{detail}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex space-x-3 pt-4 border-t border-white/5">
+                      <button 
+                        onClick={() => onGenerateReport(report.id)}
+                        className="flex-1 flex items-center justify-center space-x-2 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-colors text-xs font-black uppercase tracking-widest border border-white/5 hover:border-white/20"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span>Inspect</span>
+                      </button>
+                      <button 
+                        onClick={() => onGenerateReport(report.id, 'download')}
+                        className="flex-1 flex items-center justify-center space-x-2 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-colors text-xs font-black uppercase tracking-widest border border-primary/20"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Extract</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Last Generated</p>
-              <p className="text-2xl font-bold text-gray-900">2 hours ago</p>
+        {/* Recent Activity */}
+        <div className="lg:col-span-1">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+            className="glass-premium rounded-3xl border border-white/10 shadow-xl bg-white/5 backdrop-blur-md h-full"
+          >
+            <div className="px-8 py-6 border-b border-white/10 flex items-center space-x-3">
+              <Clock className="w-6 h-6 text-brand-yellow" />
+              <h3 className="text-xl font-black text-white uppercase tracking-widest">Recent Activity</h3>
             </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Clock className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Storage Used</p>
-              <p className="text-2xl font-bold text-gray-900">45%</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Database className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">System Status</p>
-              <p className="text-2xl font-bold text-green-600">Healthy</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Shield className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Recent Activity */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-        className="bg-white rounded-lg border border-gray-200"
-      >
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Recent Report Activity</h3>
-        </div>
-        <div className="p-6 space-y-4">
-          {[
-            {
-              id: 1,
-              title: 'Monthly User Activity Report',
-              status: 'completed',
-              time: '2 hours ago',
-              icon: Users,
-              color: 'text-blue-600'
-            },
-            {
-              id: 2,
-              title: 'Security Audit Report',
-              status: 'completed',
-              time: '4 hours ago',
-              icon: Shield,
-              color: 'text-red-600'
-            },
-            {
-              id: 3,
-              title: 'System Performance Report',
-              status: 'in_progress',
-              time: 'Just now',
-              icon: Activity,
-              color: 'text-green-600'
-            }
-          ].map((activity) => (
-            <div key={activity.id} className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center`}>
-                  <activity.icon className={`w-4 h-4 ${activity.color}`} />
+            <div className="p-8 space-y-6">
+              {[
+                {
+                  id: 1,
+                  title: 'Monthly User Activity',
+                  status: 'completed',
+                  time: '2 hours ago',
+                  icon: Users,
+                  color: 'text-blue-400',
+                  bg: 'bg-blue-500/10 border-blue-500/20'
+                },
+                {
+                  id: 2,
+                  title: 'Security Audit',
+                  status: 'completed',
+                  time: '4 hours ago',
+                  icon: Shield,
+                  color: 'text-red-400',
+                  bg: 'bg-red-500/10 border-red-500/20'
+                },
+                {
+                  id: 3,
+                  title: 'Hardware Diagnostics',
+                  status: 'in_progress',
+                  time: 'Active Process',
+                  icon: Activity,
+                  color: 'text-brand-yellow',
+                  bg: 'bg-brand-yellow/10 border-brand-yellow/20'
+                }
+              ].map((activity, idx) => (
+                <div key={activity.id} className="relative">
+                  {idx !== 2 && <div className="absolute left-6 top-14 bottom-[-24px] w-px bg-white/10"></div>}
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shrink-0 ${activity.bg}`}>
+                      <activity.icon className={`w-5 h-5 ${activity.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-white text-sm truncate">{activity.title}</p>
+                      <p className="text-[11px] font-black uppercase text-accent-muted tracking-widest">{activity.time}</p>
+                    </div>
+                    <div className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border shrink-0 ${
+                      activity.status === 'completed' 
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                        : activity.status === 'in_progress'
+                        ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                        : 'bg-white/5 text-accent-muted border-white/10'
+                    }`}>
+                      {activity.status === 'completed' ? 'Done' : 
+                       activity.status === 'in_progress' ? 'Running' : 'Wait'}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">{activity.title}</p>
-                  <p className="text-sm text-gray-500">{activity.time}</p>
-                </div>
-              </div>
-              <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                activity.status === 'completed' 
-                  ? 'bg-green-100 text-green-800'
-                  : activity.status === 'in_progress'
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : 'bg-gray-100 text-gray-800'
-              }`}>
-                {activity.status === 'completed' ? 'Completed' : 
-                 activity.status === 'in_progress' ? 'In Progress' : 'Pending'}
-              </div>
+              ))}
             </div>
-          ))}
+          </motion.div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

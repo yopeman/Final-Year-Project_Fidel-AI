@@ -28,6 +28,7 @@
               brand: {
                 green: '#10B981',
                 indigo: '#6366F1',
+                yellow: '#FFC107',
                 yellowGlow: 'rgba(255, 193, 7, 0.2)',
               },
               accent: {
@@ -68,8 +69,20 @@
         backdrop-filter: blur(20px);
         border: 1px solid rgba(255, 255, 255, 0.08);
       }
-      .yellow-glow {
-        box-shadow: 0 0 20px rgba(255, 193, 7, 0.15);
+      .yellow-glow,
+      button[class*="bg-primary"],
+      button[class*="bg-brand-yellow"],
+      a[class*="bg-primary"],
+      a[class*="bg-brand-yellow"] {
+        box-shadow: 0 0 20px rgba(255, 193, 7, 0.15), 0 10px 30px rgba(255, 193, 7, 0.12);
+      }
+
+      .yellow-glow:hover,
+      button[class*="bg-primary"]:hover,
+      button[class*="bg-brand-yellow"]:hover,
+      a[class*="bg-primary"]:hover,
+      a[class*="bg-brand-yellow"]:hover {
+        box-shadow: 0 0 28px rgba(255, 193, 7, 0.24), 0 12px 35px rgba(255, 193, 7, 0.16);
       }
     </style>
   </head>

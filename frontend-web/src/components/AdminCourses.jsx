@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { 
-  BookOpen, 
-  Plus, 
-  Search, 
-  Filter, 
-  Edit, 
-  Trash2, 
-  Eye, 
+import {
+  BookOpen,
+  Plus,
+  Search,
+  Filter,
+  Edit,
+  Trash2,
+  Eye,
   CheckCircle,
   AlertCircle,
   Calendar,
   Clock
 } from 'lucide-react';
 import { useQuery, useMutation } from '@apollo/client';
-import { 
-  GET_COURSES, 
-  CREATE_COURSE, 
-  UPDATE_COURSE, 
+import {
+  GET_COURSES,
+  CREATE_COURSE,
+  UPDATE_COURSE,
   DELETE_COURSE,
   GET_COURSE,
   ADD_MATERIAL,
@@ -28,24 +28,24 @@ import {
 import { BASE_URL } from '../lib/apollo-client';
 
 import useContentStore from '../store/contentStore';
-import { 
-  AddCourseModal, 
-  EditCourseModal, 
-  DeleteCourseConfirmationModal 
+import {
+  AddCourseModal,
+  EditCourseModal,
+  DeleteCourseConfirmationModal
 } from './CourseManagementModals';
 import { ViewCourseDetailsModal } from './CourseDetailsModal';
-import { 
-  AddMaterialModal, 
-  DeleteMaterialConfirmationModal, 
-  ViewMaterialModal, 
-  DeleteFileConfirmationModal 
+import {
+  AddMaterialModal,
+  DeleteMaterialConfirmationModal,
+  ViewMaterialModal,
+  DeleteFileConfirmationModal
 } from './MaterialManagementModals';
 
-const AdminCourses = ({ 
-  onCourseAction, 
-  onEditCourse, 
-  onViewCourse, 
-  onDeleteCourse 
+const AdminCourses = ({
+  onCourseAction,
+  onEditCourse,
+  onViewCourse,
+  onDeleteCourse
 }) => {
   const { filters, setFilters, getFilteredCourses, setCourses } = useContentStore();
   const [showCourseDetails, setShowCourseDetails] = useState(false);
@@ -226,7 +226,7 @@ const AdminCourses = ({
     try {
       // Create FormData for file upload
       const formData = new FormData();
-      
+
       // Append each file to FormData
       fileForm.files.forEach((file) => {
         formData.append('files', file);
@@ -242,7 +242,7 @@ const AdminCourses = ({
           },
         }
       );
-      
+
 
       // Update selected material files directly
       setSelectedMaterial(prev => ({
@@ -251,18 +251,18 @@ const AdminCourses = ({
       }));
 
       // console.log(selectedMaterial);
-      
-      
+
+
       // Also update the course materials
       setSelectedCourse(prev => ({
         ...prev,
-        materials: prev.materials.map(material => 
-          material.id === selectedMaterial.id 
+        materials: prev.materials.map(material =>
+          material.id === selectedMaterial.id
             ? { ...material, files: [...(material.files || []), ...response.data] }
             : material
         )
       }));
-      
+
       // Reset file form
       setFileForm({ files: [] });
     } catch (err) {
@@ -352,25 +352,30 @@ const AdminCourses = ({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-        <p className="text-center text-gray-600 mt-4">Loading courses...</p>
+      <div className="glass-premium rounded-3xl border border-white/10 p-12 shadow-2xl bg-gradient-to-br from-[#080C14] to-[#0D1B2A]/50 flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="absolute inset-0 bg-brand-yellow/20 rounded-full blur-xl animate-pulse"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-yellow relative z-10 mx-auto"></div>
+        </div>
+        <p className="text-center text-accent-secondary mt-6 font-medium animate-pulse">Loading courses...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Courses</h3>
-          <p className="text-gray-600">Please try again.</p>
-          <button 
+      <div className="glass-premium rounded-3xl border border-white/10 p-12 shadow-2xl bg-gradient-to-br from-[#080C14] to-[#0D1B2A]/50 flex flex-col items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/20 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+            <AlertCircle className="w-10 h-10 text-red-500" />
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-3">Error Loading Courses</h3>
+          <p className="text-accent-muted mb-8 text-lg">We encountered an issue while fetching the courses. Please try again.</p>
+          <button
             onClick={() => refetch()}
-            className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+            className="w-full sm:w-auto px-8 py-3 bg-brand-yellow text-black font-bold rounded-xl hover:bg-brand-yellow/90 hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,193,7,0.3)] flex items-center justify-center mx-auto space-x-2"
           >
-            Retry
+            <span>Retry</span>
           </button>
         </div>
       </div>
@@ -382,7 +387,7 @@ const AdminCourses = ({
       {/* Header */}
       <div className="glass-premium rounded-3xl border border-white/10 p-8 shadow-2xl bg-gradient-to-br from-[#080C14] to-[#0D1B2A]/50 relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-brand-yellow/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-brand-yellow/10 transition-all duration-1000"></div>
-        
+
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
           <div className="flex items-center space-x-5">
             <div className="w-16 h-16 rounded-2xl bg-brand-yellow/20 flex items-center justify-center border border-brand-yellow/30 shadow-[0_0_20px_rgba(255,193,7,0.2)]">
@@ -441,7 +446,7 @@ const AdminCourses = ({
             {/* Background design elements */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-brand-yellow/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-brand-yellow/10 transition-all duration-700"></div>
             <div className="absolute bottom-0 left-0 w-1 bg-brand-yellow/0 group-hover:bg-brand-yellow transition-all duration-500 h-full"></div>
-            
+
             <div className="relative z-10 flex flex-col h-full">
               <div className="flex items-start justify-between mb-8">
                 <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-brand-yellow/30 group-hover:bg-brand-yellow/10 transition-all duration-500 shadow-xl">
@@ -483,7 +488,7 @@ const AdminCourses = ({
 
                 <div className="flex items-center justify-between pt-6 border-t border-white/10">
                   <div className="flex items-center space-x-1">
-                     <button
+                    <button
                       onClick={() => {
                         setSelectedCourse(course);
                         setShowCourseDetails(true);
@@ -525,11 +530,11 @@ const AdminCourses = ({
           </div>
           <h3 className="text-3xl font-black text-white mb-4 tracking-tighter">Archive Empty</h3>
           <p className="max-w-md mx-auto text-accent-secondary font-medium mb-12">
-            {filters.search 
-              ? `No courses matching "${filters.search}" were found in our database.` 
+            {filters.search
+              ? `No courses matching "${filters.search}" were found in our database.`
               : 'Our academic catalogue is currently empty. Start by initializing your first course.'}
           </p>
-          <button 
+          <button
             onClick={() => setShowAddCourseModal(true)}
             className="px-10 py-5 bg-brand-yellow text-black rounded-3xl font-black capitalize tracking-tight hover:scale-105 transition-all shadow-2xl"
           >
@@ -681,8 +686,8 @@ const AdminCourses = ({
                 }));
                 setSelectedCourse(prev => ({
                   ...prev,
-                  materials: prev.materials.map(material => 
-                    material.id === selectedMaterial.id 
+                  materials: prev.materials.map(material =>
+                    material.id === selectedMaterial.id
                       ? { ...material, files: material.files.filter(file => file.id !== fileToDelete) }
                       : material
                   )

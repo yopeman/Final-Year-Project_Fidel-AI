@@ -205,7 +205,13 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen gradient-bg">
+    <div className="min-h-screen bg-gradient-to-br from-[#050B14] via-[#080C14] to-[#0D1B2A] text-white relative overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px] -mr-96 -mt-96 mix-blend-screen opacity-50"></div>
+        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-brand-indigo/10 rounded-full blur-[150px] -ml-96 -mb-96 mix-blend-screen opacity-50"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-white/5 rounded-[100%] blur-[120px] rotate-45 opacity-20"></div>
+      </div>
+
       {/* Header */}
       <header className="glass-premium border-b border-white/10 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -241,7 +247,7 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* Navigation Tabs - Responsive Scrollable */}
         <div className="glass-premium rounded-2xl border border-white/5 shadow-2xl mb-8 overflow-hidden">
           <div className="border-b border-white/10 overflow-x-auto no-scrollbar">
@@ -445,32 +451,32 @@ const AdminDashboard = () => {
 
       {/* User Details Modal */}
       {showUserDetails && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[150] p-4">
+          <div className="glass-premium rounded-[2.5rem] p-8 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl bg-gradient-to-br from-[#080C14] to-[#0D1B2A]/90 no-scrollbar">
+            <div className="flex items-center justify-between mb-8">
               <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <User className="w-8 h-8 text-indigo-600" />
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
+                  <User className="w-8 h-8 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-2xl font-black text-white tracking-tight">
                     {selectedUser.firstName} {selectedUser.lastName}
                   </h3>
-                  <p className="text-gray-600">{selectedUser.email}</p>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <p className="text-accent-secondary">{selectedUser.email}</p>
+                  <div className="flex flex-wrap items-center gap-2 mt-3">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
                       selectedUser.role === 'ADMIN' 
-                        ? 'bg-purple-100 text-purple-800' 
+                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' 
                         : selectedUser.role === 'TUTOR'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-blue-100 text-blue-800'
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                        : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                     }`}>
                       {selectedUser.role}
                     </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
                       selectedUser.isVerified 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                        : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                     }`}>
                       {selectedUser.isVerified ? 'Verified' : 'Unverified'}
                     </span>
@@ -482,67 +488,67 @@ const AdminDashboard = () => {
                   setShowUserDetails(false);
                   setSelectedUser(null);
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="p-2 rounded-xl text-accent-muted hover:text-white hover:bg-white/5 transition-all"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">Personal Information</h4>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>ID:</span>
-                    <span className="font-mono text-xs">{selectedUser.id}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+                <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Personal Information</h4>
+                <div className="space-y-4 text-sm text-accent-secondary">
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">System ID:</span>
+                    <span className="font-mono text-xs text-white/50">{selectedUser.id}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>First Name:</span>
-                    <span>{selectedUser.firstName}</span>
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">First Name:</span>
+                    <span className="text-white font-medium">{selectedUser.firstName}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Last Name:</span>
-                    <span>{selectedUser.lastName}</span>
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">Last Name:</span>
+                    <span className="text-white font-medium">{selectedUser.lastName}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Email:</span>
-                    <span>{selectedUser.email}</span>
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">Email:</span>
+                    <span className="text-white font-medium">{selectedUser.email}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Role:</span>
-                    <span>{selectedUser.role}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Role:</span>
+                    <span className="text-white font-medium">{selectedUser.role}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">Account Details</h4>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>Status:</span>
-                    <span>{selectedUser.isVerified ? 'Verified' : 'Unverified'}</span>
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+                <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Account Details</h4>
+                <div className="space-y-4 text-sm text-accent-secondary">
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">Status:</span>
+                    <span className="text-white font-medium">{selectedUser.isVerified ? 'Verified' : 'Unverified'}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Joined:</span>
-                    <span>{new Date(selectedUser.createdAt).toLocaleDateString()}</span>
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">Joined:</span>
+                    <span className="text-white font-medium">{new Date(selectedUser.createdAt).toLocaleDateString()}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Last Updated:</span>
-                    <span>{new Date(selectedUser.updatedAt).toLocaleDateString()}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Last Updated:</span>
+                    <span className="text-white font-medium">{new Date(selectedUser.updatedAt).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex space-x-3">
+            <div className="flex space-x-4">
               <button
                 onClick={() => {
                   setShowUserDetails(false);
                   setSelectedUser(null);
                 }}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="flex-1 px-4 py-4 border border-white/10 text-white rounded-2xl hover:bg-white/5 transition-all font-bold tracking-wide"
               >
-                Close
+                Close View
               </button>
               <button
                 onClick={() => {
@@ -554,9 +560,9 @@ const AdminDashboard = () => {
                     setShowEditUserPopup(true);
                   }
                 }}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                className="flex-1 px-4 py-4 bg-primary text-[#080C14] rounded-2xl hover:bg-primary/90 transition-all font-black uppercase tracking-wider shadow-[0_0_20px_rgba(255,193,7,0.15)] yellow-glow"
               >
-                Edit User
+                Modify User
               </button>
             </div>
           </div>
@@ -565,16 +571,16 @@ const AdminDashboard = () => {
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[150] p-4">
+          <div className="glass-premium rounded-[2.5rem] p-6 w-full max-w-md mx-4 border border-white/10 shadow-2xl bg-gradient-to-br from-[#080C14] to-[#0D1B2A]/90">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
+                <div className="w-10 h-10 bg-red-500/10 rounded-2xl flex items-center justify-center border border-red-500/20">
+                  <AlertCircle className="w-6 h-6 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Delete User</h3>
-                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                  <h3 className="text-lg font-black text-white">Delete User</h3>
+                  <p className="text-sm text-accent-secondary">This action cannot be undone</p>
                 </div>
               </div>
               <button
@@ -582,13 +588,13 @@ const AdminDashboard = () => {
                   setShowDeleteConfirmation(false);
                   setUserToDelete(null);
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="p-2 rounded-xl text-accent-muted hover:text-white hover:bg-white/5 transition-all"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
             
-            <p className="text-gray-700 mb-6">
+            <p className="text-accent-secondary mb-6">
               Are you sure you want to delete this user? This will permanently remove their account and all associated data.
             </p>
             
@@ -598,14 +604,14 @@ const AdminDashboard = () => {
                   setShowDeleteConfirmation(false);
                   setUserToDelete(null);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-3 border border-white/10 text-white rounded-2xl hover:bg-white/5 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteUser(userToDelete)}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 bg-red-500/90 text-white rounded-2xl hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all"
               >
                 {deleting ? 'Deleting...' : 'Delete User'}
               </button>

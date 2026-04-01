@@ -68,17 +68,17 @@ const AdminOverview = ({ onAction }) => {
     {
       label: 'System Health',
       status: 'Good',
-      color: 'bg-green-100 text-green-800'
+      color: 'bg-green-500/20 text-green-400 border border-green-500/30'
     },
     {
       label: 'Database Status',
       status: 'Connected',
-      color: 'bg-green-100 text-green-800'
+      color: 'bg-green-500/20 text-green-400 border border-green-500/30'
     },
     {
       label: 'Last Backup',
       status: '2 hours ago',
-      color: 'bg-gray-100 text-gray-800'
+      color: 'bg-white/10 text-white border border-white/20'
     }
   ];
 
@@ -192,43 +192,47 @@ const AdminOverview = ({ onAction }) => {
         transition={{ delay: 0.2 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
       >
-        <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between">
+        <div className="glass-premium rounded-2xl p-6 border border-white/10 relative overflow-hidden group hover:border-teal-500/30 transition-all duration-300 bg-white/5">
+          <div className="absolute inset-0 bg-gradient-to-r from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="flex items-center justify-between relative z-10">
             <div>
-              <p className="text-teal-100 text-sm">Upcoming Batches</p>
-              <p className="text-2xl font-bold">{stats.upcomingBatches}</p>
+              <p className="text-accent-secondary text-xs font-bold uppercase tracking-wider mb-1 text-teal-300/70">Upcoming Batches</p>
+              <p className="text-3xl font-black text-white">{stats.upcomingBatches}</p>
             </div>
-            <Calendar className="w-8 h-8 opacity-80" />
+            <Calendar className="w-8 h-8 text-teal-400/80" />
           </div>
         </div>
         
-        <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between">
+        <div className="glass-premium rounded-2xl p-6 border border-white/10 relative overflow-hidden group hover:border-red-500/30 transition-all duration-300 bg-white/5">
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="flex items-center justify-between relative z-10">
             <div>
-              <p className="text-red-100 text-sm">Completed Batches</p>
-              <p className="text-2xl font-bold">{stats.completedBatches}</p>
+              <p className="text-accent-secondary text-xs font-bold uppercase tracking-wider mb-1 text-red-300/70">Completed Batches</p>
+              <p className="text-3xl font-black text-white">{stats.completedBatches}</p>
             </div>
-            <CheckCircle className="w-8 h-8 opacity-80" />
+            <CheckCircle className="w-8 h-8 text-red-400/80" />
           </div>
         </div>
         
-        <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between">
+        <div className="glass-premium rounded-2xl p-6 border border-white/10 relative overflow-hidden group hover:border-brand-indigo/30 transition-all duration-300 bg-white/5">
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-indigo/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="flex items-center justify-between relative z-10">
             <div>
-              <p className="text-indigo-100 text-sm">Total Enrollments</p>
-              <p className="text-2xl font-bold">{stats.totalEnrollments}</p>
+              <p className="text-accent-secondary text-xs font-bold uppercase tracking-wider mb-1 text-brand-indigo/70">Total Enrollments</p>
+              <p className="text-3xl font-black text-white">{stats.totalEnrollments}</p>
             </div>
-            <UserPlus className="w-8 h-8 opacity-80" />
+            <UserPlus className="w-8 h-8 text-brand-indigo/80" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between">
+        <div className="glass-premium rounded-2xl p-6 border border-white/10 relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-300 bg-white/5">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div className="flex items-center justify-between relative z-10">
             <div>
-              <p className="text-emerald-100 text-sm">Total Courses</p>
-              <p className="text-2xl font-bold">{stats.totalCourses}</p>
+              <p className="text-accent-secondary text-xs font-bold uppercase tracking-wider mb-1 text-emerald-300/70">Total Courses</p>
+              <p className="text-3xl font-black text-white">{stats.totalCourses}</p>
             </div>
-            <BarChart3 className="w-8 h-8 opacity-80" />
+            <BarChart3 className="w-8 h-8 text-emerald-400/80" />
           </div>
         </div>
       </motion.div>
@@ -236,43 +240,43 @@ const AdminOverview = ({ onAction }) => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.3 }}
         className="grid grid-cols-1 md:grid-cols-2 gap-6"
       >
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">User Distribution</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-sm text-gray-600">Students</span>
+        <div className="glass-premium rounded-2xl border border-white/10 p-8 shadow-xl bg-white/5 backdrop-blur-md">
+          <h3 className="text-lg font-black text-white mb-6 uppercase tracking-widest border-b border-white/10 pb-4">User Distribution</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+              <div className="flex items-center space-x-4">
+                <div className="w-3 h-3 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.6)]"></div>
+                <span className="text-sm font-bold text-accent-secondary uppercase tracking-widest">Students</span>
               </div>
-              <span className="text-sm font-medium">{stats.students}</span>
+              <span className="text-xl font-black text-white">{stats.students}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-gray-600">Tutors</span>
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+              <div className="flex items-center space-x-4">
+                <div className="w-3 h-3 bg-brand-green rounded-full shadow-[0_0_10px_rgba(16,185,129,0.6)]"></div>
+                <span className="text-sm font-bold text-accent-secondary uppercase tracking-widest">Tutors</span>
               </div>
-              <span className="text-sm font-medium">{stats.tutors}</span>
+              <span className="text-xl font-black text-white">{stats.tutors}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                <span className="text-sm text-gray-600">Admins</span>
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+              <div className="flex items-center space-x-4">
+                <div className="w-3 h-3 bg-brand-indigo rounded-full shadow-[0_0_10px_rgba(99,102,241,0.6)]"></div>
+                <span className="text-sm font-bold text-accent-secondary uppercase tracking-widest">Admins</span>
               </div>
-              <span className="text-sm font-medium">{stats.admins}</span>
+              <span className="text-xl font-black text-white">{stats.admins}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">System Status</h3>
-          <div className="space-y-3">
+        <div className="glass-premium rounded-2xl border border-white/10 p-8 shadow-xl bg-white/5 backdrop-blur-md">
+          <h3 className="text-lg font-black text-white mb-6 uppercase tracking-widest border-b border-white/10 pb-4">System Status</h3>
+          <div className="space-y-4">
             {systemStatus.map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">{item.label}</span>
-                <span className={`px-2 py-1 text-xs rounded-full ${item.color}`}>
+              <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                <span className="text-sm font-bold text-accent-secondary uppercase tracking-widest">{item.label}</span>
+                <span className={`px-3 py-1 font-black uppercase text-[10px] tracking-widest rounded-xl ${item.color}`}>
                   {item.status}
                 </span>
               </div>

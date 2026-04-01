@@ -230,82 +230,101 @@ const VerificationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="gradient-bg min-h-screen flex items-center justify-center p-4 relative overflow-hidden font-sans selection:bg-brand-indigo/30 selection:text-white">
+      {/* Background Orbs */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-brand-indigo/5 rounded-full blur-[150px] -mr-96 -mt-96 mix-blend-screen opacity-50"></div>
+        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[150px] -ml-96 -mb-96 mix-blend-screen opacity-50"></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
         {/* Back to Home */}
         <button 
           onClick={() => navigate('/')}
-          className="inline-flex items-center text-gray-600 hover:text-indigo-600 mb-6"
+          className="inline-flex items-center text-accent-secondary hover:text-white mb-6 transition-colors font-medium text-sm"
         >
-          ← Back to Home
+          <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mr-3 hover:bg-white/10 transition-colors">
+            <span className="text-lg leading-none mb-0.5">←</span>
+          </div>
+          Back to Terminal
         </button>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-lg overflow-hidden"
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="glass-premium rounded-[2rem] overflow-hidden shadow-2xl"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white text-center">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ShieldCheck className="w-6 h-6" />
+          <div className="p-10 pb-6 text-center border-b border-white/10 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-indigo via-primary to-brand-green"></div>
+            <div className="w-20 h-20 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-lg">
+              <ShieldCheck className="w-10 h-10 text-primary" />
             </div>
-            <h1 className="text-xl font-bold">Verify Your Email</h1>
-            <p className="text-indigo-100 text-sm mt-1">Check your inbox for the verification code</p>
+            <h1 className="text-3xl font-black text-white tracking-tighter mb-2">Verify Identity</h1>
+            <p className="text-accent-secondary text-sm font-medium">Check your secure inbox for the verification code</p>
           </div>
 
-          <div className="p-6">
+          <div className="p-10 pt-8">
             {/* Success Message */}
             {successMessage && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-8 p-4 bg-brand-green/10 border border-brand-green/30 rounded-xl"
+              >
                 <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                  <p className="text-green-700 text-sm">{successMessage}</p>
+                  <CheckCircle className="w-5 h-5 text-brand-green mr-3 shrink-0" />
+                  <p className="text-brand-green font-medium text-sm">{successMessage}</p>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* Error Message */}
             {serverError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-8 p-4 bg-red-500/10 border border-red-500/30 rounded-xl"
+              >
                 <div className="flex items-start">
-                  <AlertCircle className="w-5 h-5 text-red-600 mr-2 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-red-400 mr-3 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-red-700 font-medium text-sm">Verification Error</p>
-                    <p className="text-red-600 text-sm mt-1">{serverError}</p>
+                    <p className="text-red-400 font-bold text-sm tracking-wide uppercase">Verification Error</p>
+                    <p className="text-red-300/80 text-sm mt-1">{serverError}</p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* Email Info */}
             {email && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mb-8 p-4 bg-brand-indigo/10 border border-brand-indigo/30 rounded-xl">
                 <div className="flex items-center">
-                  <Mail className="w-4 h-4 text-blue-600 mr-2" />
+                  <Mail className="w-5 h-5 text-brand-indigo mr-3 shrink-0" />
                   <div>
-                    <p className="text-blue-700 font-medium text-sm">Verification Email Sent To:</p>
-                    <p className="text-blue-600 text-sm mt-1 font-mono">{email}</p>
+                    <p className="text-brand-indigo/80 font-bold text-xs tracking-wide uppercase">Code Transmitted To</p>
+                    <p className="text-white text-sm mt-1 font-mono">{email}</p>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Instructions */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-medium text-gray-900 mb-2">Instructions:</h3>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Check your email inbox</li>
-                <li>• Copy the 6-digit verification code</li>
-                <li>• Enter it below to verify your account</li>
+            <div className="mb-8 p-5 bg-white/5 border border-white/10 rounded-xl">
+              <h3 className="text-xs font-bold text-accent-secondary mb-3 uppercase tracking-widest">Protocol Steps:</h3>
+              <ul className="text-sm text-accent-muted space-y-2 font-medium">
+                <li className="flex items-center"><div className="w-1.5 h-1.5 rounded-full bg-primary/50 mr-2"></div> Check incoming transmissions</li>
+                <li className="flex items-center"><div className="w-1.5 h-1.5 rounded-full bg-primary/50 mr-2"></div> Locate the 6-digit access code</li>
+                <li className="flex items-center"><div className="w-1.5 h-1.5 rounded-full bg-primary/50 mr-2"></div> Enter it below to unlock access</li>
               </ul>
             </div>
 
             {/* Verification Form */}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Verification Code
+                <label className="block text-xs font-bold text-accent-secondary mb-3 uppercase tracking-widest text-center">
+                  Authentication Code
                 </label>
                 <input
                   type="text"
@@ -317,7 +336,7 @@ const VerificationPage = () => {
                     },
                     maxLength: { value: 6, message: 'Max 6 digits' }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-center text-lg tracking-widest"
+                  className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-indigo/50 focus:bg-white/10 transition-all text-center text-2xl tracking-[0.5em] placeholder:text-white/10 font-mono"
                   placeholder="000000"
                   disabled={loading}
                   maxLength={6}
@@ -325,62 +344,62 @@ const VerificationPage = () => {
                   pattern="[0-9]*"
                 />
                 {errors.verificationCode && (
-                  <p className="mt-1 text-xs text-red-600">{errors.verificationCode.message}</p>
+                  <p className="mt-2 text-xs text-red-400 font-medium text-center">{errors.verificationCode.message}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4 pt-4">
                 <button
                   type="button"
                   onClick={handleGoToLogin}
                   disabled={loading}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                  className="px-6 py-4 border border-white/10 bg-white/5 text-white rounded-xl hover:bg-white/10 transition-all disabled:opacity-50 text-xs font-black uppercase tracking-widest"
                 >
-                  Go to Login
+                  Abort
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center"
+                  className="px-6 py-4 bg-primary text-[#080C14] rounded-xl hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center yellow-glow text-xs font-black uppercase tracking-widest"
                 >
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Verifying...
+                      Syncing...
                     </>
                   ) : (
-                    'Verify Email'
+                    'Verify Identity'
                   )}
                 </button>
               </div>
 
               {/* Resend Code */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <div className="mt-8 pt-6 border-t border-white/10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <Clock className="w-4 h-4 text-gray-600 mr-2" />
-                    <span className="text-sm text-gray-700">Didn't receive the code?</span>
+                    <Clock className="w-4 h-4 text-accent-secondary mr-2" />
+                    <span className="text-sm font-medium text-accent-secondary">Signal lost?</span>
                   </div>
                   <button
                     type="button"
                     onClick={handleResendCode}
                     disabled={resendLoading || resendCooldown > 0}
-                    className="inline-flex items-center text-indigo-600 hover:text-indigo-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center text-primary hover:text-white text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {resendLoading ? (
                       <>
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                        Sending...
+                        <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                        Transmitting...
                       </>
                     ) : resendCooldown > 0 ? (
                       <>
-                        <RefreshCw className="w-3 h-3 mr-1" />
-                        Resend in {resendCooldown}s
+                        <RefreshCw className="w-3 h-3 mr-1.5" />
+                        Cooldown {resendCooldown}s
                       </>
                     ) : (
                       <>
-                        <RefreshCw className="w-3 h-3 mr-1" />
-                        Resend Code
+                        <RefreshCw className="w-3 h-3 mr-1.5" />
+                        Retransmit Signal
                       </>
                     )}
                   </button>
@@ -389,14 +408,14 @@ const VerificationPage = () => {
 
               {/* Alternative Actions */}
               <div className="mt-4 text-center">
-                <p className="text-xs text-gray-500">
-                  Having trouble?{' '}
+                <p className="text-sm text-accent-secondary font-medium">
+                  Protocol failure?{' '}
                   <button
                     type="button"
                     onClick={handleGoToRegister}
-                    className="text-indigo-600 hover:text-indigo-700 font-medium"
+                    className="text-primary hover:text-white font-bold underline decoration-primary/30 underline-offset-4 transition-colors"
                   >
-                    Try registering again
+                    Restart Registration
                   </button>
                 </p>
               </div>
@@ -404,9 +423,9 @@ const VerificationPage = () => {
           </div>
         </motion.div>
 
-        <div className="mt-4 text-center">
-          <p className="text-xs text-gray-500">
-            © 2026 FidelAI - Bahir Dar University
+        <div className="mt-8 text-center relative z-10">
+          <p className="text-xs text-accent-muted font-bold tracking-widest uppercase">
+            © 2026 FidelAI Core Systems
           </p>
         </div>
       </div>

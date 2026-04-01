@@ -97,10 +97,10 @@ const AdminPayments = ({
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'COMPLETED': return 'bg-green-100 text-green-800';
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      case 'FAILED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'COMPLETED': return 'bg-green-500/10 text-green-400 border border-green-500/20';
+      case 'PENDING': return 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20';
+      case 'FAILED': return 'bg-red-500/10 text-red-400 border border-red-500/20';
+      default: return 'bg-white/10 text-white border border-white/20';
     }
   };
 
@@ -126,23 +126,25 @@ const AdminPayments = ({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-        <p className="text-center text-gray-600 mt-4">Loading payments...</p>
+      <div className="glass-premium rounded-3xl border border-white/10 p-10 shadow-2xl bg-white/5">
+        <div className="flex flex-col items-center justify-center py-10 space-y-4">
+          <div className="w-12 h-12 border-4 border-brand-yellow/20 border-t-brand-yellow rounded-full animate-spin"></div>
+          <p className="text-accent-muted font-bold uppercase tracking-widest text-xs">Loading payments...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="glass-premium rounded-3xl border border-white/10 p-10 shadow-2xl bg-white/5">
         <div className="text-center">
-          <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Payments</h3>
-          <p className="text-gray-600 mb-4">Please try again.</p>
+          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h3 className="text-xl font-black text-white mb-2 tracking-tight">Error Loading Payments</h3>
+          <p className="text-accent-secondary mb-4">Please try again.</p>
           <button 
             onClick={() => refetch()}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+            className="bg-brand-yellow text-black px-5 py-3 rounded-2xl font-black hover:scale-105 transition-all"
           >
             Retry
           </button>
@@ -152,62 +154,93 @@ const AdminPayments = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in duration-700">
+      {/* Header */}
+      <div className="glass-premium rounded-3xl border border-white/10 p-8 shadow-2xl bg-gradient-to-br from-[#080C14] to-[#0D1B2A]/50 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-yellow/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-brand-yellow/10 transition-all duration-1000"></div>
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+          <div className="flex items-center space-x-5">
+            <div className="w-16 h-16 rounded-2xl bg-brand-yellow/20 flex items-center justify-center border border-brand-yellow/30 shadow-[0_0_20px_rgba(255,193,7,0.2)]">
+              <CreditCard className="w-8 h-8 text-brand-yellow" />
+            </div>
+            <div>
+              <h2 className="text-4xl font-black text-white tracking-tighter">Payments</h2>
+              <p className="text-accent-secondary mt-1 font-medium flex items-center">
+                <span className="inline-block w-2 h-2 rounded-full bg-brand-yellow mr-2 animate-pulse"></span>
+                Track transactions, fees, and receipt activity
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 bg-white/5 border border-white/10 px-5 py-3 rounded-2xl">
+            <span className="w-2 h-2 rounded-full bg-brand-yellow animate-pulse"></span>
+            <span className="text-sm font-black text-white uppercase tracking-[0.2em]">
+              {filteredPayments.length} Records
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6"
+        className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6"
       >
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-100 text-sm">Total Payments</p>
-              <p className="text-2xl font-bold">{stats.totalPayments}</p>
-            </div>
-            <CreditCard className="w-8 h-8 opacity-80" />
-          </div>
-        </div>
-        
-        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100 text-sm">Completed</p>
-              <p className="text-2xl font-bold">{stats.completedPayments}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 opacity-80" />
-          </div>
-        </div>
-        
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-yellow-100 text-sm">Pending</p>
-              <p className="text-2xl font-bold">{stats.pendingPayments}</p>
-            </div>
-            <Clock className="w-8 h-8 opacity-80" />
-          </div>
-        </div>
+        {[
+          {
+            label: 'Total Payments',
+            value: stats.totalPayments,
+            icon: CreditCard,
+            accent: 'text-blue-400',
+            glow: 'bg-blue-500/10 border-blue-500/20'
+          },
+          {
+            label: 'Completed',
+            value: stats.completedPayments,
+            icon: CheckCircle,
+            accent: 'text-green-400',
+            glow: 'bg-green-500/10 border-green-500/20'
+          },
+          {
+            label: 'Pending',
+            value: stats.pendingPayments,
+            icon: Clock,
+            accent: 'text-yellow-400',
+            glow: 'bg-yellow-500/10 border-yellow-500/20'
+          },
+          {
+            label: 'Failed',
+            value: stats.failedPayments,
+            icon: XCircle,
+            accent: 'text-red-400',
+            glow: 'bg-red-500/10 border-red-500/20'
+          },
+          {
+            label: 'Total Revenue',
+            value: formatCurrency(stats.totalRevenue, 'ETB'),
+            icon: DollarSign,
+            accent: 'text-brand-yellow',
+            glow: 'bg-brand-yellow/10 border-brand-yellow/20'
+          }
+        ].map((item) => {
+          const Icon = item.icon;
 
-        <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-red-100 text-sm">Failed</p>
-              <p className="text-2xl font-bold">{stats.failedPayments}</p>
+          return (
+            <div key={item.label} className="glass-premium rounded-3xl border border-white/10 p-6 shadow-xl bg-white/5 backdrop-blur-md">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-black text-accent-muted uppercase tracking-[0.2em]">{item.label}</p>
+                  <p className="text-2xl font-black text-white mt-3 tracking-tight">{item.value}</p>
+                </div>
+                <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${item.glow}`}>
+                  <Icon className={`w-6 h-6 ${item.accent}`} />
+                </div>
+              </div>
             </div>
-            <XCircle className="w-8 h-8 opacity-80" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100 text-sm">Total Revenue</p>
-              <p className="text-2xl font-bold">{formatCurrency(stats.totalRevenue, 'ETB')}</p>
-            </div>
-            <DollarSign className="w-8 h-8 opacity-80" />
-          </div>
-        </div>
+          );
+        })}
       </motion.div>
 
       {/* Filters and Actions */}
@@ -215,46 +248,50 @@ const AdminPayments = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white rounded-lg border border-gray-200 p-6"
+        className="glass-premium rounded-3xl border border-white/10 p-6 shadow-xl bg-white/5 backdrop-blur-md"
       >
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4 flex-5">
-            <div className="relative flex-5">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <div className="flex flex-col xl:flex-row gap-4 xl:items-center xl:justify-between">
+          <div className="flex flex-col lg:flex-row gap-4 flex-1">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-accent-muted w-5 h-5 group-focus-within:text-brand-yellow transition-colors" />
               <input
                 type="text"
                 placeholder="Search payments by user or batch..."
                 value={filters.search}
                 onChange={(e) => setFilters({ search: e.target.value })}
-                className="w-full pl-12 pr-6 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                className="w-full pl-14 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-accent-muted focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 focus:border-brand-yellow/50 transition-all font-bold tracking-tight"
               />
             </div>
-            
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ status: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="PENDING">Pending</option>
-              <option value="FAILED">Failed</option>
-            </select>
 
-            <select
-              value={filters.batch}
-              onChange={(e) => setFilters({ batch: e.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="all">All Batches</option>
-              {batches.map(batch => (
-                <option key={batch.id} value={batch.id}>{batch.name}</option>
-              ))}
-            </select>
-          </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex items-center space-x-3 bg-white/5 border border-white/10 p-2 rounded-2xl">
+                <Filter className="w-5 h-5 text-accent-muted ml-2" />
+                <select
+                  value={filters.status}
+                  onChange={(e) => setFilters({ status: e.target.value })}
+                  className="bg-transparent text-white font-bold px-4 py-2 focus:outline-none cursor-pointer appearance-none min-w-[150px]"
+                >
+                  <option value="all" className="bg-[#080C14] text-white">All Status</option>
+                  <option value="COMPLETED" className="bg-[#080C14] text-white">Completed</option>
+                  <option value="PENDING" className="bg-[#080C14] text-white">Pending</option>
+                  <option value="FAILED" className="bg-[#080C14] text-white">Failed</option>
+                </select>
+              </div>
 
-          <div className="flex items-center space-x-2">
-            {/* Refresh and Export buttons removed */}
+              <div className="flex items-center space-x-3 bg-white/5 border border-white/10 p-2 rounded-2xl">
+                <Users className="w-5 h-5 text-accent-muted ml-2" />
+                <select
+                  value={filters.batch}
+                  onChange={(e) => setFilters({ batch: e.target.value })}
+                  className="bg-transparent text-white font-bold px-4 py-2 focus:outline-none cursor-pointer appearance-none min-w-[160px]"
+                >
+                  <option value="all" className="bg-[#080C14] text-white">All Batches</option>
+                  {batches.map(batch => (
+                    <option key={batch.id} value={batch.id} className="bg-[#080C14] text-white">{batch.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -264,93 +301,99 @@ const AdminPayments = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-white rounded-lg border border-gray-200 overflow-hidden"
+        className="glass-premium rounded-3xl border border-white/10 shadow-2xl bg-white/5 overflow-hidden"
       >
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Payment Records</h3>
-          <p className="text-sm text-gray-600 mt-1">{filteredPayments.length} payments found</p>
+        <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-white/5 to-transparent">
+          <h3 className="text-xl font-bold text-white">Payment Records</h3>
+          <p className="text-sm text-accent-secondary mt-1">{filteredPayments.length} payments found</p>
         </div>
-        
+
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-white/10">
+            <thead className="bg-white/5">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-4 text-left text-[11px] font-black text-accent-muted uppercase tracking-[0.2em]">User</th>
+                <th className="px-6 py-4 text-left text-[11px] font-black text-accent-muted uppercase tracking-[0.2em]">Batch</th>
+                <th className="px-6 py-4 text-left text-[11px] font-black text-accent-muted uppercase tracking-[0.2em]">Amount</th>
+                <th className="px-6 py-4 text-left text-[11px] font-black text-accent-muted uppercase tracking-[0.2em]">Status</th>
+                <th className="px-6 py-4 text-left text-[11px] font-black text-accent-muted uppercase tracking-[0.2em]">Date</th>
+                <th className="px-6 py-4 text-left text-[11px] font-black text-accent-muted uppercase tracking-[0.2em]">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-white/10">
               {filteredPayments.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan="6" className="px-6 py-10 text-center text-accent-secondary font-medium">
                     No payments found
                   </td>
                 </tr>
               ) : (
                 filteredPayments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50">
+                  <tr key={payment.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-bold text-white">
                           {payment.enrollment.profile.user.firstName} {payment.enrollment.profile.user.lastName}
                         </div>
-                        <div className="text-sm text-gray-500">{payment.enrollment.profile.user.email}</div>
+                        <div className="text-sm text-accent-muted">{payment.enrollment.profile.user.email}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{payment.enrollment.batch.name}</div>
-                      <div className="text-sm text-gray-500">Fee: {formatCurrency(payment.enrollment.batch.feeAmount, 'ETB')}</div>
+                      <div className="text-sm font-semibold text-white">{payment.enrollment.batch.name}</div>
+                      <div className="text-sm text-accent-muted">Fee: {formatCurrency(payment.enrollment.batch.feeAmount, 'ETB')}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white">
                       {formatCurrency(payment.amount, payment.currency)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
                         {getStatusIcon(payment.status)}
                         <span className="ml-1">{payment.status}</span>
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-accent-secondary">
                       {new Date(payment.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedPayment(payment);
-                          setShowPaymentDetails(true);
-                        }}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      {payment.status === 'PENDING' && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handlePaymentAction(payment.id, 'cancel')}
-                          className="text-yellow-600 hover:text-yellow-900"
+                          onClick={() => {
+                            setSelectedPayment(payment);
+                            setShowPaymentDetails(true);
+                          }}
+                          className="p-2.5 bg-white/5 hover:bg-brand-yellow/20 text-accent-muted hover:text-brand-yellow rounded-xl transition-all border border-white/5"
+                          title="View payment"
                         >
-                          <RefreshCw className="w-4 h-4" />
+                          <Eye className="w-4 h-4" />
                         </button>
-                      )}
-                      <button
-                        onClick={() => handlePaymentAction(payment.id, 'delete')}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      {payment.receiptUrl && (
-                        <a
-                          href={payment.receiptUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-900"
+                        {payment.status === 'PENDING' && (
+                          <button
+                            onClick={() => handlePaymentAction(payment.id, 'cancel')}
+                            className="p-2.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 rounded-xl transition-all border border-yellow-500/20"
+                            title="Cancel payment"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handlePaymentAction(payment.id, 'delete')}
+                          className="p-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all border border-red-500/20"
+                          title="Delete payment"
                         >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      )}
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        {payment.receiptUrl && (
+                          <a
+                            href={payment.receiptUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl transition-all border border-blue-500/20"
+                            title="Open receipt"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -362,16 +405,16 @@ const AdminPayments = ({
 
       {/* Payment Details Modal */}
       {showPaymentDetails && selectedPayment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[150] p-4">
+          <div className="glass-premium bg-gradient-to-br from-[#080C14] to-[#0D1B2A]/90 rounded-[2.5rem] p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-8 h-8 text-indigo-600" />
+                <div className="w-16 h-16 bg-brand-yellow/10 rounded-2xl flex items-center justify-center border border-brand-yellow/20">
+                  <CreditCard className="w-8 h-8 text-brand-yellow" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">Payment Details</h3>
-                  <p className="text-gray-600">Transaction #{selectedPayment.transactionId}</p>
+                  <h3 className="text-2xl font-black text-white tracking-tight">Payment Details</h3>
+                  <p className="text-accent-secondary">Transaction #{selectedPayment.transactionId}</p>
                 </div>
               </div>
               <button
@@ -379,60 +422,60 @@ const AdminPayments = ({
                   setShowPaymentDetails(false);
                   setSelectedPayment(null);
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="p-2 rounded-xl text-accent-muted hover:text-white hover:bg-white/5 transition-all"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">Payment Information</h4>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
+              <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+                <h4 className="font-bold text-white mb-3">Payment Information</h4>
+                <div className="space-y-2 text-sm text-accent-secondary">
+                  <div className="flex justify-between gap-4">
                     <span>Amount:</span>
-                    <span className="font-medium">{formatCurrency(selectedPayment.amount, selectedPayment.currency)}</span>
+                    <span className="font-bold text-white">{formatCurrency(selectedPayment.amount, selectedPayment.currency)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span>Status:</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedPayment.status)}`}>
                       {selectedPayment.status}
                     </span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span>Method:</span>
-                    <span>{selectedPayment.method || 'N/A'}</span>
+                    <span className="text-white">{selectedPayment.method || 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span>Paid At:</span>
-                    <span>{selectedPayment.paidAt ? new Date(selectedPayment.paidAt).toLocaleString() : 'Not paid'}</span>
+                    <span className="text-right text-white">{selectedPayment.paidAt ? new Date(selectedPayment.paidAt).toLocaleString() : 'Not paid'}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">User Information</h4>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
+              <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+                <h4 className="font-bold text-white mb-3">User Information</h4>
+                <div className="space-y-2 text-sm text-accent-secondary">
+                  <div className="flex justify-between gap-4">
                     <span>Name:</span>
-                    <span>{selectedPayment.enrollment.profile.user.firstName} {selectedPayment.enrollment.profile.user.lastName}</span>
+                    <span className="text-right text-white">{selectedPayment.enrollment.profile.user.firstName} {selectedPayment.enrollment.profile.user.lastName}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span>Email:</span>
-                    <span>{selectedPayment.enrollment.profile.user.email}</span>
+                    <span className="text-right text-white">{selectedPayment.enrollment.profile.user.email}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span>Batch:</span>
-                    <span>{selectedPayment.enrollment.batch.name}</span>
+                    <span className="text-right text-white">{selectedPayment.enrollment.batch.name}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span>Enrollment Status:</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       selectedPayment.enrollment.status === 'ENROLLED' 
-                        ? 'bg-green-100 text-green-800' 
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
                         : selectedPayment.enrollment.status === 'APPLIED'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
+                        ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                        : 'bg-white/10 text-white border border-white/20'
                     }`}>
                       {selectedPayment.enrollment.status}
                     </span>
@@ -442,33 +485,33 @@ const AdminPayments = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">Transaction Details</h4>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
+              <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+                <h4 className="font-bold text-white mb-3">Transaction Details</h4>
+                <div className="space-y-2 text-sm text-accent-secondary">
+                  <div className="flex justify-between gap-4">
                     <span>Transaction ID:</span>
-                    <span className="font-mono text-xs">{selectedPayment.transactionId}</span>
+                    <span className="font-mono text-xs text-white text-right">{selectedPayment.transactionId}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span>Created:</span>
-                    <span>{new Date(selectedPayment.createdAt).toLocaleString()}</span>
+                    <span className="text-right text-white">{new Date(selectedPayment.createdAt).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-4">
                     <span>Updated:</span>
-                    <span>{new Date(selectedPayment.updatedAt).toLocaleString()}</span>
+                    <span className="text-right text-white">{new Date(selectedPayment.updatedAt).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">Links</h4>
+              <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+                <h4 className="font-bold text-white mb-3">Links</h4>
                 <div className="space-y-2">
                   {selectedPayment.receiptUrl && (
                     <a
                       href={selectedPayment.receiptUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block w-full text-center px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
+                      className="block w-full text-center px-4 py-3 bg-green-500/10 text-green-400 rounded-2xl hover:bg-green-500/20 border border-green-500/20 transition-all font-bold"
                     >
                       View Receipt
                     </a>
@@ -477,13 +520,13 @@ const AdminPayments = ({
               </div>
             </div>
 
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => {
                   setShowPaymentDetails(false);
                   setSelectedPayment(null);
                 }}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="flex-1 px-4 py-3 bg-white/5 text-white rounded-2xl hover:bg-white/10 border border-white/10 transition-all font-bold"
               >
                 Close
               </button>
@@ -494,7 +537,7 @@ const AdminPayments = ({
                     setShowPaymentDetails(false);
                     setSelectedPayment(null);
                   }}
-                  className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                  className="flex-1 px-4 py-3 bg-yellow-500/90 text-black rounded-2xl hover:bg-yellow-400 transition-all font-black"
                 >
                   Cancel Payment
                 </button>
@@ -505,7 +548,7 @@ const AdminPayments = ({
                   setShowPaymentDetails(false);
                   setSelectedPayment(null);
                 }}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="flex-1 px-4 py-3 bg-red-500/90 text-white rounded-2xl hover:bg-red-500 transition-all font-black"
               >
                 Delete Payment
               </button>

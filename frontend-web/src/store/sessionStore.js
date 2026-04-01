@@ -47,11 +47,18 @@ const useSessionStore = create((set, get) => ({
   getTotalStudents: () => {
     const { sessions } = get();
     const studentIds = new Set();
+
     sessions.forEach(session => {
       if (session.enrollments) {
-        session.enrollments.forEach(e => studentIds.add(e.studentId || e.id));
+        session.enrollments.forEach(e => {
+          const resolvedStudentId = e.profile?.user?.id || e.profileId || e.studentId || e.id;
+          if (resolvedStudentId) {
+            studentIds.add(resolvedStudentId);
+          }
+        });
       }
     });
+
     return studentIds.size;
   },
 

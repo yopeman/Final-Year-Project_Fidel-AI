@@ -15,6 +15,7 @@ import TutorDashboard from './pages/TutorDashboard'
 import CommunityPage from './pages/CommunityPage';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
+import Exam from './pages/Exam';
 
 const App = () => {
   return (
@@ -26,37 +27,38 @@ const App = () => {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify" element={<VerificationPage />} />
           <Route path="/test-verify" element={<TestVerification />} />
-          <Route 
-            path="/dashboard" 
+          <Route path="/exam/:roomId" element={<Exam />} />
+          <Route
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/tutor/dashboard" 
+          <Route
+            path="/tutor/dashboard"
             element={
               <ProtectedRoute allowedRoles={['TUTOR']}>
                 <TutorDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/dashboard" 
+          <Route
+            path="/admin/dashboard"
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
                 <AdminDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/community/:batchId" 
+          <Route
+            path="/community/:batchId"
             element={
               <ProtectedRoute>
                 <CommunityPage />
               </ProtectedRoute>
-            } 
+            }
           />
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<Navigate to="/404" replace />} />
