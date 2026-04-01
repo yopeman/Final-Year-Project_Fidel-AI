@@ -170,23 +170,17 @@ const Exam = () => {
 
                 const domain = "meet.jit.si";
                 const options = {
-                    roomName: "fidel-ai-proctoring-" + Math.random().toString(36).substring(7),
+                    roomName: roomId || "fidel-ai-proctoring",
                     width: "100%",
                     height: "100%",
                     parentNode: jitsiContainerRef.current,
                     userInfo: {
-                        displayName: "Exam Candidate",
+                        displayName: "Your Name",
                     },
-                    configOverwrite: {
-                        startWithAudioMuted: false,
-                        startWithVideoMuted: false,
-                        disableModeratorIndicator: true,
-                        disableInviteFunctions: true,
-                    },
-                    interfaceConfigOverwrite: {
-                        SHOW_JITSI_WATERMARK: false,
-                        TOOLBAR_BUTTONS: ['microphone', 'camera'],
-                    },
+                    // configOverwrite: {
+                    //     startWithAudioMuted: false,
+                    //     startWithVideoMuted: false,
+                    // },
                 };
 
                 const api = new window.JitsiMeetExternalAPI(domain, options);
@@ -240,10 +234,10 @@ const Exam = () => {
                     <h2 className="text-3xl font-black text-white mb-4 relative z-10">Exam Completed</h2>
                     <p className="text-accent-secondary mb-8 relative z-10">{warningMessage || "Your exam has been submitted successfully."}</p>
                     <button
-                        onClick={() => window.location.href = "/dashboard"}
+                        onClick={() => window.location.href = "/"}
                         className="px-8 py-3 bg-brand-indigo text-white font-bold rounded-xl hover:bg-brand-indigo/90 transition-colors w-full relative z-10 shadow-lg"
                     >
-                        Return to Dashboard
+                        Return to Home
                     </button>
                 </motion.div>
             </div>
@@ -339,20 +333,20 @@ const Exam = () => {
                 <div className="flex-[3] overflow-y-auto p-8 relative wrapper-scrollbar">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-brand-indigo/5 rounded-full blur-[120px] pointer-events-none" />
 
-                    <div className="max-w-6xl mx-auto space-y-8 relative z-10 pb-10">
+                    <div className="mx-auto space-y-8 relative z-10 pb-10">
                         {/* Live Proctoring / Screen Share Area (Massive View) */}
                         <div className="bg-[#0B111B]/80 border border-white/10 rounded-3xl shadow-xl overflow-hidden flex flex-col relative z-20">
                             <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
                                 <div className="flex items-center text-white font-semibold flex-1">
                                     <Video className="w-5 h-5 mr-3 text-brand-indigo" />
-                                    Tutor Live Stream & Prompts
+                                    Exam Live Stream
                                 </div>
                                 <span className="flex items-center text-xs text-green-400 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
                                     <span className="w-2 h-2 rounded-full bg-green-400 mr-2 animate-pulse" />
                                     Live Connection
                                 </span>
                             </div>
-                            <div className="w-full h-[550px] bg-black relative">
+                            <div className="bg-black" style={{ height: '80vh', width: '100%' }}>
                                 {!examStarted && (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center text-accent-muted z-10">
                                         <Video className="w-16 h-16 mb-4 opacity-50" />
@@ -364,7 +358,7 @@ const Exam = () => {
                         </div>
 
                         {/* Speaking & Listening via Meeting */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="bg-white/5 border border-white/10 rounded-3xl p-8 shadow-xl relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-brand-green/10 rounded-full blur-[40px] pointer-events-none -mr-10 -mt-10" />
                                 <h2 className="text-2xl font-black text-white mb-4 flex items-center">
@@ -386,10 +380,10 @@ const Exam = () => {
                                     Listen carefully to the audio prompts or the tutor's questions provided through Zoom and respond as instructed.
                                 </p>
                             </div>
-                        </div>
+                        </div> */}
 
                         {/* Reading via Meeting */}
-                        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 shadow-xl relative overflow-hidden">
+                        {/* <div className="bg-white/5 border border-white/10 rounded-3xl p-8 shadow-xl relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-brand-yellow/10 rounded-full blur-[50px] pointer-events-none" />
                             <h2 className="text-2xl font-black text-white mb-4 flex items-center">
                                 <BookOpen className="w-6 h-6 mr-3 text-brand-yellow" />
@@ -398,10 +392,10 @@ const Exam = () => {
                             <p className="text-accent-secondary leading-relaxed">
                                 The tutor will share reading materials either by screen sharing on Zoom or through the chat. Please read aloud or answer questions as directed.
                             </p>
-                        </div>
+                        </div> */}
 
                         {/* Writing Skill with Text Area */}
-                        <div className="bg-[#0B111B]/80 border border-brand-indigo/30 rounded-3xl p-8 shadow-[0_0_30px_rgba(99,102,241,0.1)] relative">
+                        {/* <div className="bg-[#0B111B]/80 border border-brand-indigo/30 rounded-3xl p-8 shadow-[0_0_30px_rgba(99,102,241,0.1)] relative">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-2xl font-black text-white flex items-center">
                                     <Edit3 className="w-6 h-6 mr-3 text-brand-indigo" />
@@ -422,7 +416,7 @@ const Exam = () => {
                                 onCut={(e) => e.preventDefault()}
                                 spellCheck={false}
                             />
-                        </div>
+                        </div> */}
                     </div>
                 </div>
 
