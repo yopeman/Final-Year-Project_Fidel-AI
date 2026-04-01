@@ -1,6 +1,7 @@
 import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
+import useAuthStore from '../store/authStore';
 
 // Get your GraphQL endpoint
 export const BASE_URL = import.meta.env.VITE_BASE_URL || 'https://brittny-reprehensible-joel.ngrok-free.dev'
@@ -22,9 +23,8 @@ const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
       
       // Auto-logout on authentication errors
       if (message.includes('Unauthorized') || message.includes('Authentication') || message.includes('invalid token')) {
-        console.log('Authentication error detected, clearing localStorage');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        console.log('Authentication error detected, clearing store');
+        useAuthStore.getState().logout();
         window.location.href = '/login';
       }
     });
@@ -42,8 +42,8 @@ const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
 
 // Auth link to add token to headers
 const authLink = setContext((_, { headers }) => {
-  // Get token from localStorage
-  const token = localStorage.getItem('token');
+  // Get token from store
+  const { token } = useAuthStore.getState();
   
   // Return headers with token if available
   return {

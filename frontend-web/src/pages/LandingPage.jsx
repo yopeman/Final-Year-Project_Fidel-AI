@@ -9,49 +9,74 @@ import {
   BookOpen, 
   Star,
   ArrowRight,
-  GraduationCap,
-  CheckCircle
+  GraduationCap
 } from 'lucide-react';
 
 const LandingPage = () => {
   const navigate = useNavigate();
 
   const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
+    initial: { opacity: 0, y: 30 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.5 }
+    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+  };
+
+  const staggerChildren = {
+    animate: {
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
   };
 
   const features = [
     {
       icon: <Brain className="w-8 h-8" />,
       title: "AI-Powered Learning",
-      description: "Personalized English lessons powered by advanced AI"
+      description: "Personalized English lessons powered by advanced AI algorithms.",
+      iconColor: "text-brand-indigo",
+      bgGlow: "group-hover:bg-brand-indigo/10",
+      borderColor: "group-hover:border-brand-indigo/30"
     },
     {
       icon: <Users className="w-8 h-8" />,
       title: "Live Tutor Sessions",
-      description: "Connect with certified tutors for real-time practice"
+      description: "Connect with certified tutors for real-time intensive practice.",
+      iconColor: "text-brand-green",
+      bgGlow: "group-hover:bg-brand-green/10",
+      borderColor: "group-hover:border-brand-green/30"
     },
     {
       icon: <Globe className="w-8 h-8" />,
       title: "Localized Content",
-      description: "Content tailored for Ethiopian learners"
+      description: "Tailored educational material designed specifically for Ethiopian learners.",
+      iconColor: "text-primary",
+      bgGlow: "group-hover:bg-primary/10",
+      borderColor: "group-hover:border-primary/30"
     },
     {
       icon: <Video className="w-8 h-8" />,
       title: "Interactive Classes",
-      description: "Engaging video sessions with interactive tools"
+      description: "Engaging video sessions with built-in interactive learning tools.",
+      iconColor: "text-brand-indigo",
+      bgGlow: "group-hover:bg-brand-indigo/10",
+      borderColor: "group-hover:border-brand-indigo/30"
     },
     {
       icon: <BookOpen className="w-8 h-8" />,
       title: "Structured Curriculum",
-      description: "Comprehensive learning paths for all levels"
+      description: "Comprehensive, multi-level learning paths for absolute beginners to pros.",
+      iconColor: "text-brand-green",
+      bgGlow: "group-hover:bg-brand-green/10",
+      borderColor: "group-hover:border-brand-green/30"
     },
     {
       icon: <Star className="w-8 h-8" />,
       title: "Progress Tracking",
-      description: "Monitor your improvement with detailed analytics"
+      description: "Monitor your English improvement with detailed real-time analytics.",
+      iconColor: "text-primary",
+      bgGlow: "group-hover:bg-primary/10",
+      borderColor: "group-hover:border-primary/30"
     }
   ];
 
@@ -63,32 +88,43 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="gradient-bg text-white relative overflow-hidden font-sans selection:bg-brand-indigo/30 selection:text-white">
+      {/* Background Decorators */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px] -mr-96 -mt-96 mix-blend-screen opacity-50"></div>
+        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-brand-indigo/10 rounded-full blur-[150px] -ml-96 -mb-96 mix-blend-screen opacity-50"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-white/5 rounded-[100%] blur-[120px] rotate-45 pointer-events-none opacity-20"></div>
+      </div>
+
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b">
+      <nav className="sticky top-0 z-50 glass-premium border-b-0 border-white/5 rounded-none">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <GraduationCap className="w-8 h-8 text-indigo-600" />
-              <span className="text-2xl font-bold text-gray-900">Fidel<span className="text-indigo-600">AI</span></span>
+            <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => navigate('/')}>
+              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 group-hover:border-brand-green/30 group-hover:bg-brand-green/10 transition-all duration-500 shadow-xl overflow-hidden relative">
+                <div className="absolute inset-0 bg-brand-green opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500"></div>
+                <GraduationCap className="w-6 h-6 text-white group-hover:text-brand-green transition-colors relative z-10" />
+              </div>
+              <span className="text-3xl font-black text-white tracking-tighter">Fidel<span className="text-brand-green">AI</span></span>
             </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-gray-600 hover:text-indigo-600 transition">Features</a>
-              <a href="#how-it-works" className="text-gray-600 hover:text-indigo-600 transition">How it Works</a>
-              <a href="#testimonials" className="text-gray-600 hover:text-indigo-600 transition">Testimonials</a>
+            <div className="hidden md:flex items-center space-x-10">
+              <a href="#features" className="text-accent-secondary hover:text-white text-sm font-black uppercase tracking-widest transition-colors duration-300">Platform</a>
+              <a href="#how-it-works" className="text-accent-secondary hover:text-white text-sm font-black uppercase tracking-widest transition-colors duration-300">Methodology</a>
+              <a href="#testimonials" className="text-accent-secondary hover:text-white text-sm font-black uppercase tracking-widest transition-colors duration-300">Success Stories</a>
             </div>
             <div className="flex items-center space-x-4">
               <button 
                 onClick={() => navigate('/login')}
-                className="px-6 py-2 text-gray-700 hover:text-indigo-600 transition font-medium"
+                className="px-6 py-3 text-accent-secondary hover:text-white transition-colors duration-300 font-bold text-sm uppercase tracking-wider"
               >
                 Sign In
               </button>
               <button 
                 onClick={() => navigate('/register')}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md"
+                className="group px-6 py-3 bg-primary text-[#080C14] rounded-xl font-black uppercase tracking-wider hover:scale-105 transition-all duration-300 yellow-glow flex items-center space-x-2"
               >
-                Get Started
+                <span>Initialize</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
             </div>
           </div>
@@ -96,50 +132,65 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="py-20 px-6">
+      <section className="relative pt-32 pb-20 px-6 z-10">
         <div className="container mx-auto">
           <motion.div 
-            {...fadeInUp}
-            className="text-center max-w-4xl mx-auto"
+            initial="initial"
+            animate="animate"
+            variants={staggerChildren}
+            className="text-center max-w-5xl mx-auto"
           >
-            <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
-              Master English with
-              <span className="text-indigo-600 block mt-2">AI-Powered Learning</span>
-            </h1>
-            <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-              Personalized English education platform for Ethiopian learners. 
-              AI-driven lessons, live tutor sessions, and local payment integration.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <motion.div variants={fadeInUp} className="inline-block mb-6 px-6 py-2 rounded-full border border-brand-indigo/30 bg-brand-indigo/10 text-brand-indigo font-black uppercase tracking-widest text-xs">
+              Next-Gen English Mastery Platform
+            </motion.div>
+            <motion.h1 
+              variants={fadeInUp}
+              className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter leading-tight"
+            >
+              Master English through <br className="hidden md:block" />
+              <span className="gradient-text">Neural Intelligence</span>
+            </motion.h1>
+            <motion.p 
+              variants={fadeInUp}
+              className="text-xl md:text-2xl text-accent-secondary mb-12 max-w-3xl mx-auto leading-relaxed font-medium"
+            >
+              The premium educational terminal designed to elevate Ethiopian learners. Harness adaptive AI and certified tutors to fast-track your fluency.
+            </motion.p>
+            <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <button 
                 onClick={() => navigate('/register')}
-                className="px-8 py-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition transform hover:-translate-y-1 shadow-lg flex items-center justify-center space-x-2"
+                className="group px-10 py-5 bg-primary text-[#080C14] rounded-[2rem] hover:opacity-90 transition transform hover:-translate-y-1 yellow-glow flex items-center justify-center space-x-3 w-full sm:w-auto"
               >
-                <span className="text-lg font-semibold">Start Learning Free</span>
-                <ArrowRight className="w-5 h-5" />
+                <span className="text-lg font-black tracking-wider uppercase">Engage Protocol</span>
+                <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-2" />
               </button>
-              <button className="px-8 py-4 bg-white text-gray-800 rounded-xl hover:bg-gray-50 transition border shadow-md">
-                <span className="text-lg font-semibold">Watch Demo</span>
+              <button className="px-10 py-5 glass-effect text-accent-secondary hover:text-white rounded-[2rem] hover:bg-white/10 transition flex items-center justify-center space-x-3 w-full sm:w-auto">
+                <span className="text-lg font-black tracking-wider uppercase">Review Architecture</span>
               </button>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
       {/* Stats */}
-      <div className="py-12 bg-white">
+      <div className="relative py-16 border-y border-white/5 bg-black/20 backdrop-blur-sm z-10">
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
             {stats.map((stat, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1 }}
-                className="text-center"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.6 }}
+                className="text-center group"
               >
-                <div className="text-4xl font-bold text-indigo-600 mb-2">{stat.number}</div>
-                <div className="text-gray-600">{stat.label}</div>
+                <div className="text-5xl md:text-6xl font-black text-white mb-3 tracking-tighter group-hover:text-brand-green transition-colors duration-500">
+                  {stat.number}
+                </div>
+                <div className="text-accent-muted font-bold uppercase tracking-widest text-sm">
+                  {stat.label}
+                </div>
               </motion.div>
             ))}
           </div>
@@ -147,28 +198,39 @@ const LandingPage = () => {
       </div>
 
       {/* Features */}
-      <section id="features" className="py-20 px-6 bg-gradient-to-b from-white to-blue-50">
+      <section id="features" className="relative py-32 px-6 z-10">
         <div className="container mx-auto">
-          <motion.div {...fadeInUp} className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Choose FidelAI?</h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Comprehensive English learning solution designed specifically for Ethiopian students
+          <div className="text-center mb-24">
+            <h2 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tighter">Core Systems</h2>
+            <p className="text-accent-secondary text-xl font-medium max-w-2xl mx-auto">
+              A meticulously engineered stack to guarantee linguistic acceleration.
             </p>
-          </motion.div>
+          </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
-                {...fadeInUp}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100"
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                className={`group relative glass-effect rounded-[2.5rem] p-10 transition-all duration-500 hover:shadow-[0_20px_60px_rgba(0,0,0,0.4)] overflow-hidden ${feature.borderColor}`}
               >
-                <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-6">
-                  <div className="text-indigo-600">{feature.icon}</div>
+                {/* Feature background glow */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 transition-all duration-700"></div>
+                
+                <div className="relative z-10">
+                  <div className={`w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 transition-all duration-500 shadow-xl mb-8 ${feature.bgGlow}`}>
+                    <div className={`${feature.iconColor} opacity-80 group-hover:opacity-100 transition-opacity duration-500`}>
+                      {feature.icon}
+                    </div>
+                  </div>
+                  <h3 className={`text-2xl font-black text-white mb-4 tracking-tight transition-colors ${feature.iconColor.replace('text-', 'group-hover:text-')}`}>{feature.title}</h3>
+                  <p className="text-accent-secondary font-medium leading-relaxed">
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -176,35 +238,39 @@ const LandingPage = () => {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-6">
+      <section id="how-it-works" className="relative py-32 px-6 border-t border-white/5 bg-gradient-to-b from-transparent to-black/30 z-10">
         <div className="container mx-auto">
-          <motion.div {...fadeInUp} className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">How It Works</h2>
-            <p className="text-gray-600 text-lg">Start your English learning journey in 3 simple steps</p>
-          </motion.div>
+          <div className="text-center mb-24">
+            <h2 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tighter">Operational Flow</h2>
+            <p className="text-accent-secondary text-xl font-medium">Initialize your linguistic subroutines.</p>
+          </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-12 relative">
+            {/* Connecting Line */}
+            <div className="hidden md:block absolute top-[4rem] left-0 w-full h-[2px] bg-gradient-to-r from-brand-indigo/0 via-brand-indigo/30 to-brand-indigo/0 z-0"></div>
+
             {[
-              { step: "01", title: "Sign Up & Assessment", desc: "Create account and take level assessment" },
-              { step: "02", title: "Personalized Plan", desc: "Get AI-generated learning path based on your level" },
-              { step: "03", title: "Learn & Practice", desc: "Start lessons with AI and live tutor sessions" }
+              { step: "01", title: "Authentication", desc: "Securely connect to the terminal and establish your baseline metrics.", color: "text-brand-indigo", border: "border-brand-indigo" },
+              { step: "02", title: "Processing", desc: "Our engine compiles a bespoke syllabus tailored precisely to your cognitive load.", color: "text-primary", border: "border-primary" },
+              { step: "03", title: "Execution", desc: "Engage with neural tasks and human operatives to finalize fluency.", color: "text-brand-green", border: "border-brand-green" }
             ].map((item, index) => (
               <motion.div
                 key={index}
-                {...fadeInUp}
-                transition={{ delay: index * 0.2 }}
-                className="relative"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.2, duration: 0.6 }}
+                className="relative z-10"
               >
-                <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-                  <div className="text-6xl font-bold text-indigo-100 mb-4">{item.step}</div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{item.title}</h3>
-                  <p className="text-gray-600">{item.desc}</p>
-                </div>
-                {index < 2 && (
-                  <div className="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2">
-                    <ArrowRight className="w-8 h-8 text-indigo-300" />
+                <div className="glass-premium p-10 rounded-[3rem] border border-white/10 hover:border-white/30 transition-all duration-500 relative group h-full shadow-[0_0_30px_rgba(0,0,0,0.2)]">
+                  <div className={`absolute -top-8 left-10 w-16 h-16 bg-[#080C14] border-2 ${item.border} rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500`}>
+                    <span className={`text-xl font-black ${item.color}`}>{item.step}</span>
                   </div>
-                )}
+                  <div className="mt-8">
+                    <h3 className="text-2xl font-black text-white mb-4 tracking-tight">{item.title}</h3>
+                    <p className="text-accent-secondary font-medium leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -212,38 +278,40 @@ const LandingPage = () => {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-20 px-6 bg-gradient-to-b from-blue-50 to-white">
+      <section id="testimonials" className="relative py-32 px-6 z-10">
         <div className="container mx-auto">
-          <motion.div {...fadeInUp} className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">What Our Students Say</h2>
-            <p className="text-gray-600 text-lg">Join thousands of successful English learners</p>
-          </motion.div>
+          <div className="text-center mb-24">
+            <h2 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tighter">Operator Feedback</h2>
+            <p className="text-accent-secondary text-xl font-medium">Telemetry from verified alumni.</p>
+          </div>
           
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { name: "Sisay Atinkut", role: "University Student", text: "FidelAI transformed my English skills in just 3 months!" },
-              { name: "Walelign Enemayehu", role: "Professional", text: "The AI pronunciation feedback is incredibly accurate." },
-              { name: "Yohanes Debebe", role: "Teacher", text: "Perfect blend of technology and human teaching." }
+              { name: "Sisay Atinkut", role: "University Student", text: "The terminal architecture is flawless. FidelAI optimized my syntax in a fraction of standard computational time." },
+              { name: "Walelign Enemayehu", role: "Professional Analyst", text: "Vocal rendering feedback ensures my outputs are universally readable. Outstanding latency and support." },
+              { name: "Yohanes Debebe", role: "Instructional Designer", text: "A seamless integration of machine logic and organic human interaction. Highly recommended." }
             ].map((testimonial, index) => (
               <motion.div
                 key={index}
-                {...fadeInUp}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100"
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                className="glass-effect p-10 rounded-[2.5rem] border border-white/5 hover:border-white/20 transition-all duration-500 shadow-xl"
               >
-                <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mr-4">
-                    <span className="text-indigo-600 font-bold">{testimonial.name.charAt(0)}</span>
+                <div className="flex items-center mb-8">
+                  <div className="w-14 h-14 bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center mr-5 shadow-lg">
+                    <span className="text-brand-green font-black text-xl">{testimonial.name.charAt(0)}</span>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-gray-600 text-sm">{testimonial.role}</p>
+                    <h4 className="font-bold text-white text-lg tracking-tight">{testimonial.name}</h4>
+                    <p className="text-accent-muted text-xs uppercase tracking-widest font-bold mt-1">{testimonial.role}</p>
                   </div>
                 </div>
-                <p className="text-gray-700 italic">"{testimonial.text}"</p>
-                <div className="flex mt-4">
+                <p className="text-white/80 italic font-medium leading-relaxed mb-6">"{testimonial.text}"</p>
+                <div className="flex gap-1">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                    <Star key={i} className="w-4 h-4 text-brand-indigo fill-current" />
                   ))}
                 </div>
               </motion.div>
@@ -253,34 +321,59 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6 bg-gradient-to-r from-indigo-600 to-purple-600">
-        <div className="container mx-auto text-center">
-          <motion.div {...fadeInUp}>
-            <h2 className="text-4xl font-bold text-white mb-6">Ready to Transform Your English Skills?</h2>
-            <p className="text-indigo-100 text-xl mb-10 max-w-2xl mx-auto">
-              Join thousands of successful learners. Start your 7-day free trial today.
-            </p>
-            <button 
-              onClick={() => navigate('/register')}
-              className="px-10 py-4 bg-white text-indigo-600 rounded-xl hover:bg-gray-100 transition transform hover:-translate-y-1 shadow-xl text-lg font-semibold"
-            >
-              Get Started Now - It's Free
-            </button>
+      <section className="relative py-32 px-6 z-10">
+        <div className="container mx-auto max-w-6xl">
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative glass-premium rounded-[3rem] p-12 md:p-20 text-center border border-brand-indigo/30 overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.1)]"
+          >
+            {/* CTA Background Layer */}
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-indigo/10 to-transparent z-0 pointer-events-none"></div>
+            
+            <div className="relative z-10">
+              <h2 className="text-5xl md:text-6xl font-black text-white mb-8 tracking-tighter leading-tight">
+                Ready to Upgrade Your <br className="hidden md:block"/> 
+                <span className="gradient-text">Linguistic Engine?</span>
+              </h2>
+              <p className="text-accent-secondary text-xl mb-12 max-w-2xl mx-auto font-medium">
+                Connect to the FidelAI mainframe and activate your 7-day priority access trial. No configuration required.
+              </p>
+              <button 
+                onClick={() => navigate('/register')}
+                className="group px-12 py-6 bg-primary text-[#080C14] rounded-[2rem] hover:opacity-90 transition-all transform hover:-translate-y-1 yellow-glow text-xl font-black tracking-wider uppercase inline-flex items-center space-x-4"
+              >
+                <span>Authorize Access</span>
+                <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-2" />
+              </button>
+            </div>
           </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 px-6">
+      <footer className="glass-premium border-b-0 border-white/5 border-t rounded-none text-white py-16 px-6 relative z-10">
         <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-6 md:mb-0">
-              <GraduationCap className="w-8 h-8 text-indigo-400" />
-              <span className="text-2xl font-bold">Fidel<span className="text-indigo-400">AI</span></span>
+          <div className="flex flex-col md:flex-row justify-between items-center md:items-start text-center md:text-left">
+            <div className="mb-10 md:mb-0">
+              <div className="flex items-center space-x-3 mb-4 justify-center md:justify-start">
+                <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+                  <GraduationCap className="w-5 h-5 text-brand-green" />
+                </div>
+                <span className="text-2xl font-black tracking-tighter">Fidel<span className="text-brand-green">AI</span></span>
+              </div>
+              <p className="text-accent-muted font-bold uppercase tracking-widest text-xs max-w-xs">
+                Educational Engine v2.0
+              </p>
             </div>
-            <div className="text-center md:text-right">
-              <p className="text-gray-400">© 2026 FidelAI. All rights reserved.</p>
-              <p className="text-gray-500 text-sm mt-2">Bahir Dar University - Final Year Project</p>
+            
+            <div className="flex flex-col md:items-end">
+              <p className="text-accent-muted text-sm font-medium mb-2">© 2026 FidelAI Core Systems.</p>
+              <p className="text-accent-muted text-xs uppercase tracking-widest font-bold">
+                Bahir Dar University - Final Year Protocol
+              </p>
             </div>
           </div>
         </div>

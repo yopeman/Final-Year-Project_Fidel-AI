@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client';
 import { motion } from 'framer-motion';
 import { 
@@ -39,12 +40,18 @@ import AdminSchedules from '../components/AdminSchedules';
 import AdminBatches from '../components/AdminBatches';
 import AdminPayments from '../components/AdminPayments';
 import AdminFeedback from '../components/AdminFeedback';
+import useAuthStore from '../store/authStore';
+import useUserStore from '../store/userStore';
+import useBatchStore from '../store/batchStore';
+import useContentStore from '../store/contentStore';
+import useFinanceStore from '../store/financeStore';
+import useSystemStore from '../store/systemStore';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const { activeTab, setActiveTab } = useSystemStore();
+  const { users, setUsers, getFilteredUsers } = useUserStore();
+  const { batches, setBatches } = useBatchStore();
+  
   const [showUpdatePopup, setShowUpdatePopup] = useState(false);
   const [showEditUserPopup, setShowEditUserPopup] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -52,6 +59,9 @@ const AdminDashboard = () => {
   const [deleting, setDeleting] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserDetails, setShowUserDetails] = useState(false);
+
+  const { user: storedUser, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   const { data: userData, loading: userLoading, error: userError } = useQuery(GET_CURRENT_USER);
   const { data: usersData, loading: usersLoading, error: usersError, refetch } = useQuery(GET_USERS, {
@@ -64,36 +74,37 @@ const AdminDashboard = () => {
   const [deleteUser] = useMutation(DELETE_USER_MUTATION);
 
   const user = userData?.me;
-  const users = usersData?.users || [];
 
   useEffect(() => {
-    // Check if user is authenticated and has admin role
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (!token || !storedUser) {
-      window.location.href = '/login';
+    if (usersData?.users) {
+      setUsers(usersData.users);
+    }
+  }, [usersData, setUsers]);
+
+  useEffect(() => {
+    if (batchesData?.batches) {
+      setBatches(batchesData.batches);
+    }
+  }, [batchesData, setBatches]);
+
+  useEffect(() => {
+    // Check if user is authenticated and has admin role using store
+    if (!storedUser) {
+      navigate('/login', { replace: true });
       return;
     }
 
-    try {
-      const userData = JSON.parse(storedUser);
-      if (userData.role !== 'ADMIN') {
-        // Redirect to appropriate dashboard based on role
-        switch (userData.role) {
-          case 'TUTOR':
-            window.location.href = '/tutor/dashboard';
-            break;
-          default:
-            window.location.href = '/dashboard';
-        }
+    if (storedUser.role !== 'ADMIN') {
+      // Redirect to appropriate dashboard based on role
+      switch (storedUser.role) {
+        case 'TUTOR':
+          navigate('/tutor/dashboard', { replace: true });
+          break;
+        default:
+          navigate('/dashboard', { replace: true });
       }
-    } catch (err) {
-      console.error('Error parsing user:', err);
-      localStorage.clear();
-      window.location.href = '/login';
     }
-  }, []);
+  }, [storedUser, navigate]);
 
   const handleUserAction = async (userId, action) => {
     try {
@@ -132,9 +143,8 @@ const AdminDashboard = () => {
     try {
       setDeleting(true);
       await deleteUser({ variables: { id: user.id } });
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      logout();
+      navigate('/login', { replace: true });
     } catch (err) {
       console.error('Error deleting profile:', err);
       setDeleting(false);
@@ -148,9 +158,8 @@ const AdminDashboard = () => {
       
       // If admin is deleting their own account, logout
       if (userId === user.id) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        logout();
+        navigate('/login', { replace: true });
       } else {
         setShowDeleteConfirmation(false);
         setUserToDelete(null);
@@ -164,29 +173,14 @@ const AdminDashboard = () => {
   };
 
 
-  const batches = batchesData?.batches || [];
-  
-  const stats = {
-    totalUsers: users.length,
-    students: users.filter(u => u.role === 'STUDENT').length,
-    tutors: users.filter(u => u.role === 'TUTOR').length,
-    admins: users.filter(u => u.role === 'ADMIN').length,
-    verified: users.filter(u => u.isVerified).length,
-    unverified: users.filter(u => !u.isVerified).length,
-    totalBatches: batches.length,
-    activeBatches: batches.filter(b => b.status === 'ACTIVE').length,
-    upcomingBatches: batches.filter(b => b.status === 'UPCOMING').length,
-    completedBatches: batches.filter(b => b.status === 'COMPLETED').length,
-    totalEnrollments: batches.reduce((total, batch) => total + (batch.enrollments?.length || 0), 0),
-    totalCourses: batches.reduce((total, batch) => total + (batch.batchCourses?.length || 0), 0)
-  };
+
 
   if (userLoading || usersLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-accent-secondary font-medium">Loading your workspace...</p>
         </div>
       </div>
     );
@@ -194,16 +188,16 @@ const AdminDashboard = () => {
 
   if (userError || usersError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Dashboard</h2>
-          <p className="text-gray-600 mb-6">Please try again or contact support.</p>
+      <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+        <div className="glass-premium p-8 rounded-2xl border border-red-500/20 text-center max-w-sm">
+          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Workspace Unavailable</h2>
+          <p className="text-accent-secondary mb-6 text-sm">We're having trouble reaching the servers. Please try again.</p>
           <button 
             onClick={() => window.location.reload()}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+            className="w-full bg-primary text-black font-bold px-6 py-3 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/10"
           >
-            Retry
+            Retry Connection
           </button>
         </div>
       </div>
@@ -211,43 +205,53 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#050B14] via-[#080C14] to-[#0D1B2A] text-white relative overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px] -mr-96 -mt-96 mix-blend-screen opacity-50"></div>
+        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-brand-indigo/10 rounded-full blur-[150px] -ml-96 -mb-96 mix-blend-screen opacity-50"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-white/5 rounded-[100%] blur-[120px] rotate-45 opacity-20"></div>
+      </div>
+
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="glass-premium border-b border-white/10 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <Shield className="w-8 h-8 text-indigo-600 mr-3" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">Welcome back, {user?.firstName}!</p>
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 yellow-glow">
+                <Shield className="w-6 h-6 text-primary" />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-bold text-white tracking-tight">Admin Portal</h1>
+                <p className="text-xs text-accent-secondary">Fidel AI Control Center</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 md:space-x-6">
               <NotificationBell userId={user?.id} />
-              <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
-                Administrator
-              </span>
+              <div className="hidden md:flex items-center space-x-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full">
+                <div className="w-2 h-2 bg-brand-green rounded-full animate-pulse"></div>
+                <span className="text-white/90 text-xs font-semibold uppercase tracking-wider">
+                  Admin Active
+                </span>
+              </div>
               <button 
                 onClick={() => {
-                  localStorage.removeItem('token');
-                  localStorage.removeItem('user');
-                  window.location.href = '/login';
+                  logout();
+                  navigate('/login', { replace: true });
                 }}
-                className="text-gray-600 hover:text-gray-900"
+                className="text-accent-secondary hover:text-white transition-colors text-sm font-medium flex items-center space-x-2"
               >
-                Logout
+                <span>Logout</span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Navigation Tabs */}
-            <div className="bg-white rounded-lg shadow-sm mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        {/* Navigation Tabs - Responsive Scrollable */}
+        <div className="glass-premium rounded-2xl border border-white/5 shadow-2xl mb-8 overflow-hidden">
+          <div className="border-b border-white/10 overflow-x-auto no-scrollbar">
+            <nav className="flex space-x-1 px-4 py-2 min-w-max">
               {[ 
                 { id: 'overview', name: 'Overview', icon: BarChart3 },
                 { id: 'users', name: 'Users', icon: Users }, 
@@ -260,10 +264,10 @@ const AdminDashboard = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                  className={`py-3 px-4 rounded-xl font-semibold text-sm flex items-center space-x-2 transition-all duration-200 ${
                     activeTab === tab.id
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'bg-primary text-black shadow-lg shadow-primary/20'
+                      : 'text-accent-secondary hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <tab.icon className="w-4 h-4" />
@@ -277,8 +281,6 @@ const AdminDashboard = () => {
           <div className="p-6">
             {activeTab === 'overview' && (
               <AdminOverview 
-                user={user}
-                stats={stats}
                 onAction={(action) => {
                   if (action === 'updateProfile') {
                     setShowUpdatePopup(true);
@@ -449,32 +451,32 @@ const AdminDashboard = () => {
 
       {/* User Details Modal */}
       {showUserDetails && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[150] p-4">
+          <div className="glass-premium rounded-[2.5rem] p-8 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl bg-gradient-to-br from-[#080C14] to-[#0D1B2A]/90 no-scrollbar">
+            <div className="flex items-center justify-between mb-8">
               <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <User className="w-8 h-8 text-indigo-600" />
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
+                  <User className="w-8 h-8 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-2xl font-black text-white tracking-tight">
                     {selectedUser.firstName} {selectedUser.lastName}
                   </h3>
-                  <p className="text-gray-600">{selectedUser.email}</p>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <p className="text-accent-secondary">{selectedUser.email}</p>
+                  <div className="flex flex-wrap items-center gap-2 mt-3">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
                       selectedUser.role === 'ADMIN' 
-                        ? 'bg-purple-100 text-purple-800' 
+                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' 
                         : selectedUser.role === 'TUTOR'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-blue-100 text-blue-800'
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                        : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                     }`}>
                       {selectedUser.role}
                     </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
                       selectedUser.isVerified 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                        : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                     }`}>
                       {selectedUser.isVerified ? 'Verified' : 'Unverified'}
                     </span>
@@ -486,67 +488,67 @@ const AdminDashboard = () => {
                   setShowUserDetails(false);
                   setSelectedUser(null);
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="p-2 rounded-xl text-accent-muted hover:text-white hover:bg-white/5 transition-all"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">Personal Information</h4>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>ID:</span>
-                    <span className="font-mono text-xs">{selectedUser.id}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+                <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Personal Information</h4>
+                <div className="space-y-4 text-sm text-accent-secondary">
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">System ID:</span>
+                    <span className="font-mono text-xs text-white/50">{selectedUser.id}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>First Name:</span>
-                    <span>{selectedUser.firstName}</span>
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">First Name:</span>
+                    <span className="text-white font-medium">{selectedUser.firstName}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Last Name:</span>
-                    <span>{selectedUser.lastName}</span>
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">Last Name:</span>
+                    <span className="text-white font-medium">{selectedUser.lastName}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Email:</span>
-                    <span>{selectedUser.email}</span>
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">Email:</span>
+                    <span className="text-white font-medium">{selectedUser.email}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Role:</span>
-                    <span>{selectedUser.role}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Role:</span>
+                    <span className="text-white font-medium">{selectedUser.role}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">Account Details</h4>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>Status:</span>
-                    <span>{selectedUser.isVerified ? 'Verified' : 'Unverified'}</span>
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+                <h4 className="font-bold text-white mb-4 uppercase tracking-wider text-xs">Account Details</h4>
+                <div className="space-y-4 text-sm text-accent-secondary">
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">Status:</span>
+                    <span className="text-white font-medium">{selectedUser.isVerified ? 'Verified' : 'Unverified'}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Joined:</span>
-                    <span>{new Date(selectedUser.createdAt).toLocaleDateString()}</span>
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="font-medium">Joined:</span>
+                    <span className="text-white font-medium">{new Date(selectedUser.createdAt).toLocaleDateString()}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Last Updated:</span>
-                    <span>{new Date(selectedUser.updatedAt).toLocaleDateString()}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Last Updated:</span>
+                    <span className="text-white font-medium">{new Date(selectedUser.updatedAt).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex space-x-3">
+            <div className="flex space-x-4">
               <button
                 onClick={() => {
                   setShowUserDetails(false);
                   setSelectedUser(null);
                 }}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="flex-1 px-4 py-4 border border-white/10 text-white rounded-2xl hover:bg-white/5 transition-all font-bold tracking-wide"
               >
-                Close
+                Close View
               </button>
               <button
                 onClick={() => {
@@ -558,9 +560,9 @@ const AdminDashboard = () => {
                     setShowEditUserPopup(true);
                   }
                 }}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                className="flex-1 px-4 py-4 bg-primary text-[#080C14] rounded-2xl hover:bg-primary/90 transition-all font-black uppercase tracking-wider shadow-[0_0_20px_rgba(255,193,7,0.15)] yellow-glow"
               >
-                Edit User
+                Modify User
               </button>
             </div>
           </div>
@@ -569,16 +571,16 @@ const AdminDashboard = () => {
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[150] p-4">
+          <div className="glass-premium rounded-[2.5rem] p-6 w-full max-w-md mx-4 border border-white/10 shadow-2xl bg-gradient-to-br from-[#080C14] to-[#0D1B2A]/90">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
+                <div className="w-10 h-10 bg-red-500/10 rounded-2xl flex items-center justify-center border border-red-500/20">
+                  <AlertCircle className="w-6 h-6 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Delete User</h3>
-                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                  <h3 className="text-lg font-black text-white">Delete User</h3>
+                  <p className="text-sm text-accent-secondary">This action cannot be undone</p>
                 </div>
               </div>
               <button
@@ -586,13 +588,13 @@ const AdminDashboard = () => {
                   setShowDeleteConfirmation(false);
                   setUserToDelete(null);
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="p-2 rounded-xl text-accent-muted hover:text-white hover:bg-white/5 transition-all"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
             
-            <p className="text-gray-700 mb-6">
+            <p className="text-accent-secondary mb-6">
               Are you sure you want to delete this user? This will permanently remove their account and all associated data.
             </p>
             
@@ -602,14 +604,14 @@ const AdminDashboard = () => {
                   setShowDeleteConfirmation(false);
                   setUserToDelete(null);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-3 border border-white/10 text-white rounded-2xl hover:bg-white/5 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteUser(userToDelete)}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 bg-red-500/90 text-white rounded-2xl hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all"
               >
                 {deleting ? 'Deleting...' : 'Delete User'}
               </button>

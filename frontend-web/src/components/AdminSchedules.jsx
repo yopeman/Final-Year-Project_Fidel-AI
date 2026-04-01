@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, 
   Plus, 
@@ -11,10 +11,15 @@ import {
   Clock,
   Sun, 
   Moon, 
-  Users,
-  AlertCircle,
   CheckCircle,
-  X
+  X,
+  ChevronRight,
+  Save,
+  Loader2,
+  User,
+  Users,
+  Layers,
+  Layout
 } from 'lucide-react';
 import { 
   GET_SCHEDULES, 
@@ -23,15 +28,15 @@ import {
   DELETE_SCHEDULE 
 } from '../graphql/schedule';
 
+import useSystemStore from '../store/systemStore';
+
 const AdminSchedules = ({ 
   onScheduleAction, 
   onEditSchedule, 
   onViewSchedule, 
   onDeleteSchedule 
 }) => {
-  const [schedules, setSchedules] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterDay, setFilterDay] = useState('all');
+  const { filters, setFilters, getFilteredSchedules, setSchedules } = useSystemStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
@@ -44,71 +49,16 @@ const AdminSchedules = ({
   const [updateScheduleMutation] = useMutation(UPDATE_SCHEDULE);
   const [deleteScheduleMutation] = useMutation(DELETE_SCHEDULE);
 
+  const schedules = data?.schedules || [];
+
+  // Sync schedules to store
   useEffect(() => {
-    if (data?.schedules) {
-      setSchedules(data.schedules);
+    if (schedules.length > 0) {
+      setSchedules(schedules);
     }
-  }, [data]);
+  }, [schedules, setSchedules]);
 
-  const handleCreateSchedule = async (scheduleData) => {
-    try {
-      setLoading(true);
-      const { data: newData } = await createScheduleMutation({
-        variables: { input: scheduleData }
-      });
-      
-      setSchedules(prev => [...prev, newData.createSchedule]);
-      setShowCreateModal(false);
-    } catch (err) {
-      console.error('Error creating schedule:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateSchedule = async (scheduleId, scheduleData) => {
-    try {
-      setLoading(true);
-      const { data: newData } = await updateScheduleMutation({
-        variables: { id: scheduleId, input: scheduleData }
-      });
-      
-      setSchedules(prev => prev.map(s => 
-        s.id === scheduleId ? newData.updateSchedule : s
-      ));
-      setShowEditModal(false);
-      setSelectedSchedule(null);
-    } catch (err) {
-      console.error('Error updating schedule:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteSchedule = async (scheduleId) => {
-    try {
-      setLoading(true);
-      await deleteScheduleMutation({ variables: { id: scheduleId } });
-      
-      setSchedules(prev => prev.filter(s => s.id !== scheduleId));
-      setShowDeleteConfirmation(false);
-      setScheduleToDelete(null);
-    } catch (err) {
-      console.error('Error deleting schedule:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredSchedules = schedules.filter(schedule => {
-    const matchesSearch = schedule.dayOfWeek.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.startTime.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         schedule.endTime.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterDay === 'all' || schedule.dayOfWeek === filterDay;
-    
-    return matchesSearch && matchesFilter;
-  });
+  const filteredSchedules = getFilteredSchedules();
 
   const dayOfWeekOptions = [
     'all', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'
@@ -129,47 +79,57 @@ const AdminSchedules = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in duration-700">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Schedule Management</h2>
-            <p className="text-gray-600 mt-1">Manage class schedules and time slots</p>
+      <div className="glass-premium rounded-3xl border border-white/10 p-8 shadow-2xl bg-gradient-to-br from-[#080C14] to-[#0D1B2A]/50 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-yellow/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-brand-yellow/10 transition-all duration-1000"></div>
+        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+          <div className="flex items-center space-x-5">
+            <div className="w-16 h-16 rounded-2xl bg-brand-yellow/20 flex items-center justify-center border border-brand-yellow/30 shadow-[0_0_20px_rgba(255,193,7,0.2)]">
+              <Calendar className="w-8 h-8 text-brand-yellow" />
+            </div>
+            <div>
+              <h2 className="text-4xl font-black text-white tracking-tighter">Schedules</h2>
+              <p className="text-accent-secondary mt-1 font-medium flex items-center">
+                <div className="w-2 h-2 rounded-full bg-brand-yellow mr-2 animate-pulse"></div>
+                Manage academic class timings and availability
+              </p>
+            </div>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center space-x-2"
+            className="group px-8 py-4 bg-brand-yellow text-black rounded-2xl font-black uppercase tracking-wider hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,193,7,0.2)] flex items-center space-x-3 active:scale-95"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
             <span>Add Schedule</span>
           </button>
         </div>
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <div className="glass-premium rounded-3xl border border-white/10 p-6 shadow-xl bg-white/5 backdrop-blur-md">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex-1 relative group">
+            <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-accent-muted w-5 h-5 group-focus-within:text-brand-yellow transition-colors" />
             <input
               type="text"
-              placeholder="Search schedules..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Filter by day or time slot..."
+              value={filters.search}
+              onChange={(e) => setFilters({ search: e.target.value })}
+              className="w-full pl-14 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 focus:border-brand-yellow/50 transition-all font-bold tracking-tight"
             />
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <select
-                value={filterDay}
-                onChange={(e) => setFilterDay(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            <div className="flex items-center space-x-3 bg-white/5 border border-white/10 p-2 rounded-2xl">
+              <Filter className="w-5 h-5 text-accent-muted ml-2" />
+               <select
+                value={filters.day}
+                onChange={(e) => setFilters({ day: e.target.value })}
+                className="bg-transparent text-white font-bold px-4 py-2 focus:outline-none cursor-pointer appearance-none min-w-[140px]"
               >
                 {dayOfWeekOptions.map(day => (
-                  <option key={day} value={day}>
+                  <option key={day} value={day} className="bg-[#080C14] text-white">
                     {day === 'all' ? 'All Days' : day}
                   </option>
                 ))}
@@ -180,74 +140,95 @@ const AdminSchedules = ({
       </div>
 
       {/* Schedule List */}
-      <div className="bg-white rounded-lg shadow-sm">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Schedules ({filteredSchedules.length})
+      <div className="glass-premium rounded-3xl border border-white/10 shadow-2xl bg-white/5 overflow-hidden">
+        <div className="p-8">
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
+            <h3 className="text-xl font-bold text-white flex items-center">
+              <div className="w-2 h-6 bg-brand-yellow rounded-full mr-3 shadow-[0_0_10px_rgba(255,193,7,0.5)]"></div>
+              Active Slots ({filteredSchedules.length})
             </h3>
-            <div className="text-sm text-gray-600">
-              Last updated: {new Date().toLocaleDateString()}
+            <div className="text-xs font-black text-accent-muted uppercase tracking-[0.2em]">
+              Real-time Sync Active
             </div>
           </div>
 
           {queryLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+              <div className="w-12 h-12 border-4 border-brand-yellow/20 border-t-brand-yellow rounded-full animate-spin"></div>
+              <p className="text-accent-muted font-bold animate-pulse uppercase tracking-widest text-xs">Fetching Timetable...</p>
             </div>
           ) : filteredSchedules.length === 0 ? (
-            <div className="text-center py-8">
-              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No schedules found</p>
+            <div className="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/20">
+              <Calendar className="w-16 h-16 text-accent-muted mx-auto mb-6 opacity-20" />
+              <p className="text-accent-secondary font-bold text-lg">No schedules found matching your criteria.</p>
+              <button onClick={() => setFilters({ search: '', day: 'all' })} className="mt-4 text-brand-yellow text-sm font-black hover:underline uppercase tracking-widest">Clear all filters</button>
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredSchedules.map((schedule) => (
                 <motion.div
                   key={schedule.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="group relative bg-[#080C14]/40 border border-white/10 rounded-3xl p-6 hover:border-brand-yellow/30 transition-all duration-300 hover:shadow-[0_10px_40px_rgba(0,0,0,0.5)] overflow-hidden"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        {getDayIcon(schedule.dayOfWeek)}
-                        <span className="font-semibold text-gray-900">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-brand-yellow/5 group-hover:bg-brand-yellow transition-all duration-500"></div>
+                  
+                  <div className="flex flex-col h-full relative z-10">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-brand-yellow/10 group-hover:border-brand-yellow/30 transition-all">
+                          {getDayIcon(schedule.dayOfWeek)}
+                        </div>
+                        <span className="font-black text-white group-hover:text-brand-yellow transition-colors tracking-tight text-lg">
                           {schedule.dayOfWeek}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-2 text-gray-600">
-                        <Clock className="w-4 h-4" />
-                        <span>{formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}</span>
+                      <div className="flex items-center space-x-1">
+                        <button
+                          onClick={() => {
+                            setSelectedSchedule(schedule);
+                            setShowEditModal(true);
+                          }}
+                          className="p-2.5 bg-white/5 hover:bg-brand-yellow/20 text-accent-muted hover:text-brand-yellow rounded-xl transition-all border border-white/5"
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setScheduleToDelete(schedule.id);
+                            setShowDeleteConfirmation(true);
+                          }}
+                          className="p-2.5 bg-white/5 hover:bg-red-500/20 text-accent-muted hover:text-red-400 rounded-xl transition-all border border-white/5"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedSchedule(schedule);
-                          setShowEditModal(true);
-                        }}
-                        className="p-2 text-gray-400 hover:text-indigo-600 transition-colors"
-                        title="Edit Schedule"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setScheduleToDelete(schedule.id);
-                          setShowDeleteConfirmation(true);
-                        }}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                        title="Delete Schedule"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-4 bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:border-white/10 transition-all">
+                        <Clock className="w-5 h-5 text-brand-yellow" />
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-accent-muted uppercase tracking-widest">Time range</span>
+                          <span className="text-white font-bold">{formatTime(schedule.startTime)} — {formatTime(schedule.endTime)}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2 flex justify-between items-center opacity-40 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[10px] font-bold text-accent-muted uppercase tracking-tighter">Updated {new Date(schedule.updatedAt).toLocaleDateString()}</span>
+                        <div className="flex -space-x-2">
+                          {[1,2,3].map(i => (
+                            <div key={i} className="w-6 h-6 rounded-full border-2 border-[#080C14] bg-white/10 flex items-center justify-center">
+                              <Users className="w-3 h-3 text-accent-muted" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-sm text-gray-500">
-                    <span>Created: {new Date(schedule.createdAt).toLocaleDateString()}</span>
-                    <span>Last updated: {new Date(schedule.updatedAt).toLocaleDateString()}</span>
                   </div>
                 </motion.div>
               ))}
@@ -257,44 +238,50 @@ const AdminSchedules = ({
       </div>
 
       {/* Create Schedule Modal */}
-      {showCreateModal && (
-        <ScheduleModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSave={handleCreateSchedule}
-          loading={loading}
-          title="Create New Schedule"
-        />
-      )}
+      <AnimatePresence>
+        {showCreateModal && (
+          <ScheduleModal
+            isOpen={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            onSave={handleCreateSchedule}
+            loading={loading}
+            title="Create New Slot"
+          />
+        )}
+      </AnimatePresence>
 
       {/* Edit Schedule Modal */}
-      {showEditModal && selectedSchedule && (
-        <ScheduleModal
-          isOpen={showEditModal}
-          onClose={() => {
-            setShowEditModal(false);
-            setSelectedSchedule(null);
-          }}
-          onSave={(data) => handleUpdateSchedule(selectedSchedule.id, data)}
-          loading={loading}
-          title="Edit Schedule"
-          schedule={selectedSchedule}
-        />
-      )}
+      <AnimatePresence>
+        {showEditModal && selectedSchedule && (
+          <ScheduleModal
+            isOpen={showEditModal}
+            onClose={() => {
+              setShowEditModal(false);
+              setSelectedSchedule(null);
+            }}
+            onSave={(data) => handleUpdateSchedule(selectedSchedule.id, data)}
+            loading={loading}
+            title="Edit timing Slot"
+            schedule={selectedSchedule}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirmation && (
-        <DeleteConfirmationModal
-          isOpen={showDeleteConfirmation}
-          onClose={() => {
-            setShowDeleteConfirmation(false);
-            setScheduleToDelete(null);
-          }}
-          onConfirm={() => handleDeleteSchedule(scheduleToDelete)}
-          loading={loading}
-          itemName="schedule"
-        />
-      )}
+      <AnimatePresence>
+        {showDeleteConfirmation && (
+          <DeleteConfirmationModal
+            isOpen={showDeleteConfirmation}
+            onClose={() => {
+              setShowDeleteConfirmation(false);
+              setScheduleToDelete(null);
+            }}
+            onConfirm={() => handleDeleteSchedule(scheduleToDelete)}
+            loading={loading}
+            itemName="schedule pattern"
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -331,79 +318,85 @@ const ScheduleModal = ({ isOpen, onClose, onSave, loading, title, schedule }) =>
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+    <div className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[150] p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="glass-premium w-full max-w-lg overflow-hidden border border-white/10 shadow-2xl rounded-3xl"
+      >
+        <div className="px-8 py-6 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-brand-yellow/10 to-transparent">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-xl bg-brand-yellow/20 flex items-center justify-center border border-brand-yellow/30 shadow-[0_0_20px_rgba(255,193,7,0.2)]">
+              <CalendarIcon className="w-6 h-6 text-brand-yellow" />
+            </div>
+            <h3 className="text-2xl font-black text-white tracking-tight">{title}</h3>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="p-2 hover:bg-white/10 rounded-full transition-all text-accent-secondary hover:text-white"
           >
-            <X className="w-6 h-6" />
+            <X className="w-8 h-8" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Day of Week
-            </label>
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-accent-muted uppercase tracking-[0.2em] ml-1">Day of Week</label>
             <select
               value={formData.dayOfWeek}
               onChange={(e) => setFormData({ ...formData, dayOfWeek: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 transition-all font-bold text-lg appearance-none cursor-pointer"
               required
             >
               {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].map(day => (
-                <option key={day} value={day}>{day}</option>
+                <option key={day} value={day} className="bg-[#080C14]">{day}</option>
               ))}
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Start Time
-            </label>
-            <input
-              type="time"
-              value={formData.startTime}
-              onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            />
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-accent-muted uppercase tracking-[0.2em] ml-1">Start Time</label>
+              <input
+                type="time"
+                value={formData.startTime}
+                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 transition-all font-bold text-lg"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-accent-muted uppercase tracking-[0.2em] ml-1">End Time</label>
+              <input
+                type="time"
+                value={formData.endTime}
+                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 transition-all font-bold text-lg"
+                required
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              End Time
-            </label>
-            <input
-              type="time"
-              value={formData.endTime}
-              onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          <div className="flex space-x-3 pt-4">
+          <div className="flex gap-4 pt-6">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              className="flex-1 px-8 py-4 border border-white/10 rounded-2xl text-white font-bold hover:bg-white/5 transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-8 py-4 bg-brand-yellow text-black rounded-2xl font-black uppercase tracking-wider hover:bg-brand-yellow/90 transition-all shadow-[0_0_30px_rgba(255,193,7,0.3)] disabled:opacity-50"
             >
-              {loading ? 'Saving...' : 'Save Schedule'}
+              {loading ? 'Processing...' : 'Save Pattern'}
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };
@@ -413,46 +406,37 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, loading, itemName
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-red-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Delete {itemName}</h3>
-              <p className="text-sm text-gray-600">This action cannot be undone</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-6 h-6" />
-          </button>
+    <div className="fixed inset-0 bg-[#080C14]/90 backdrop-blur-xl flex items-center justify-center z-[200] p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="glass-premium w-full max-w-sm border border-white/10 shadow-2xl p-10 text-center rounded-3xl"
+      >
+        <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-8 border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+          <AlertCircle className="w-10 h-10 text-red-500" />
         </div>
-        
-        <p className="text-gray-700 mb-6">
-          Are you sure you want to delete this {itemName}? This will permanently remove it from the system.
+        <h3 className="text-3xl font-black text-white mb-3 tracking-tight">Delete Slot?</h3>
+        <p className="text-accent-secondary mb-10 font-medium leading-relaxed">
+          Are you sure you want to remove this <span className="text-white font-bold">{itemName}</span>? This action is permanent and cannot be reversed.
         </p>
         
-        <div className="flex space-x-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-          >
-            Cancel
-          </button>
+        <div className="flex flex-col gap-3">
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-red-500 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-[0_0_20px_rgba(239,68,68,0.2)] disabled:opacity-50"
           >
-            {loading ? 'Deleting...' : 'Delete'}
+            {loading ? 'Invalidating...' : 'Delete Permanently'}
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full py-4 border border-white/10 rounded-2xl text-accent-muted font-bold hover:bg-white/5 transition-all"
+          >
+            Cancel
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

@@ -1,52 +1,29 @@
+import useAuthStore from '../store/authStore';
+
 // Check if user is authenticated
 export const isAuthenticated = () => {
-  const token = localStorage.getItem('token');
-  const user = localStorage.getItem('user');
-  
-  if (!token || !user) {
-    return false;
-  }
-  
-  try {
-    JSON.parse(user);
-    return true;
-  } catch (error) {
-    console.error('Error parsing user data:', error);
-    return false;
-  }
+  const { token, user } = useAuthStore.getState();
+  return !!token && !!user;
 };
 
 // Get current user data
 export const getCurrentUser = () => {
-  const user = localStorage.getItem('user');
-  
-  if (!user) {
-    return null;
-  }
-  
-  try {
-    return JSON.parse(user);
-  } catch (error) {
-    console.error('Error parsing user data:', error);
-    return null;
-  }
+  return useAuthStore.getState().user;
 };
 
 // Get auth token
 export const getAuthToken = () => {
-  return localStorage.getItem('token');
+  return useAuthStore.getState().token;
 };
 
 // Save authentication data
 export const saveAuthData = (token, user) => {
-  localStorage.setItem('token', token);
-  localStorage.setItem('user', JSON.stringify(user));
+  useAuthStore.getState().login(user, token);
 };
 
 // Clear authentication data (logout)
 export const clearAuthData = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  useAuthStore.getState().logout();
 };
 
 // Check if user has specific role

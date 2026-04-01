@@ -1,9 +1,9 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const token = localStorage.getItem('token');
+  const { user, token } = useAuthStore();
 
   if (!token || !user) {
     return <Navigate to="/login" replace />;

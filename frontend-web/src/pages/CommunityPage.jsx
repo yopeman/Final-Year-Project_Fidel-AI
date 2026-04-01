@@ -45,14 +45,19 @@ import { uploadCommunityAttachments, formatFileSize, getFileIcon, validateFile }
 import { BASE_URL } from '../lib/apollo-client';
 
 
+import useAuthStore from '../store/authStore';
+
 const CommunityPage = () => {
   const { batchId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const currentUserId = user?.id;
+  
   const [newPost, setNewPost] = useState('');
   const [editingPost, setEditingPost] = useState(null);
   const [editingContent, setEditingContent] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [showFileInput, setShowFileInput] = useState(null); // Changed to track which post has file input open
+  const [showFileInput, setShowFileInput] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
@@ -84,9 +89,6 @@ const CommunityPage = () => {
   const { data: subscriptionData } = useSubscription(COMMUNITY_UPDATED, {
     variables: { batchId },
   });
-
-  // Get current user ID from localStorage
-  const currentUserId = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).id : null;
 
   const [postCommunity] = useMutation(POST_COMMUNITY);
   const [updateCommunity] = useMutation(UPDATE_COMMUNITY);
@@ -329,10 +331,11 @@ const CommunityPage = () => {
 
   if (loading && !data) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-indigo-600 mx-auto animate-spin" />
-          <p className="mt-4 text-gray-600">Loading community...</p>
+      <div className="min-h-screen gradient-bg flex items-center justify-center px-4">
+        <div className="glass-premium rounded-[2rem] border border-white/10 p-10 text-center shadow-2xl max-w-md w-full">
+          <Loader2 className="w-12 h-12 text-primary mx-auto animate-spin" />
+          <h2 className="mt-4 text-xl font-bold text-white">Loading community...</h2>
+          <p className="mt-2 text-accent-secondary">Fetching the latest posts and discussions for this batch.</p>
         </div>
       </div>
     );
@@ -340,14 +343,14 @@ const CommunityPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Community</h2>
-          <p className="text-gray-600 mb-6">Please try again or contact support.</p>
+      <div className="min-h-screen gradient-bg flex items-center justify-center px-4">
+        <div className="glass-premium rounded-[2rem] border border-white/10 p-10 text-center shadow-2xl max-w-md w-full">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">Error Loading Community</h2>
+          <p className="text-accent-secondary mb-6">Please try again or contact support.</p>
           <button 
             onClick={() => refetch()}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+            className="bg-brand-yellow text-black px-4 py-2 rounded-xl hover:bg-brand-yellow/90 yellow-glow font-bold"
           >
             Retry
           </button>
@@ -357,30 +360,36 @@ const CommunityPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen gradient-bg relative overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-16 left-8 h-48 w-48 rounded-full bg-primary/5 blur-3xl"></div>
+        <div className="absolute top-24 right-12 h-56 w-56 rounded-full bg-brand-indigo/10 blur-3xl"></div>
+        <div className="absolute bottom-16 left-1/3 h-64 w-64 rounded-full bg-white/5 blur-3xl"></div>
+      </div>
+
       {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#080C14]/80 backdrop-blur-xl">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-4">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate(-1)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-3 bg-white/5 border border-white/10 rounded-2xl transition-all hover:bg-white/10 hover:border-primary/20"
               >
-                <ArrowLeft className="w-6 h-6 text-gray-600" />
+                <ArrowLeft className="w-5 h-5 text-white" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Community</h1>
-                <p className="text-sm text-gray-600">Batch {batchId}</p>
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Community Hub</h1>
+                <p className="text-sm text-accent-secondary">Batch #{batchId}</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                <Users className="w-4 h-4" />
-                <span>{data?.communities?.length || 0} posts</span>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-sm text-accent-secondary bg-white/5 border border-white/10 rounded-2xl px-4 py-2">
+                <Users className="w-4 h-4 text-primary" />
+                <span><span className="text-white font-bold">{data?.communities?.length || 0}</span> posts</span>
               </div>
               {loading && (
-                <div className="flex items-center space-x-2 text-sm text-indigo-600">
+                <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 border border-primary/20 rounded-2xl px-4 py-2">
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>Refreshing...</span>
                 </div>
@@ -390,25 +399,29 @@ const CommunityPage = () => {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex items-center space-x-4 flex-1">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <div className="glass-premium rounded-[2rem] shadow-xl border border-white/10 p-4 sm:p-5">
+          <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+            <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.2em] text-accent-muted">
+              <Filter className="w-4 h-4 text-primary" />
+              <span>Filter Feed</span>
+            </div>
+            <div className="flex flex-1 flex-col sm:flex-row gap-3 lg:max-w-3xl">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-accent-muted w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search posts..."
+                  placeholder="Search posts, tutors, or students..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 bg-[#0B111B]/80 border border-white/10 rounded-xl text-white placeholder:text-accent-muted focus:ring-2 focus:ring-primary/40 focus:border-primary/50"
                 />
               </div>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="px-4 py-3 bg-[#0B111B]/80 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-primary/40 focus:border-primary/50"
               >
                 <option value="newest">Newest first</option>
                 <option value="oldest">Oldest first</option>
@@ -416,22 +429,22 @@ const CommunityPage = () => {
                 <option value="most_comments">Most comments</option>
               </select>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-accent-muted">
               {sortedCommunities.length} post{sortedCommunities.length !== 1 ? 's' : ''}
             </div>
           </div>
         </div>
 
         {/* Posts */}
-        <div className="space-y-6 pb-48">
+        <div className="space-y-6 pb-56">
           {sortedCommunities.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-              <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No posts yet</h3>
-              <p className="text-gray-600 mb-6">Be the first to share something with the community!</p>
+            <div className="glass-premium rounded-[2.5rem] shadow-xl border border-dashed border-white/20 p-10 text-center bg-white/5">
+              <MessageCircle className="w-16 h-16 text-accent-muted/40 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">No posts yet</h3>
+              <p className="text-accent-secondary mb-6">Be the first to share something with the community!</p>
               <button
-                onClick={() => document.querySelector('textarea').focus()}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+                onClick={() => document.querySelector('textarea')?.focus()}
+                className="bg-brand-yellow text-black px-4 py-2 rounded-xl hover:bg-brand-yellow/90 yellow-glow font-bold"
               >
                 Create your first post
               </button>
@@ -442,27 +455,27 @@ const CommunityPage = () => {
                 key={community.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+                className="glass-premium rounded-[2rem] shadow-xl border border-white/10 p-6"
               >
                 {/* Post Header */}
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-4 gap-4">
                   <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="w-5 h-5 text-indigo-600" />
+                    <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0 border border-primary/20">
+                      <User className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <div className="flex items-center space-x-2">
-                        <h4 className="font-semibold text-gray-900">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="font-semibold text-white">
                           {community.user.firstName} {community.user.lastName}
                         </h4>
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                        <span className="px-2 py-1 bg-white/5 border border-white/10 text-accent-secondary text-xs rounded-full">
                           {community.user.role}
                         </span>
                         {community.isEdited && (
-                          <span className="text-xs text-gray-500">(edited)</span>
+                          <span className="text-xs text-accent-muted">(edited)</span>
                         )}
                       </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <div className="flex items-center space-x-4 text-sm text-accent-muted mt-1">
                         <div className="flex items-center space-x-1">
                           <Clock className="w-4 h-4" />
                           <span>{formatTime(community.createdAt)}</span>
@@ -475,7 +488,8 @@ const CommunityPage = () => {
                       <>
                         <button
                           onClick={() => setShowFileInput(showFileInput === community.id ? null : community.id)}
-                          className="p-2 text-gray-400 hover:text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                          className="p-2 text-accent-muted hover:text-white border border-white/10 rounded-xl hover:bg-white/5"
+                          title="Attach files"
                         >
                           <Paperclip className="w-4 h-4" />
                         </button>
@@ -484,13 +498,15 @@ const CommunityPage = () => {
                             setShowUpdatePostModal(community);
                             setEditingContent(community.content);
                           }}
-                          className="p-2 text-gray-400 hover:text-gray-600"
+                          className="p-2 text-accent-muted hover:text-primary rounded-xl hover:bg-primary/5"
+                          title="Edit post"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setShowDeleteConfirm(community.id)}
-                          className="p-2 text-gray-400 hover:text-red-600"
+                          className="p-2 text-accent-muted hover:text-red-400 rounded-xl hover:bg-red-500/5"
+                          title="Delete post"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -501,13 +517,13 @@ const CommunityPage = () => {
 
                 {/* Post Content */}
                 <div className="mb-4">
-                  <p className="text-gray-800 whitespace-pre-wrap">{community.content}</p>
+                  <p className="text-white/90 whitespace-pre-wrap leading-relaxed">{community.content}</p>
                 </div>
 
                 {/* Attachments */}
                 {community.attachments && community.attachments.length > 0 && (
                   <div className="mb-4">
-                    <h5 className="text-sm font-medium text-gray-700 mb-2">Attachments:</h5>
+                    <h5 className="text-sm font-medium text-accent-secondary mb-2">Attachments</h5>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {community.attachments.map((attachment) => (
                         <a
@@ -515,23 +531,23 @@ const CommunityPage = () => {
                           href={`${BASE_URL}/${attachment.filePath}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                          className="flex items-center space-x-3 bg-white/5 border border-white/10 p-3 rounded-2xl hover:bg-white/10 transition-colors"
                         >
-                          <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                            <FileText className="w-4 h-4 text-gray-600" />
+                          <div className="w-8 h-8 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
+                            <FileText className="w-4 h-4 text-primary" />
                           </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{attachment.fileName}</p>
-                            <p className="text-xs text-gray-500">{formatFileSize(attachment.fileSize)}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white truncate">{attachment.fileName}</p>
+                            <p className="text-xs text-accent-muted">{formatFileSize(attachment.fileSize)}</p>
                           </div>
-                          <div className="flex space-x-2">
+                          <div className="flex space-x-2 shrink-0">
                             {community.userId === currentUserId && (
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
                                   confirmAttachmentDelete(attachment.id);
                                 }}
-                                className="text-red-600 hover:text-red-700"
+                                className="text-red-400 hover:text-red-300"
                               >
                                 <X className="w-4 h-4" />
                               </button>
@@ -545,8 +561,8 @@ const CommunityPage = () => {
 
                 {/* File Input for Individual Post */}
                 {showFileInput === community.id && (
-                  <div className="mb-4 border-t border-gray-200 pt-4">
-                    <div className="flex items-center space-x-3 mb-3">
+                  <div className="mb-4 border-t border-white/10 pt-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -557,11 +573,11 @@ const CommunityPage = () => {
                       />
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                        className="px-4 py-2 bg-brand-yellow text-black rounded-xl hover:bg-brand-yellow/90 yellow-glow font-bold"
                       >
                         Select Files
                       </button>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-accent-secondary">
                         {selectedFiles.length > 0 ? `${selectedFiles.length} file(s) selected` : 'No files selected'}
                       </span>
                     </div>
@@ -569,17 +585,17 @@ const CommunityPage = () => {
                     {/* Selected Files Preview */}
                     {selectedFiles.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-700">Selected files:</p>
+                        <p className="text-sm font-medium text-accent-secondary">Selected files:</p>
                         {selectedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-lg">
-                            <div className="flex items-center space-x-2">
-                              <FileText className="w-4 h-4 text-gray-500" />
-                              <span className="text-sm text-gray-700">{file.name}</span>
-                              <span className="text-xs text-gray-500">{formatFileSize(file.size)}</span>
+                          <div key={index} className="flex items-center justify-between bg-white/5 border border-white/10 p-2 rounded-xl">
+                            <div className="flex items-center space-x-2 min-w-0">
+                              <FileText className="w-4 h-4 text-primary" />
+                              <span className="text-sm text-white truncate">{file.name}</span>
+                              <span className="text-xs text-accent-muted">{formatFileSize(file.size)}</span>
                             </div>
                             <button
                               onClick={() => removeFile(index)}
-                              className="text-red-500 hover:text-red-700"
+                              className="text-red-400 hover:text-red-300"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -601,7 +617,7 @@ const CommunityPage = () => {
                               }
                             }}
                             disabled={selectedFiles.length === 0}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-brand-green text-white rounded-xl hover:bg-brand-green/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                           >
                             Upload Files
                           </button>
@@ -610,7 +626,7 @@ const CommunityPage = () => {
                               setSelectedFiles([]);
                               setShowFileInput(null);
                             }}
-                            className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+                            className="px-4 py-2 text-accent-secondary hover:text-white border border-white/10 rounded-xl hover:bg-white/5"
                           >
                             Cancel
                           </button>
@@ -621,12 +637,12 @@ const CommunityPage = () => {
                 )}
 
                 {/* Reactions */}
-                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                  <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-white/10 pt-4">
+                  <div className="flex items-center flex-wrap gap-2">
                     <button
                       onClick={() => handleReaction(community.id, 'LIKE')}
                       disabled={isReacting}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center space-x-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-accent-secondary hover:text-brand-indigo hover:bg-brand-indigo/10 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isReacting ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -638,7 +654,7 @@ const CommunityPage = () => {
                     <button
                       onClick={() => handleReaction(community.id, 'DISLIKE')}
                       disabled={isReacting}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center space-x-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-accent-secondary hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isReacting ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -650,7 +666,7 @@ const CommunityPage = () => {
                     <button
                       onClick={() => handleReaction(community.id, 'LOVE')}
                       disabled={isReacting}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center space-x-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-accent-secondary hover:text-red-400 hover:bg-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isReacting ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -663,7 +679,7 @@ const CommunityPage = () => {
                   
                   <button
                     onClick={() => setShowCommentInput(showCommentInput === community.id ? null : community.id)}
-                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
+                    className="flex items-center justify-center space-x-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-accent-secondary hover:text-white hover:bg-white/10"
                   >
                     <MessageCircle className="w-4 h-4" />
                     <span>Comment ({community.comments?.length || 0})</span>
@@ -677,11 +693,11 @@ const CommunityPage = () => {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mt-4 pt-4 border-t border-gray-200"
+                      className="mt-4 pt-4 border-t border-white/10"
                     >
                       <div className="flex space-x-3">
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="w-4 h-4 text-gray-600" />
+                        <div className="w-8 h-8 bg-brand-indigo/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-brand-indigo/20">
+                          <User className="w-4 h-4 text-brand-indigo" />
                         </div>
                         <div className="flex-1">
                           {editingComment ? (
@@ -690,7 +706,7 @@ const CommunityPage = () => {
                                 type="text"
                                 value={editingCommentContent}
                                 onChange={(e) => setEditingCommentContent(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                className="w-full px-3 py-2 border border-white/10 bg-[#0B111B]/80 text-white rounded-xl focus:ring-2 focus:ring-primary/40 focus:border-primary/50"
                                 placeholder="Edit your comment..."
                               />
                               <div className="flex space-x-2">
@@ -699,33 +715,33 @@ const CommunityPage = () => {
                                     setEditingComment(null);
                                     setEditingCommentContent('');
                                   }}
-                                  className="px-3 py-1 text-gray-600 hover:text-gray-800"
+                                  className="px-3 py-2 text-accent-secondary hover:text-white"
                                 >
                                   Cancel
                                 </button>
                                 <button
                                   onClick={handleUpdateComment}
                                   disabled={!editingCommentContent.trim()}
-                                  className="px-3 py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                                  className="px-3 py-2 bg-brand-yellow text-black rounded-xl hover:bg-brand-yellow/90 disabled:opacity-50 font-semibold"
                                 >
                                   Update
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <div className="flex space-x-3">
+                            <div className="flex flex-col sm:flex-row gap-3">
                               <input
                                 type="text"
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleComment(community.id)}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                className="flex-1 px-3 py-2 border border-white/10 bg-[#0B111B]/80 text-white rounded-xl focus:ring-2 focus:ring-primary/40 focus:border-primary/50"
                                 placeholder="Write a comment..."
                               />
                               <button
                                 onClick={() => handleComment(community.id)}
                                 disabled={!newComment.trim()}
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 bg-brand-yellow text-black rounded-xl hover:bg-brand-yellow/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                               >
                                 Post
                               </button>
@@ -741,40 +757,40 @@ const CommunityPage = () => {
                 {community.comments && community.comments.length > 0 && (
                   <div className="mt-4 space-y-3">
                     {community.comments.map((comment) => (
-                      <div key={comment.id} className="flex items-start space-x-3 bg-gray-50 p-3 rounded-lg">
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="w-4 h-4 text-gray-600" />
+                      <div key={comment.id} className="flex items-start space-x-3 bg-white/5 border border-white/10 p-3 rounded-2xl">
+                        <div className="w-8 h-8 bg-brand-indigo/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-brand-indigo/20">
+                          <User className="w-4 h-4 text-brand-indigo" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="font-medium text-gray-900">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="font-medium text-white">
                               {comment.user.firstName} {comment.user.lastName}
                             </span>
-                            <span className="text-xs text-gray-500">{formatTime(comment.createdAt)}</span>
+                            <span className="text-xs text-accent-muted">{formatTime(comment.createdAt)}</span>
                             {comment.isEdited && (
-                              <span className="text-xs text-gray-500">(edited)</span>
+                              <span className="text-xs text-accent-muted">(edited)</span>
                             )}
-                            {comment.userId === localStorage.getItem('user') && (
+                            {comment.userId === currentUserId && (
                               <div className="flex space-x-1">
                                 <button
                                   onClick={() => {
                                     setEditingComment(comment);
                                     setEditingCommentContent(comment.content);
                                   }}
-                                  className="text-gray-400 hover:text-gray-600"
+                                  className="text-accent-muted hover:text-primary"
                                 >
                                   <Edit className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteComment(comment.id)}
-                                  className="text-gray-400 hover:text-red-600"
+                                  className="text-accent-muted hover:text-red-400"
                                 >
                                   <Trash2 className="w-3 h-3" />
                                 </button>
                               </div>
                             )}
                           </div>
-                          <p className="text-gray-700 text-sm">{comment.content}</p>
+                          <p className="text-accent-secondary text-sm">{comment.content}</p>
                         </div>
                       </div>
                     ))}
@@ -786,121 +802,124 @@ const CommunityPage = () => {
       </div>
 
       {/* Create Post Section */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-4xl z-50">
-        <div className="flex items-start space-x-4">
-          <div className="flex-1">
-            {editingPost ? (
-              <div className="space-y-4">
-                <textarea
-                  value={editingContent}
-                  onChange={(e) => setEditingContent(e.target.value)}
-                  placeholder="What would you like to share with the community?"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                  rows={4}
-                />
-                <div className="flex justify-between items-center">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        setEditingPost(null);
-                        setEditingContent('');
-                      }}
-                      className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleUpdatePost}
-                      disabled={!editingContent.trim()}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Update Post
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-end space-x-3">
-                  <textarea
-                    value={newPost}
-                    onChange={handleTextareaChange}
-                    placeholder="What would you like to share with the community?"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none min-h-[44px] max-h-[120px]"
-                    style={{ height: 'auto' }}
-                  />
-                  <button
-                    onClick={handlePost}
-                    disabled={!newPost.trim()}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                  >
-                    <Send className="w-4 h-4" />
-                    <span>Post</span>
-                  </button>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex space-x-2">
-                    {/* <button
-                      onClick={() => setShowFileInput(!showFileInput)}
-                      className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                      <Paperclip className="w-4 h-4" />
-                      <span>Attach</span>
-                    </button> */}
-                    {showFileInput && (
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        onChange={handleFileSelect}
-                        className="hidden"
-                        accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip"
-                      />
-                    )}
-                  </div>
-                </div>
-                
-                {/* Selected Files Preview */}
-                {selectedFiles.length > 0 && (
-                  <div className="border-t border-gray-200 pt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Selected files:</p>
-                    <div className="space-y-2">
-                      {selectedFiles.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-lg">
-                          <div className="flex items-center space-x-2">
-                            <FileText className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm text-gray-700">{file.name}</span>
-                            <span className="text-xs text-gray-500">{formatFileSize(file.size)}</span>
-                          </div>
-                          <button
-                            onClick={() => removeFile(index)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
+      <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pointer-events-none">
+        <div className="max-w-5xl mx-auto pointer-events-auto">
+          <div className="glass-premium rounded-[2rem] border border-white/10 shadow-2xl p-4 sm:p-5">
+            <div className="flex items-start space-x-4">
+              <div className="flex-1">
+                {editingPost ? (
+                  <div className="space-y-4">
+                    <textarea
+                      value={editingContent}
+                      onChange={(e) => setEditingContent(e.target.value)}
+                      placeholder="What would you like to share with the community?"
+                      className="w-full px-4 py-3 border border-white/10 bg-[#0B111B]/80 text-white rounded-xl focus:ring-2 focus:ring-primary/40 focus:border-primary/50 resize-none"
+                      rows={4}
+                    />
+                    <div className="flex justify-between items-center">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingPost(null);
+                            setEditingContent('');
+                          }}
+                          className="px-4 py-2 text-accent-secondary hover:text-white"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleUpdatePost}
+                          disabled={!editingContent.trim()}
+                          className="px-4 py-2 bg-brand-yellow text-black rounded-xl hover:bg-brand-yellow/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                        >
+                          Update Post
+                        </button>
+                      </div>
                     </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+                      <textarea
+                        value={newPost}
+                        onChange={handleTextareaChange}
+                        placeholder="What would you like to share with the community?"
+                        className="flex-1 px-4 py-3 border border-white/10 bg-[#0B111B]/80 text-white rounded-xl focus:ring-2 focus:ring-primary/40 focus:border-primary/50 resize-none min-h-[52px] max-h-[140px] placeholder:text-accent-muted"
+                        style={{ height: 'auto' }}
+                      />
+                      <button
+                        onClick={handlePost}
+                        disabled={!newPost.trim() || isPosting}
+                        className="px-5 py-3 bg-brand-yellow text-black rounded-xl hover:bg-brand-yellow/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 font-bold yellow-glow"
+                      >
+                        {isPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        <span>{isPosting ? 'Posting...' : 'Post'}</span>
+                      </button>
+                    </div>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div className="flex flex-wrap gap-2">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          multiple
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip"
+                        />
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center space-x-2 px-3 py-2 text-accent-secondary hover:text-white border border-white/10 rounded-xl hover:bg-white/5"
+                        >
+                          <Paperclip className="w-4 h-4" />
+                          <span>Attach files</span>
+                        </button>
+                      </div>
+                      <p className="text-xs text-accent-muted">Share updates, files, and notes with your batch community.</p>
+                    </div>
+                    
+                    {/* Selected Files Preview */}
+                    {selectedFiles.length > 0 && (
+                      <div className="border-t border-white/10 pt-4">
+                        <p className="text-sm font-medium text-accent-secondary mb-2">Selected files:</p>
+                        <div className="space-y-2">
+                          {selectedFiles.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between bg-white/5 border border-white/10 p-2 rounded-xl">
+                              <div className="flex items-center space-x-2 min-w-0">
+                                <FileText className="w-4 h-4 text-primary" />
+                                <span className="text-sm text-white truncate">{file.name}</span>
+                                <span className="text-xs text-accent-muted">{formatFileSize(file.size)}</span>
+                              </div>
+                              <button
+                                onClick={() => removeFile(index)}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Update Post Modal */}
       {showUpdatePostModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[150] p-4">
+          <div className="glass-premium rounded-[2rem] p-6 w-full max-w-2xl mx-4 border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <Edit className="w-6 h-6 text-indigo-600" />
+                <div className="w-10 h-10 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
+                  <Edit className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Edit Post</h3>
-                  <p className="text-sm text-gray-600">Update your post content</p>
+                  <h3 className="text-lg font-semibold text-white">Edit Post</h3>
+                  <p className="text-sm text-accent-secondary">Update your post content</p>
                 </div>
               </div>
               <button
@@ -908,7 +927,7 @@ const CommunityPage = () => {
                   setShowUpdatePostModal(null);
                   setEditingContent('');
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-accent-muted hover:text-white"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -919,12 +938,12 @@ const CommunityPage = () => {
                 value={editingContent}
                 onChange={(e) => setEditingContent(e.target.value)}
                 placeholder="What would you like to share with the community?"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                className="w-full px-4 py-3 border border-white/10 bg-[#0B111B]/80 text-white rounded-xl focus:ring-2 focus:ring-primary/40 focus:border-primary/50 resize-none"
                 rows={6}
               />
               
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-500">
+              <div className="flex justify-between items-center gap-3 flex-wrap">
+                <div className="text-sm text-accent-muted">
                   {editingContent.length} characters
                 </div>
                 <div className="flex space-x-3">
@@ -933,14 +952,14 @@ const CommunityPage = () => {
                       setShowUpdatePostModal(null);
                       setEditingContent('');
                     }}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    className="px-4 py-2 text-accent-secondary hover:text-white border border-white/10 rounded-xl hover:bg-white/5"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleUpdatePost}
                     disabled={!editingContent.trim()}
-                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2 bg-brand-yellow text-black rounded-xl hover:bg-brand-yellow/90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                   >
                     Update Post
                   </button>
@@ -953,40 +972,40 @@ const CommunityPage = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[160] p-4">
+          <div className="glass-premium rounded-[2rem] p-6 w-full max-w-md mx-4 border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
+                <div className="w-10 h-10 bg-red-500/15 rounded-2xl flex items-center justify-center border border-red-500/30">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Delete Post</h3>
-                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                  <h3 className="text-lg font-semibold text-white">Delete Post</h3>
+                  <p className="text-sm text-accent-secondary">This action cannot be undone</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-accent-muted hover:text-white"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
             
-            <p className="text-gray-700 mb-6">
+            <p className="text-accent-secondary mb-6">
               Are you sure you want to delete this post? This will also delete all associated comments and reactions.
             </p>
             
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border border-white/10 text-accent-secondary rounded-xl hover:bg-white/5"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeletePost(showDeleteConfirm)}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700"
               >
                 Delete Post
               </button>
@@ -997,40 +1016,40 @@ const CommunityPage = () => {
 
       {/* Attachment Delete Confirmation Modal */}
       {showAttachmentDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[160] p-4">
+          <div className="glass-premium rounded-[2rem] p-6 w-full max-w-md mx-4 border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
+                <div className="w-10 h-10 bg-red-500/15 rounded-2xl flex items-center justify-center border border-red-500/30">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Delete Attachment</h3>
-                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                  <h3 className="text-lg font-semibold text-white">Delete Attachment</h3>
+                  <p className="text-sm text-accent-secondary">This action cannot be undone</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowAttachmentDeleteConfirm(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-accent-muted hover:text-white"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
             
-            <p className="text-gray-700 mb-6">
+            <p className="text-accent-secondary mb-6">
               Are you sure you want to delete this attachment? This action cannot be undone.
             </p>
             
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowAttachmentDeleteConfirm(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border border-white/10 text-accent-secondary rounded-xl hover:bg-white/5"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmAttachmentDelete}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700"
               >
                 Delete Attachment
               </button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  X, 
+import {
+  X,
   Save,
   Send,
   FileText,
@@ -22,24 +22,26 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useQuery, useMutation, useLazyQuery } from '@apollo/client';
-import { 
-  GET_TUTOR_ASSIGNED_STUDENTS, 
-  GET_EXAM_LINK, 
-  CREATE_SKILL, 
-  UPDATE_SKILL, 
-  SEND_EXAM_LINK, 
+import {
+  GET_TUTOR_ASSIGNED_STUDENTS,
+  GET_EXAM_LINK,
+  CREATE_SKILL,
+  UPDATE_SKILL,
+  SEND_EXAM_LINK,
   GENERATE_CERTIFICATE,
   GET_CERTIFICATE,
   DELETE_CERTIFICATE
 } from '../graphql/tutorBatch';
 import { BASE_URL } from '../lib/apollo-client';
+import usePerformanceStore from '../store/performanceStore';
 
-const SkillTestModal = ({ 
-  isOpen, 
-  onClose, 
-  batch, 
-  onOpen 
+const SkillTestModal = ({
+  isOpen,
+  onClose,
+  batch,
+  onOpen
 }) => {
+  const { studentEvaluations, updateEvaluation, setEvaluations } = usePerformanceStore();
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [skillData, setSkillData] = useState({
@@ -86,12 +88,12 @@ const SkillTestModal = ({
 
   const handleJoinExam = async () => {
     if (!selectedStudent) return;
-    
+
     try {
       const { data } = await getExamLinkQuery({
         variables: { enrollmentId: selectedStudent.id }
       });
-      
+
       if (data?.getExamLink) {
         window.open(data.getExamLink, '_blank');
       } else {
@@ -112,11 +114,27 @@ const SkillTestModal = ({
   if (!isOpen) return null;
 
   const students = data?.tutorAssignedStudents || [];
-  
+
+  useEffect(() => {
+    if (students.length > 0) {
+      setEvaluations(students.map(s => ({
+        studentId: s.id,
+        batchId: batch?.id,
+        scores: s.skill ? {
+          reading: s.skill.readingSkill?.finalResult,
+          writing: s.skill.writingSkill?.finalResult,
+          speaking: s.skill.speakingSkill?.finalResult,
+          listening: s.skill.listeningSkill?.finalResult
+        } : null,
+        remarks: s.skill?.remarks || ''
+      })));
+    }
+  }, [students, batch, setEvaluations]);
+
   const handleStudentSelect = (student) => {
     setSelectedStudent(student);
     setActiveTab('overview');
-    
+
     // Initialize skill data if student has existing skill
     if (student.skill) {
       setSkillData({
@@ -205,9 +223,9 @@ const SkillTestModal = ({
       'C_PLUS': 70, 'C': 65, 'C_MINUS': 60,
       'D': 55, 'F': 0, 'FX': 0
     };
-    
+
     const average = grades.reduce((sum, grade) => sum + gradeValues[grade], 0) / grades.length;
-    
+
     if (average >= 95) return 'A_PLUS';
     if (average >= 90) return 'A';
     if (average >= 85) return 'A_MINUS';
@@ -222,7 +240,7 @@ const SkillTestModal = ({
 
   const handleSubmitSkill = async () => {
     if (!selectedStudent) return;
-    
+
     setIsSubmitting(true);
     try {
       const input = {
@@ -266,7 +284,7 @@ const SkillTestModal = ({
           variables: { input }
         });
       }
-      
+
       await refetch();
       alert('Skill assessment saved successfully!');
     } catch (error) {
@@ -279,7 +297,7 @@ const SkillTestModal = ({
 
   const handleSendExamLink = async () => {
     if (!selectedStudent) return;
-    
+
     try {
       await sendExamLinkMutation({
         variables: {
@@ -298,7 +316,7 @@ const SkillTestModal = ({
 
   const handleGenerateCertificate = async () => {
     if (!selectedStudent?.skill) return;
-    
+
     try {
       await generateCertificateMutation({
         variables: {
@@ -316,7 +334,7 @@ const SkillTestModal = ({
 
   const handleViewCertificate = async (certificateId) => {
     if (!certificateId) return;
-    
+
     try {
       window.open(`${BASE_URL}/certificates/${certificateId}`, '_blank');
     } catch (error) {
@@ -327,11 +345,11 @@ const SkillTestModal = ({
 
   const handleDeleteCertificate = async (certificateId) => {
     if (!certificateId) return;
-    
+
     if (!window.confirm('Are you sure you want to delete this certificate? This action cannot be undone.')) {
       return;
     }
-    
+
     try {
       await deleteCertificateMutation({
         variables: { id: certificateId }
@@ -347,29 +365,29 @@ const SkillTestModal = ({
 
   const getGradeColor = (grade) => {
     switch (grade) {
-      case 'A_PLUS': return 'bg-green-100 text-green-800';
-      case 'A': return 'bg-green-100 text-green-800';
-      case 'A_MINUS': return 'bg-green-100 text-green-800';
-      case 'B_PLUS': return 'bg-blue-100 text-blue-800';
-      case 'B': return 'bg-blue-100 text-blue-800';
-      case 'B_MINUS': return 'bg-blue-100 text-blue-800';
-      case 'C_PLUS': return 'bg-yellow-100 text-yellow-800';
-      case 'C': return 'bg-yellow-100 text-yellow-800';
-      case 'C_MINUS': return 'bg-yellow-100 text-yellow-800';
-      case 'D': return 'bg-orange-100 text-orange-800';
-      case 'F': return 'bg-red-100 text-red-800';
-      case 'FX': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'A_PLUS': return 'bg-green-500/10 text-green-400 border border-green-500/20';
+      case 'A': return 'bg-green-500/10 text-green-400 border border-green-500/20';
+      case 'A_MINUS': return 'bg-green-500/10 text-green-400 border border-green-500/20';
+      case 'B_PLUS': return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+      case 'B': return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+      case 'B_MINUS': return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+      case 'C_PLUS': return 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20';
+      case 'C': return 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20';
+      case 'C_MINUS': return 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20';
+      case 'D': return 'bg-orange-500/10 text-orange-400 border border-orange-500/20';
+      case 'F': return 'bg-red-500/10 text-red-400 border border-red-500/20';
+      case 'FX': return 'bg-red-500/10 text-red-400 border border-red-500/20';
+      default: return 'bg-white/10 text-accent-secondary border border-white/10';
     }
   };
 
   const GradeSelector = ({ value, onChange, label }) => (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-accent-secondary">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        className="w-full px-3 py-2 border border-white/10 bg-[#0B111B]/80 text-white rounded-xl focus:ring-2 focus:ring-primary/40 focus:border-primary/50"
       >
         <option value="A_PLUS">A+ (Excellent)</option>
         <option value="A">A (Very Good)</option>
@@ -388,19 +406,19 @@ const SkillTestModal = ({
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[170] p-4">
+      <div className="glass-premium rounded-[2rem] p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-              <GraduationCap className="w-8 h-8 text-indigo-600" />
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-[0_0_20px_rgba(255,193,7,0.18)]">
+              <GraduationCap className="w-8 h-8 text-primary" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-gray-900">Skill Assessment</h3>
-              <p className="text-gray-600">Batch: {batch?.name}</p>
+              <h3 className="text-2xl font-bold text-white">Skill Assessment</h3>
+              <p className="text-accent-secondary">Batch: {batch?.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-accent-muted hover:text-white">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -408,8 +426,8 @@ const SkillTestModal = ({
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Student List */}
           <div className="lg:col-span-1">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-4 flex items-center space-x-2">
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+              <h4 className="font-medium text-white mb-4 flex items-center space-x-2">
                 <User className="w-4 h-4" />
                 <span>Students ({students.length})</span>
               </h4>
@@ -419,24 +437,23 @@ const SkillTestModal = ({
                     <div className="bg-gray-300 h-12 rounded"></div>
                   </div>
                 ) : students.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No students assigned to this batch.</p>
+                  <p className="text-accent-muted text-sm">No students assigned to this batch.</p>
                 ) : (
                   students.map((student) => (
                     <button
                       key={student.id}
                       onClick={() => handleStudentSelect(student)}
-                      className={`w-full text-left p-3 rounded-lg transition-colors ${
-                        selectedStudent?.id === student.id 
-                          ? 'bg-indigo-100 border-2 border-indigo-200' 
-                          : 'bg-white border border-gray-200 hover:bg-gray-100'
-                      }`}
+                      className={`w-full text-left p-3 rounded-lg transition-colors ${selectedStudent?.id === student.id
+                        ? 'bg-primary/10 border-2 border-primary/30'
+                        : 'bg-[#0B111B]/70 border border-white/10 hover:bg-white/5'
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-white">
                             {student.profile.user.firstName} {student.profile.user.lastName}
                           </div>
-                          <div className="text-sm text-gray-500">{student.profile.user.email}</div>
+                          <div className="text-sm text-accent-muted">{student.profile.user.email}</div>
                         </div>
                         {student.skill && (
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getGradeColor(student.skill.finalResult)}`}>
@@ -454,35 +471,35 @@ const SkillTestModal = ({
           {/* Main Content */}
           <div className="lg:col-span-3">
             {!selectedStudent ? (
-              <div className="bg-gray-50 rounded-lg p-8 text-center">
-                <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h4 className="text-lg font-medium text-gray-900 mb-2">Select a Student</h4>
-                <p className="text-gray-600">Choose a student from the list to begin skill assessment.</p>
+              <div className="bg-white/5 rounded-2xl p-8 text-center border border-white/10">
+                <GraduationCap className="w-16 h-16 text-accent-muted mx-auto mb-4" />
+                <h4 className="text-lg font-medium text-white mb-2">Select a Student</h4>
+                <p className="text-accent-secondary">Choose a student from the list to begin skill assessment.</p>
               </div>
             ) : (
               <div className="space-y-6">
                 {/* Student Header */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="w-8 h-8 text-blue-600" />
+                      <div className="w-16 h-16 bg-brand-indigo/10 rounded-2xl flex items-center justify-center border border-brand-indigo/20">
+                        <User className="w-8 h-8 text-brand-indigo" />
                       </div>
                       <div>
-                        <h4 className="text-xl font-semibold text-gray-900">
+                        <h4 className="text-xl font-semibold text-white">
                           {selectedStudent.profile.user.firstName} {selectedStudent.profile.user.lastName}
                         </h4>
-                        <p className="text-gray-600">{selectedStudent.profile.user.email}</p>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500 mt-2">
-                          <span>Status: {selectedStudent.status}</span>
-                          <span>Enrolled: {new Date(selectedStudent.enrollmentDate).toLocaleDateString()}</span>
+                        <p className="text-accent-secondary">{selectedStudent.profile.user.email}</p>
+                        <div className="flex items-center space-x-4 text-sm text-accent-muted mt-2">
+                          <span className="px-2 py-1 bg-white/5 rounded-md border border-white/10">Status: {selectedStudent.status}</span>
+                          <span className="px-2 py-1 bg-white/5 rounded-md border border-white/10">Enrolled: {new Date(selectedStudent.enrollmentDate).toLocaleDateString()}</span>
                         </div>
                       </div>
                     </div>
                     {selectedStudent.skill && (
                       <div className="text-right">
-                        <div className="text-sm text-gray-500">Final Result</div>
-                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(selectedStudent.skill.finalResult)}`}>
+                        <div className="text-sm text-accent-muted mb-1">Final Result</div>
+                        <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(selectedStudent.skill.finalResult)}`}>
                           {selectedStudent.skill.finalResult}
                         </div>
                       </div>
@@ -491,7 +508,7 @@ const SkillTestModal = ({
                 </div>
 
                 {/* Tabs */}
-                <div className="border-b border-gray-200">
+                <div className="border-b border-white/10">
                   <nav className="-mb-px flex space-x-8">
                     {[
                       { id: 'overview', label: 'Overview', icon: Eye },
@@ -505,11 +522,10 @@ const SkillTestModal = ({
                         <button
                           key={tab.id}
                           onClick={() => setActiveTab(tab.id)}
-                          className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
-                            activeTab === tab.id
-                              ? 'border-indigo-500 text-indigo-600'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                          }`}
+                          className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-accent-muted hover:text-white hover:border-white/20'
+                            }`}
                         >
                           <Icon className="w-4 h-4" />
                           <span>{tab.label}</span>
@@ -520,83 +536,85 @@ const SkillTestModal = ({
                 </div>
 
                 {/* Tab Content */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mt-6">
                   {!selectedStudent.skill?.certificate && activeTab === 'overview' && (
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <h5 className="font-medium text-gray-900 mb-4">Skill Assessment Summary</h5>
+                          <h5 className="font-medium text-white mb-4">Skill Assessment Summary</h5>
                           {selectedStudent.skill ? (
                             <div className="space-y-4">
                               <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                  <div className="text-sm text-green-600">Reading</div>
-                                  <div className="font-bold text-green-800">{selectedStudent.skill.readingSkill?.finalResult || 'N/A'}</div>
+                                <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+                                  <div className="text-sm text-green-400">Reading</div>
+                                  <div className="font-bold text-white text-lg">{selectedStudent.skill.readingSkill?.finalResult || 'N/A'}</div>
                                 </div>
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                  <div className="text-sm text-blue-600">Writing</div>
-                                  <div className="font-bold text-blue-800">{selectedStudent.skill.writingSkill?.finalResult || 'N/A'}</div>
+                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                                  <div className="text-sm text-blue-400">Writing</div>
+                                  <div className="font-bold text-white text-lg">{selectedStudent.skill.writingSkill?.finalResult || 'N/A'}</div>
                                 </div>
-                                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                                  <div className="text-sm text-purple-600">Speaking</div>
-                                  <div className="font-bold text-purple-800">{selectedStudent.skill.speakingSkill?.finalResult || 'N/A'}</div>
+                                <div className="bg-brand-indigo/10 border border-brand-indigo/20 rounded-xl p-4">
+                                  <div className="text-sm text-indigo-400">Speaking</div>
+                                  <div className="font-bold text-white text-lg">{selectedStudent.skill.speakingSkill?.finalResult || 'N/A'}</div>
                                 </div>
-                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                                  <div className="text-sm text-orange-600">Listening</div>
-                                  <div className="font-bold text-orange-800">{selectedStudent.skill.listeningSkill?.finalResult || 'N/A'}</div>
+                                <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4">
+                                  <div className="text-sm text-orange-400">Listening</div>
+                                  <div className="font-bold text-white text-lg">{selectedStudent.skill.listeningSkill?.finalResult || 'N/A'}</div>
                                 </div>
                               </div>
-                              
+
                               <div className="flex space-x-3">
                                 <button
                                   onClick={handleGenerateCertificate}
                                   disabled={!selectedStudent.skill}
-                                  className="flex items-center space-x-2 px-4 py-2 w-full bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="flex items-center justify-center space-x-2 px-4 py-3 w-full bg-brand-green/20 text-green-400 border border-brand-green/30 rounded-xl hover:bg-brand-green/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
-                                  <FileCheck className="w-4 h-4" />
-                                  <span className="text-center">Generate Certificate</span>
+                                  <FileCheck className="w-5 h-5" />
+                                  <span className="font-medium">Generate Certificate</span>
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <div className="text-center py-8">
-                              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                              <p className="text-gray-500">No skill assessment found for this student.</p>
-                              <p className="text-sm text-gray-400 mt-2">Create a new assessment to get started.</p>
+                            <div className="text-center py-8 bg-[#0B111B]/50 rounded-xl border border-white/5">
+                              <AlertCircle className="w-12 h-12 text-accent-muted mx-auto mb-4" />
+                              <p className="text-accent-secondary">No skill assessment found for this student.</p>
+                              <p className="text-sm text-accent-muted mt-2">Create a new assessment to get started.</p>
                             </div>
                           )}
                         </div>
-                        
+
                         <div>
-                          <h5 className="font-medium text-gray-900 mb-4">Actions</h5>
-                          <div className="space-y-3">
-                            <div className="flex space-x-3">
+                          <h5 className="font-medium text-white mb-4">Actions</h5>
+                          <div className="space-y-4">
+                            <div className="flex flex-col space-y-3">
                               <input
                                 type="date"
                                 value={examDate}
                                 onChange={(e) => setExamDate(e.target.value)}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                className="w-full px-4 py-3 bg-[#0B111B]/80 border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-brand-indigo/40 focus:border-brand-indigo/50"
                               />
-                              <button
-                                onClick={handleSendExamLink}
-                                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                              >
-                                <Send className="w-4 h-4" />
-                                <span>Send Exam Link</span>
-                              </button>                              
+                              <div className="flex space-x-3">
+                                <button
+                                  onClick={handleSendExamLink}
+                                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-brand-indigo text-white rounded-xl hover:bg-brand-indigo/90 transition-colors"
+                                >
+                                  <Send className="w-4 h-4" />
+                                  <span>Send Link</span>
+                                </button>
                                 <button
                                   onClick={handleJoinExam}
-                                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-white/5 border border-white/10 text-white rounded-xl hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                   <ExternalLink className="w-4 h-4" />
                                   <span>Join Exam</span>
                                 </button>
+                              </div>
                             </div>
-                            
-                            <div className="bg-gray-50 rounded-lg p-4">
-                              <h6 className="font-medium text-gray-900 mb-2">Exam Link</h6>
-                              <p className="text-sm text-gray-600 mb-3">Generate and send exam link to student for skill testing.</p>
-                              <div className="text-xs text-gray-500">
+
+                            <div className="bg-brand-indigo/10 rounded-xl p-4 border border-brand-indigo/20">
+                              <h6 className="font-medium text-blue-300 mb-2">Exam Link</h6>
+                              <p className="text-sm text-blue-200/80 mb-3">Generate and send exam link to student for skill testing.</p>
+                              <div className="text-xs text-blue-200/60 bg-black/20 px-2 py-1 rounded inline-block">
                                 Selected date: {new Date(examDate).toLocaleDateString()}
                               </div>
                             </div>
@@ -625,18 +643,18 @@ const SkillTestModal = ({
                           label="Vocabulary"
                         />
                       </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-sm text-gray-500">Final Result: </span>
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(calculateFinalResult('readingSkill'))}`}>
+
+                      <div className="flex justify-between items-center pt-4 border-t border-white/10">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm text-accent-secondary">Final Result: </span>
+                          <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(calculateFinalResult('readingSkill'))}`}>
                             {calculateFinalResult('readingSkill')}
                           </span>
                         </div>
                         <button
                           onClick={handleSubmitSkill}
                           disabled={isSubmitting}
-                          className="flex items-center space-x-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center space-x-2 px-6 py-3 bg-brand-indigo text-white rounded-xl hover:bg-brand-indigo/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           <Save className="w-4 h-4" />
                           <span>{isSubmitting ? 'Saving...' : 'Save Reading Assessment'}</span>
@@ -669,18 +687,18 @@ const SkillTestModal = ({
                           label="Punctuation"
                         />
                       </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-sm text-gray-500">Final Result: </span>
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(calculateFinalResult('writingSkill'))}`}>
+
+                      <div className="flex justify-between items-center pt-4 border-t border-white/10">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm text-accent-secondary">Final Result: </span>
+                          <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(calculateFinalResult('writingSkill'))}`}>
                             {calculateFinalResult('writingSkill')}
                           </span>
                         </div>
                         <button
                           onClick={handleSubmitSkill}
                           disabled={isSubmitting}
-                          className="flex items-center space-x-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center space-x-2 px-6 py-3 bg-brand-indigo text-white rounded-xl hover:bg-brand-indigo/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           <Save className="w-4 h-4" />
                           <span>{isSubmitting ? 'Saving...' : 'Save Writing Assessment'}</span>
@@ -718,18 +736,18 @@ const SkillTestModal = ({
                           label="Coherence"
                         />
                       </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-sm text-gray-500">Final Result: </span>
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(calculateFinalResult('speakingSkill'))}`}>
+
+                      <div className="flex justify-between items-center pt-4 border-t border-white/10">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm text-accent-secondary">Final Result: </span>
+                          <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(calculateFinalResult('speakingSkill'))}`}>
                             {calculateFinalResult('speakingSkill')}
                           </span>
                         </div>
                         <button
                           onClick={handleSubmitSkill}
                           disabled={isSubmitting}
-                          className="flex items-center space-x-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center space-x-2 px-6 py-3 bg-brand-indigo text-white rounded-xl hover:bg-brand-indigo/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           <Save className="w-4 h-4" />
                           <span>{isSubmitting ? 'Saving...' : 'Save Speaking Assessment'}</span>
@@ -757,18 +775,18 @@ const SkillTestModal = ({
                           label="Interpretation"
                         />
                       </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-sm text-gray-500">Final Result: </span>
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(calculateFinalResult('listeningSkill'))}`}>
+
+                      <div className="flex justify-between items-center pt-4 border-t border-white/10">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm text-accent-secondary">Final Result: </span>
+                          <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getGradeColor(calculateFinalResult('listeningSkill'))}`}>
                             {calculateFinalResult('listeningSkill')}
                           </span>
                         </div>
                         <button
                           onClick={handleSubmitSkill}
                           disabled={isSubmitting}
-                          className="flex items-center space-x-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center space-x-2 px-6 py-3 bg-brand-indigo text-white rounded-xl hover:bg-brand-indigo/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           <Save className="w-4 h-4" />
                           <span>{isSubmitting ? 'Saving...' : 'Save Listening Assessment'}</span>
@@ -776,38 +794,39 @@ const SkillTestModal = ({
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Certificate Section */}
                   {selectedStudent.skill?.certificate && (
-                    <div className="border-t border-gray-200 pt-6">
-                      <h5 className="font-medium text-gray-900 mb-4 flex items-center space-x-2">
-                        <Download className="w-5 h-5 text-green-600" />
+                    <div className="border-t border-white/10 pt-6 mt-6">
+                      <h5 className="font-medium text-white mb-4 flex items-center space-x-2">
+                        <Download className="w-5 h-5 text-brand-green" />
                         <span>Certificate</span>
                       </h5>
-                      <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
-                        <div className="flex items-center justify-between mb-4">
+                      <div className="bg-brand-green/5 border border-brand-green/20 rounded-xl p-6 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-green/10 rounded-full blur-2xl pointer-events-none" />
+                        <div className="flex items-center justify-between mb-4 relative z-10">
                           <div>
-                            <h6 className="font-semibold text-gray-900">Certificate of Achievement</h6>
-                            <p className="text-sm text-gray-600">Final Result: {selectedStudent.skill.certificate.result}</p>
+                            <h6 className="font-semibold text-white text-lg">Certificate of Achievement</h6>
+                            <p className="text-sm text-green-400 mt-1">Final Result: {selectedStudent.skill.certificate.result}</p>
                           </div>
-                          <div className="flex space-x-2">
+                          <div className="flex space-x-3">
                             <button
                               onClick={() => handleViewCertificate(selectedStudent.skill.certificate.id)}
-                              className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                              className="flex items-center space-x-2 px-4 py-2 bg-white/5 border border-white/10 text-white rounded-xl hover:bg-white/10 transition-colors"
                             >
                               <Eye className="w-4 h-4" />
                               <span>View Certificate</span>
                             </button>
                             <button
                               onClick={() => handleDeleteCertificate(selectedStudent.skill.certificate.id)}
-                              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                              className="flex items-center space-x-2 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors"
                             >
                               <XCircle className="w-4 h-4" />
                               <span>Delete</span>
                             </button>
                           </div>
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-accent-muted relative z-10 bg-black/20 p-3 rounded-lg inline-block">
                           Certificate ID: {selectedStudent.skill.certificate.id}
                           <br />
                           Generated: {new Date(selectedStudent.skill.certificate.createdAt).toLocaleDateString()}

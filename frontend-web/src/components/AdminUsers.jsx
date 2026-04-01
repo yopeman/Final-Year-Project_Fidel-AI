@@ -15,6 +15,8 @@ import {
   X
 } from 'lucide-react';
 
+import useUserStore from '../store/userStore';
+
 const AdminUsers = ({ 
   users, 
   loading, 
@@ -26,20 +28,14 @@ const AdminUsers = ({
   showUserDetails,
   setShowUserDetails
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const { filters, setFilters, getFilteredUsers, setUsers } = useUserStore();
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = filterRole === 'all' || user.role.toLowerCase() === filterRole.toLowerCase();
-    const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'verified' && user.isVerified) ||
-                         (filterStatus === 'unverified' && !user.isVerified);
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  // Sync users from props to store
+  React.useEffect(() => {
+    setUsers(users);
+  }, [users, setUsers]);
+
+  const filteredUsers = getFilteredUsers();
 
   const getRoleColor = (role) => {
     switch (role) {
@@ -64,34 +60,36 @@ const AdminUsers = ({
         className="flex flex-col lg:flex-row gap-4"
       >
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-accent-muted w-4 h-4" />
           <input
             type="text"
             placeholder="Search users by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            value={filters.search}
+            onChange={(e) => setFilters({ search: e.target.value })}
+            className="w-full pl-12 pr-4 py-3 glass-premium border border-white/10 rounded-xl text-white placeholder:text-accent-muted focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
           />
         </div>
-        <select
-          value={filterRole}
-          onChange={(e) => setFilterRole(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-        >
-          <option value="all">All Roles</option>
-          <option value="student">Students</option>
-          <option value="tutor">Tutors</option>
-          <option value="admin">Admins</option>
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-        >
-          <option value="all">All Status</option>
-          <option value="verified">Verified</option>
-          <option value="unverified">Unverified</option>
-        </select>
+        <div className="flex gap-4">
+          <select
+            value={filters.role}
+            onChange={(e) => setFilters({ role: e.target.value })}
+            className="flex-1 lg:flex-none px-4 py-3 glass-premium border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-primary transition-all cursor-pointer"
+          >
+            <option value="all">All Roles</option>
+            <option value="student">Students</option>
+            <option value="tutor">Tutors</option>
+            <option value="admin">Admins</option>
+          </select>
+          <select
+            value={filters.status}
+            onChange={(e) => setFilters({ status: e.target.value })}
+            className="flex-1 lg:flex-none px-4 py-3 glass-premium border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-primary transition-all cursor-pointer"
+          >
+            <option value="all">All Status</option>
+            <option value="verified">Verified</option>
+            <option value="unverified">Unverified</option>
+          </select>
+        </div>
       </motion.div>
 
       {/* Users List */}
@@ -99,67 +97,76 @@ const AdminUsers = ({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white rounded-lg border border-gray-200 overflow-hidden"
+        className="glass-premium rounded-2xl border border-white/5 overflow-hidden shadow-2xl"
       >
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Users ({filteredUsers.length})</h3>
+        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
+          <h3 className="text-lg font-bold text-white tracking-tight">Active Users</h3>
+          <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-bold text-accent-secondary">
+            {filteredUsers.length} total
+          </span>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-white/5">
           {loading ? (
-            <div className="p-6 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading users...</p>
+            <div className="p-12 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-accent-secondary font-medium">Synchronizing user data...</p>
             </div>
           ) : filteredUsers.length === 0 ? (
-            <div className="p-6 text-center">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <User className="w-6 h-6 text-gray-400" />
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                <UserX className="w-8 h-8 text-accent-muted" />
               </div>
-              <p className="text-gray-600">No users found matching your criteria.</p>
+              <p className="text-accent-secondary font-medium">No users match your filters.</p>
             </div>
           ) : (
             filteredUsers.map((user) => (
-              <div key={user.id} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <h4 className="text-lg font-medium text-gray-900">
-                        {user.firstName} {user.lastName}
-                      </h4>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
-                        {user.role}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(user.isVerified)}`}>
-                        {user.isVerified ? 'Verified' : 'Unverified'}
-                      </span>
+              <div key={user.id} className="p-6 hover:bg-white/[0.02] transition-colors group">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 group-hover:border-primary/20 transition-colors">
+                      <User className="w-6 h-6 text-accent-secondary group-hover:text-primary transition-colors" />
                     </div>
-                    <p className="text-gray-600 mt-1">{user.email}</p>
-                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                      <span>Joined: {new Date(user.createdAt).toLocaleDateString()}</span>
-                      <span>Last updated: {new Date(user.updatedAt).toLocaleDateString()}</span>
+                    <div>
+                      <div className="flex items-center flex-wrap gap-2 mb-1">
+                        <h4 className="text-base font-bold text-white">
+                          {user.firstName} {user.lastName}
+                        </h4>
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                          user.role === 'ADMIN' ? 'bg-brand-indigo/20 text-brand-indigo border border-brand-indigo/30' :
+                          user.role === 'TUTOR' ? 'bg-brand-green/20 text-brand-green border border-brand-green/30' :
+                          'bg-primary/20 text-primary border border-primary/30'
+                        }`}>
+                          {user.role}
+                        </span>
+                        {user.isVerified && (
+                          <CheckCircle className="w-3.5 h-3.5 text-brand-green" />
+                        )}
+                      </div>
+                      <p className="text-sm text-accent-secondary font-medium">{user.email}</p>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
+                  
+                  <div className="flex items-center justify-end space-x-2">
                     <button 
                       onClick={() => onViewUser(user)}
-                      className="flex items-center space-x-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
+                      className="p-2.5 bg-white/5 border border-white/10 text-accent-secondary rounded-xl hover:text-white hover:bg-white/10 transition-all"
+                      title="View Profile"
                     >
                       <Eye className="w-4 h-4" />
-                      <span>View</span>
                     </button>
                     <button 
                       onClick={() => onEditUser(user)}
-                      className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                      className="p-2.5 bg-white/5 border border-white/10 text-accent-secondary rounded-xl hover:text-primary hover:bg-primary/5 hover:border-primary/20 transition-all"
+                      title="Edit User"
                     >
                       <Edit className="w-4 h-4" />
-                      <span>Edit</span>
                     </button>
                     <button 
                       onClick={() => onDeleteUser(user.id)}
-                      className="flex items-center space-x-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                      className="p-2.5 bg-white/5 border border-white/10 text-accent-secondary rounded-xl hover:text-red-400 hover:bg-red-400/5 hover:border-red-400/20 transition-all"
+                      title="Delete User"
                     >
                       <Trash2 className="w-4 h-4" />
-                      <span>Delete</span>
                     </button>
                   </div>
                 </div>
@@ -174,98 +181,97 @@ const AdminUsers = ({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
         >
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <User className="w-8 h-8 text-indigo-600" />
+          <div className="glass-premium rounded-2xl p-8 w-full max-w-2xl border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-8">
+              <div className="flex items-center space-x-6">
+                <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 yellow-glow">
+                  <User className="w-10 h-10 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-2xl font-bold text-white tracking-tight">
                     {selectedUser.firstName} {selectedUser.lastName}
                   </h3>
-                  <p className="text-gray-600">{selectedUser.email}</p>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(selectedUser.role)}`}>
+                  <p className="text-accent-secondary font-medium">{selectedUser.email}</p>
+                  <div className="flex items-center flex-wrap gap-3 mt-3">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${
+                      selectedUser.role === 'ADMIN' ? 'bg-brand-indigo/20 text-brand-indigo' :
+                      selectedUser.role === 'TUTOR' ? 'bg-brand-green/20 text-brand-green' :
+                      'bg-primary/20 text-primary'
+                    }`}>
                       {selectedUser.role}
                     </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedUser.isVerified)}`}>
-                      {selectedUser.isVerified ? 'Verified' : 'Unverified'}
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${
+                      selectedUser.isVerified ? 'bg-brand-green/20 text-brand-green' : 'bg-orange-500/20 text-orange-400'
+                    }`}>
+                      {selectedUser.isVerified ? 'Verified' : 'Pending'}
                     </span>
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => setShowUserDetails(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="p-2 hover:bg-white/5 rounded-xl transition-colors text-accent-muted hover:text-white"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">Personal Information</h4>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>ID:</span>
-                    <span className="font-mono text-xs">{selectedUser.id}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
+                <h4 className="text-sm font-bold text-primary uppercase tracking-widest mb-4">Identity</h4>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-accent-secondary">Internal ID</span>
+                    <span className="font-mono text-xs text-white bg-white/5 px-2 py-1 rounded">#{selectedUser.id.slice(0, 8)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>First Name:</span>
-                    <span>{selectedUser.firstName}</span>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-accent-secondary">Full Name</span>
+                    <span className="text-white font-medium">{selectedUser.firstName} {selectedUser.lastName}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Last Name:</span>
-                    <span>{selectedUser.lastName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Email:</span>
-                    <span>{selectedUser.email}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Role:</span>
-                    <span>{selectedUser.role}</span>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-accent-secondary">Role</span>
+                    <span className="text-white font-medium">{selectedUser.role}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">Account Details</h4>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>Status:</span>
-                    <span>{selectedUser.isVerified ? 'Verified' : 'Unverified'}</span>
+              <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
+                <h4 className="text-sm font-bold text-primary uppercase tracking-widest mb-4">Security</h4>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-accent-secondary">Status</span>
+                    <span className="text-white font-medium">{selectedUser.isVerified ? 'Fully Verified' : 'Standard User'}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Joined:</span>
-                    <span>{new Date(selectedUser.createdAt).toLocaleDateString()}</span>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-accent-secondary">Joined</span>
+                    <span className="text-white font-medium">{new Date(selectedUser.createdAt).toLocaleDateString()}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Last Updated:</span>
-                    <span>{new Date(selectedUser.updatedAt).toLocaleDateString()}</span>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-accent-secondary">Activity</span>
+                    <span className="text-white font-medium">Last updated {new Date(selectedUser.updatedAt).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowUserDetails(false)}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Close
-              </button>
+            <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={() => {
                   setShowUserDetails(false);
                   onEditUser(selectedUser);
                 }}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                className="flex-1 px-6 py-4 bg-primary text-black font-bold rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/10 flex items-center justify-center space-x-2"
               >
-                Edit User
+                <Edit className="w-4 h-4" />
+                <span>Modify Permissions</span>
+              </button>
+              <button
+                onClick={() => setShowUserDetails(false)}
+                className="flex-1 px-6 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-colors"
+              >
+                Discard
               </button>
             </div>
           </div>
