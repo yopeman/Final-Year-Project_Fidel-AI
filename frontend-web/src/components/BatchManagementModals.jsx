@@ -66,7 +66,7 @@ export const CreateBatchModal = ({ isOpen, onClose, onSubmit, courses }) => {
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
-              placeholder="e.g. Full Stack Web Development v2"
+              placeholder="e.g. Travel Batch 1"
               className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 transition-all font-bold placeholder:text-white/20"
               required
             />
@@ -97,6 +97,9 @@ export const CreateBatchModal = ({ isOpen, onClose, onSubmit, courses }) => {
                 <option value="ADVANCED" className="bg-[#080C14]">Advanced</option>
               </select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-accent-muted uppercase tracking-[0.2em] ml-1">Archive Size</label>
               <input
@@ -104,6 +107,19 @@ export const CreateBatchModal = ({ isOpen, onClose, onSubmit, courses }) => {
                 value={formData.maxStudents}
                 onChange={(e) => setFormData({...formData, maxStudents: e.target.value})}
                 placeholder="Limit"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 transition-all font-bold"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-accent-muted uppercase tracking-[0.2em] ml-1">Fee Amount ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.feeAmount}
+                onChange={(e) => setFormData({...formData, feeAmount: e.target.value})}
+                placeholder="0.00"
                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 transition-all font-bold"
                 required
               />
