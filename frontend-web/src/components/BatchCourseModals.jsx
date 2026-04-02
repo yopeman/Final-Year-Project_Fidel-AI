@@ -1,4 +1,5 @@
 import React from 'react';
+import { useQuery } from '@apollo/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -11,6 +12,7 @@ import {
   Calendar,
   Plus
 } from 'lucide-react';
+import { GET_SCHEDULES } from '../graphql/schedule';
 
 // Assign Course Modal Component
 export const AssignCourseModal = ({ isOpen, onClose, onSubmit, batchId, courses, isAssigning }) => {
@@ -124,8 +126,15 @@ export const DeleteCourseConfirmationModal = ({ isOpen, onClose, onConfirm, isDe
 };
 
 // View Course Details Modal Component
-export const ViewCourseDetailsModal = ({ isOpen, onClose, courseDetails, onAddInstructor, onDeleteInstructor, onAddSchedule, onDeleteSchedule }) => {
+export const ViewCourseDetailsModal = ({ isOpen, onClose, courseDetails, onAddInstructor, onDeleteInstructor, onAddSchedule, onDeleteSchedule, isAddingSchedule }) => {
   if (!isOpen || !courseDetails) return null;
+
+  const [showAddScheduleModal, setShowAddScheduleModal] = React.useState(false);
+
+  const handleAddSchedule = async (batchCourseId, scheduleId) => {
+    await onAddSchedule(batchCourseId, scheduleId);
+    setShowAddScheduleModal(false);
+  };
 
   return (
     <div className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[110] p-4">
@@ -200,9 +209,10 @@ export const ViewCourseDetailsModal = ({ isOpen, onClose, courseDetails, onAddIn
                   <div className="w-1.5 h-1.5 rounded-full bg-brand-green mr-3 animate-pulse"></div>
                   Temporal Slots
                 </h4>
-                <button onClick={() => onAddSchedule(courseDetails.id)} className="px-5 py-2 bg-brand-green/20 text-brand-green border border-brand-green/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl">
+                <button onClick={() => setShowAddScheduleModal(true)} className="px-5 py-2 bg-brand-green/20 text-brand-green border border-brand-green/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl">
                   Add Slot
                 </button>
+                <AddScheduleModal isOpen={showAddScheduleModal} onClose={() => setShowAddScheduleModal(false)} onSubmit={handleAddSchedule} batchCourseId={courseDetails.id} isAdding={isAddingSchedule} />
               </div>
               <div className="space-y-4">
                 {courseDetails.schedules?.length > 0 ? (
@@ -344,8 +354,13 @@ export const DeleteInstructorConfirmationModal = ({ isOpen, onClose, onConfirm, 
 };
 
 // Add Schedule Modal Component
-export const AddScheduleModal = ({ isOpen, onClose, onSubmit, batchCourseId, schedules, isAdding }) => {
+export const AddScheduleModal = ({ isOpen, onClose, onSubmit, batchCourseId, isAdding }) => {
   const [selectedScheduleId, setSelectedScheduleId] = React.useState('');
+  const { data: schedulesData, loading: loadingSchedules } = useQuery(GET_SCHEDULES, {
+    skip: !isOpen,
+  });
+
+  const availableSchedules = schedulesData?.schedules || [];
 
   if (!isOpen) return null;
 
@@ -369,10 +384,11 @@ export const AddScheduleModal = ({ isOpen, onClose, onSubmit, batchCourseId, sch
             <select
               value={selectedScheduleId}
               onChange={(e) => setSelectedScheduleId(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-brand-green/50 outline-none appearance-none font-bold"
+              disabled={loadingSchedules}
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-brand-green/50 outline-none appearance-none font-bold disabled:opacity-50"
             >
-              <option value="" className="bg-[#080C14]">Choose a slot from vault...</option>
-              {schedules.map(s => (
+              <option value="" className="bg-[#080C14]">{loadingSchedules ? 'Loading slots...' : 'Choose a slot from vault...'}</option>
+              {availableSchedules.map(s => (
                 <option key={s.id} value={s.id} className="bg-[#080C14]">{s.dayOfWeek}: {s.startTime} — {s.endTime}</option>
               ))}
             </select>
@@ -381,7 +397,7 @@ export const AddScheduleModal = ({ isOpen, onClose, onSubmit, batchCourseId, sch
             <button onClick={onClose} className="flex-1 py-4 border border-white/10 rounded-2xl text-accent-muted font-bold hover:bg-white/5 transition-all text-xs uppercase tracking-widest">Abort</button>
             <button
               onClick={() => onSubmit(batchCourseId, selectedScheduleId)}
-              disabled={isAdding || !selectedScheduleId}
+              disabled={isAdding || !selectedScheduleId || loadingSchedules}
               className="flex-1 py-4 bg-brand-green text-[#080C14] rounded-2xl font-black hover:bg-brand-green-dark transition-all disabled:opacity-50 text-xs uppercase tracking-widest shadow-xl"
             >
               {isAdding ? "Mapping..." : "Map Slot"}

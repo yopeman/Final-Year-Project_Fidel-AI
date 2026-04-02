@@ -960,11 +960,9 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
               setShowAddInstructorModal(true);
             }}
             onDeleteInstructor={handleDeleteInstructor}
-            onAddSchedule={(batchCourseId) => {
-              setSelectedCourseForSchedule(batchCourseId);
-              setShowAddScheduleModal(true);
-            }}
+            onAddSchedule={handleAddSchedule}
             onDeleteSchedule={handleDeleteSchedule}
+            isAddingSchedule={isAddingSchedule}
             zIndex={60}
           />
         )}
