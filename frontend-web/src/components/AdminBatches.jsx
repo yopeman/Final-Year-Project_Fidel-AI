@@ -709,8 +709,8 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filteredBatches.map((batch) => (
-                  <tr key={batch.id} className="hover:bg-white/[0.02] transition-colors group">
+                {filteredBatches.map((batch, index) => (
+                  <tr key={batch.id || `batch-${index}`} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-8 py-6">
                       <div className="flex items-center space-x-4">
                         <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 group-hover:border-primary/20 transition-all duration-300">
@@ -853,6 +853,14 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
               setEnrollmentToDelete(enrollmentId);
               setShowDeleteEnrollmentConfirm(true);
             }}
+            onAttendance={(batch) => {
+              setSelectedBatchForAttendance(batch);
+              setShowAttendanceModal(true);
+              handleFetchAttendance(batch.id, selectedDate);
+            }}
+            onCertificates={(batch) => {
+              handleViewCertificates(batch);
+            }}
           />
         )}
 
@@ -952,11 +960,9 @@ const [showEnrollStudentModal, setShowEnrollStudentModal] = useState(false);
               setShowAddInstructorModal(true);
             }}
             onDeleteInstructor={handleDeleteInstructor}
-            onAddSchedule={(batchCourseId) => {
-              setSelectedCourseForSchedule(batchCourseId);
-              setShowAddScheduleModal(true);
-            }}
+            onAddSchedule={handleAddSchedule}
             onDeleteSchedule={handleDeleteSchedule}
+            isAddingSchedule={isAddingSchedule}
             zIndex={60}
           />
         )}

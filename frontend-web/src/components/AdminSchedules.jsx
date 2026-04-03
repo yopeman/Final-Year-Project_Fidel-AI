@@ -19,7 +19,8 @@ import {
   User,
   Users,
   Layers,
-  Layout
+  Layout,
+  AlertCircle
 } from 'lucide-react';
 import { 
   GET_SCHEDULES, 
@@ -78,6 +79,69 @@ const AdminSchedules = ({
     }
   };
 
+  const handleCreateSchedule = async (formData) => {
+    setLoading(true);
+    try {
+      await createScheduleMutation({
+        variables: {
+          input: {
+            dayOfWeek: formData.dayOfWeek,
+            startTime: formData.startTime,
+            endTime: formData.endTime
+          }
+        }
+      });
+      setShowCreateModal(false);
+      refetch();
+      onScheduleAction?.('create');
+    } catch (error) {
+      console.error('Error creating schedule:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateSchedule = async (id, formData) => {
+    setLoading(true);
+    try {
+      await updateScheduleMutation({
+        variables: {
+          id,
+          input: {
+            dayOfWeek: formData.dayOfWeek,
+            startTime: formData.startTime,
+            endTime: formData.endTime
+          }
+        }
+      });
+      setShowEditModal(false);
+      setSelectedSchedule(null);
+      refetch();
+      onEditSchedule?.();
+    } catch (error) {
+      console.error('Error updating schedule:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteSchedule = async (id) => {
+    setLoading(true);
+    try {
+      await deleteScheduleMutation({
+        variables: { id }
+      });
+      setShowDeleteConfirmation(false);
+      setScheduleToDelete(null);
+      refetch();
+      onDeleteSchedule?.();
+    } catch (error) {
+      console.error('Error deleting schedule:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       {/* Header */}
@@ -91,10 +155,10 @@ const AdminSchedules = ({
             </div>
             <div>
               <h2 className="text-4xl font-black text-white tracking-tighter">Schedules</h2>
-              <p className="text-accent-secondary mt-1 font-medium flex items-center">
+              <div className="text-accent-secondary mt-1 font-medium flex items-center">
                 <div className="w-2 h-2 rounded-full bg-brand-yellow mr-2 animate-pulse"></div>
                 Manage academic class timings and availability
-              </p>
+              </div>
             </div>
           </div>
           <button
@@ -328,7 +392,7 @@ const ScheduleModal = ({ isOpen, onClose, onSave, loading, title, schedule }) =>
         <div className="px-8 py-6 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-brand-yellow/10 to-transparent">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-xl bg-brand-yellow/20 flex items-center justify-center border border-brand-yellow/30 shadow-[0_0_20px_rgba(255,193,7,0.2)]">
-              <CalendarIcon className="w-6 h-6 text-brand-yellow" />
+              <Calendar className="w-6 h-6 text-brand-yellow" />
             </div>
             <h3 className="text-2xl font-black text-white tracking-tight">{title}</h3>
           </div>

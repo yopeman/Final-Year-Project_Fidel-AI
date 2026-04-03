@@ -61,7 +61,7 @@ export const AddCourseModal = ({ isOpen, onClose, onSubmit, courseForm, onFormCh
               className={`w-full bg-white/5 border rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow/50 transition-all font-bold text-lg ${
                 formErrors.name ? 'border-red-500/50 bg-red-500/5' : 'border-white/10 hover:border-white/20'
               }`}
-              placeholder="e.g. Advanced Quantum Computing"
+              placeholder="e.g. Greeting"
             />
             {formErrors.name && (
               <p className="text-red-400 text-[10px] font-black uppercase tracking-widest ml-1">{formErrors.name}</p>
