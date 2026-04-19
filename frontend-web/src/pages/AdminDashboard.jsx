@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client';
 import { motion } from 'framer-motion';
-import { 
-  GraduationCap, 
-  Users, 
-  Shield, 
-  Calendar, 
-  BookOpen, 
+import {
+  GraduationCap,
+  Users,
+  Shield,
+  Calendar,
+  BookOpen,
   AlertTriangle,
   CheckCircle,
   Eye,
@@ -51,7 +51,7 @@ const AdminDashboard = () => {
   const { activeTab, setActiveTab } = useSystemStore();
   const { users, setUsers, getFilteredUsers } = useUserStore();
   const { batches, setBatches } = useBatchStore();
-  
+
   const [showUpdatePopup, setShowUpdatePopup] = useState(false);
   const [showEditUserPopup, setShowEditUserPopup] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -155,7 +155,7 @@ const AdminDashboard = () => {
     try {
       setDeleting(true);
       await deleteUser({ variables: { id: userId } });
-      
+
       // If admin is deleting their own account, logout
       if (userId === user.id) {
         logout();
@@ -193,7 +193,7 @@ const AdminDashboard = () => {
           <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Workspace Unavailable</h2>
           <p className="text-accent-secondary mb-6 text-sm">We're having trouble reaching the servers. Please try again.</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="w-full bg-primary text-black font-bold px-6 py-3 rounded-xl hover:bg-primary/90 transition shadow-lg shadow-primary/10"
           >
@@ -227,20 +227,17 @@ const AdminDashboard = () => {
             </div>
             <div className="flex items-center space-x-3 md:space-x-6">
               <NotificationBell userId={user?.id} />
-              <div className="hidden md:flex items-center space-x-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full">
-                <div className="w-2 h-2 bg-brand-green rounded-full animate-pulse"></div>
-                <span className="text-white/90 text-xs font-semibold uppercase tracking-wider">
-                  Admin Active
-                </span>
-              </div>
-              <button 
+              <span className="px-4 py-2 bg-green-500/10 text-green-300 text-sm font-black rounded-2xl border border-green-500/20 uppercase tracking-wider">
+                Admin
+              </span>
+              <button
                 onClick={() => {
                   logout();
                   navigate('/login', { replace: true });
                 }}
-                className="text-accent-secondary hover:text-white transition-colors text-sm font-medium flex items-center space-x-2"
+                className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all font-bold"
               >
-                <span>Logout</span>
+                Logout
               </button>
             </div>
           </div>
@@ -252,9 +249,9 @@ const AdminDashboard = () => {
         <div className="glass-premium rounded-2xl border border-white/5 shadow-2xl mb-8 overflow-hidden">
           <div className="border-b border-white/10 overflow-x-auto no-scrollbar">
             <nav className="flex space-x-1 px-4 py-2 min-w-max">
-              {[ 
+              {[
                 { id: 'overview', name: 'Overview', icon: BarChart3 },
-                { id: 'users', name: 'Users', icon: Users }, 
+                { id: 'users', name: 'Users', icon: Users },
                 { id: 'courses', name: 'Courses', icon: BookOpen },
                 { id: 'schedules', name: 'Schedules', icon: Calendar },
                 { id: 'batches', name: 'Batches', icon: GraduationCap },
@@ -264,11 +261,10 @@ const AdminDashboard = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`py-3 px-4 rounded-xl font-semibold text-sm flex items-center space-x-2 transition-all duration-200 ${
-                    activeTab === tab.id
+                  className={`py-3 px-4 rounded-xl font-semibold text-sm flex items-center space-x-2 transition-all duration-200 ${activeTab === tab.id
                       ? 'bg-primary text-black shadow-lg shadow-primary/20'
                       : 'text-accent-secondary hover:text-white hover:bg-white/5'
-                  }`}
+                    }`}
                 >
                   <tab.icon className="w-4 h-4" />
                   <span>{tab.name}</span>
@@ -280,7 +276,7 @@ const AdminDashboard = () => {
           {/* Tab Content */}
           <div className="p-6">
             {activeTab === 'overview' && (
-              <AdminOverview 
+              <AdminOverview
                 onAction={(action) => {
                   if (action === 'updateProfile') {
                     setShowUpdatePopup(true);
@@ -293,7 +289,7 @@ const AdminDashboard = () => {
             )}
 
             {activeTab === 'users' && (
-              <AdminUsers 
+              <AdminUsers
                 users={users}
                 loading={usersLoading}
                 onUserAction={handleUserAction}
@@ -320,7 +316,7 @@ const AdminDashboard = () => {
             )}
 
             {activeTab === 'batches' && (
-              <AdminBatches 
+              <AdminBatches
                 onBatchAction={(action, batchId) => {
                   console.log(`Batch action: ${action} for batch ${batchId}`);
                   // Add batch action logic here
@@ -341,7 +337,7 @@ const AdminDashboard = () => {
             )}
 
             {activeTab === 'schedules' && (
-              <AdminSchedules 
+              <AdminSchedules
                 onScheduleAction={(action, scheduleId) => {
                   console.log(`Schedule action: ${action} for schedule ${scheduleId}`);
                   // Add schedule action logic here
@@ -363,7 +359,7 @@ const AdminDashboard = () => {
 
 
             {activeTab === 'courses' && (
-              <AdminCourses 
+              <AdminCourses
                 onCourseAction={(action, courseId) => {
                   console.log(`Course action: ${action} for course ${courseId}`);
                   // Add course action logic here
@@ -384,7 +380,7 @@ const AdminDashboard = () => {
             )}
 
             {activeTab === 'payments' && (
-              <AdminPayments 
+              <AdminPayments
                 onPaymentAction={(action, paymentId) => {
                   console.log(`Payment action: ${action} for payment ${paymentId}`);
                   // Add payment action logic here
@@ -405,7 +401,7 @@ const AdminDashboard = () => {
             )}
 
             {activeTab === 'feedback' && (
-              <AdminFeedback 
+              <AdminFeedback
                 onFeedbackAction={(action, feedbackId) => {
                   console.log(`Feedback action: ${action} for feedback ${feedbackId}`);
                   // Add feedback action logic here
@@ -464,20 +460,18 @@ const AdminDashboard = () => {
                   </h3>
                   <p className="text-accent-secondary">{selectedUser.email}</p>
                   <div className="flex flex-wrap items-center gap-2 mt-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                      selectedUser.role === 'ADMIN' 
-                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' 
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${selectedUser.role === 'ADMIN'
+                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
                         : selectedUser.role === 'TUTOR'
-                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                        : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                    }`}>
+                          ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                          : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                      }`}>
                       {selectedUser.role}
                     </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                      selectedUser.isVerified 
-                        ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${selectedUser.isVerified
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
                         : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                    }`}>
+                      }`}>
                       {selectedUser.isVerified ? 'Verified' : 'Unverified'}
                     </span>
                   </div>
@@ -593,11 +587,11 @@ const AdminDashboard = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <p className="text-accent-secondary mb-6">
               Are you sure you want to delete this user? This will permanently remove their account and all associated data.
             </p>
-            
+
             <div className="flex space-x-3">
               <button
                 onClick={() => {
