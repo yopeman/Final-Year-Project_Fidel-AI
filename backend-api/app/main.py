@@ -71,6 +71,7 @@ from .resolver.speaking_skill import speaking_skill
 from .resolver.listening_skill import listening_skill
 from .resolver.certificate import mutation as cert_mutation, query as cert_query, certificate
 from .resolver.analytics import query as analytics_query
+from .resolver.exam import mutation as exam_mutation, subscription as exam_subscription
 from .schema import type_defs
 from .util.auth import create_default_admin, get_current_user
 
@@ -243,17 +244,24 @@ bindables = [
     datetime_scalar,
     date_scalar,
     time_scalar,
-    upload_scalar
+    upload_scalar,
+    exam_mutation,
+    exam_subscription
 ]
 
 schema = make_executable_schema(type_defs, *bindables)
 os.makedirs("static", exist_ok=True)
 
 
-def get_context_value(request: Request):
-    # Use the session from middleware (properly managed lifecycle)
-    print(request.__dict__['_body'])
-    db = request.state.db
+def get_context_value(request: Request, *args):
+    if request.__dict__:
+        if '_body' in request.__dict__:
+            print(request.__dict__['_body'])
+
+    db = getattr(request.state, "db", None)
+    if db is None:
+        db = SessionLocal()
+    
     context = {"db": db, "pubsub": broadcast}
     context["base_url"] = request.base_url
     auth_header = request.headers.get("authorization")
@@ -274,7 +282,12 @@ graphql_app = GraphQL(
 
 @app.websocket("/graphql")
 async def websocket_endpoint(websocket: WebSocket):
-    await graphql_app.handle_websocket(websocket)
+    db = SessionLocal()
+    websocket.state.db = db
+    try:
+        await graphql_app.handle_websocket(websocket)
+    finally:
+        db.close()
 
 
 app.mount("/graphql", graphql_app)

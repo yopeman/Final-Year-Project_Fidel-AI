@@ -1,17 +1,31 @@
-import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, from, split } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
+import { createClient } from 'graphql-ws';
+import { getMainDefinition } from '@apollo/client/utilities';
 import useAuthStore from '../store/authStore';
 
 // Get your GraphQL endpoint
 export const BASE_URL = import.meta.env.VITE_BASE_URL || 'https://brittny-reprehensible-joel.ngrok-free.dev'
 const GRAPHQL_URI = `${BASE_URL}/graphql`;
+const WS_GRAPHQL_URI = GRAPHQL_URI.replace('https', 'ws');
 
 // Create HTTP link
 const httpLink = createHttpLink({
   uri: GRAPHQL_URI,
-  // Don't use credentials: 'include' unless backend properly supports CORS
 });
+
+// Create WebSocket link
+const wsLink = new GraphQLWsLink(createClient({
+  url: WS_GRAPHQL_URI,
+  connectionParams: () => {
+    const { token } = useAuthStore.getState();
+    return {
+      Authorization: token ? `Bearer ${token}` : '',
+    };
+  },
+}));
 
 // Error handling link
 const errorLink = onError(({ graphQLErrors, networkError, operation }) => {
@@ -54,8 +68,21 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
-// Combine links
-const link = from([errorLink, authLink, httpLink]);
+// Combine HTTP links
+const httpCombinedLink = from([errorLink, authLink, httpLink]);
+
+// Split link based on operation type
+const link = split(
+  ({ query }) => {
+    const definition = getMainDefinition(query);
+    return (
+      definition.kind === 'OperationDefinition' &&
+      definition.operation === 'subscription'
+    );
+  },
+  wsLink,
+  httpCombinedLink
+);
 
 // Cache configuration
 const cache = new InMemoryCache({

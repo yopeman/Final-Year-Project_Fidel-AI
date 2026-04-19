@@ -1640,3 +1640,20 @@ extend type Mutation {
   updateArticle(id: ID!, input: UpdateArticleInput!): LessonOnlineArticles!
   deleteArticle(id: ID!): Boolean!
 }
+
+
+type ExamMessage {
+    id: String!
+    roomId: String!
+    senderName: String!
+    content: String!
+    createdAt: DateTime!
+}
+
+extend type Mutation {
+    sendExamMessage(roomId: String!, content: String!, senderName: String!): ExamMessage!
+}
+
+extend type Subscription {
+    examMessageReceived(roomId: String!): ExamMessage!
+}
