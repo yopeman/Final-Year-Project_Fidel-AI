@@ -80,7 +80,7 @@ const CreateProfile = () => {
                         <Text style={styles.label}>What is your native language?</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="e.g. Spanish, French"
+                            placeholder="e.g. Amharic, Oromo"
                             value={formData.nativeLanguage}
                             onChangeText={(text) => setFormData({ ...formData, nativeLanguage: text })}
                         />

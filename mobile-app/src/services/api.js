@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuthStore } from '../stores/authStore';
 
 // Create axios instance
 const api = axios.create({
@@ -63,8 +64,13 @@ const graphQLRequest = async (query, variables = {}) => {
             query: query.substring(0, 100) + '...'
         });
 
+        if (error.response?.data?.message?.toLowerCase() === 'not authenticated') {
+            console.log("Not authenticated");
+            useAuthStore.getState().logout();
+        }
+
         // Enhance Network Error message
-        if (error.message === 'Network Error') {
+        if (error.message.toLowerCase() === 'network error' || error.message.toLowerCase() === 'timeout exceeded') {
             throw new Error('Unable to connect to the server. Please check your internet connection or verify the API URL.');
         }
 
