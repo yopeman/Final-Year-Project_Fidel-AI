@@ -9,12 +9,12 @@ from ..model.modules import Modules
 from ..model.student_profile import (AgeRange, DurationUnit, Proficiency,
                                      StudentProfile)
 from ..model.user import User, UserRole
-# from ..util.ai_service.install_learning_plan import install_learning_plan
-from ..util.ai_service.false_install_learning_plan import install_learning_plan
-# from ..util.ai_service.learning_plan import (generate_learning_plan,
-#                                              update_learning_plan)
-from ..util.ai_service.false_learning_plan import (generate_learning_plan,
+from ..util.ai_service.install_learning_plan import install_learning_plan
+# from ..util.ai_service.false_install_learning_plan import install_learning_plan
+from ..util.ai_service.learning_plan import (generate_learning_plan,
                                              update_learning_plan)
+# from ..util.ai_service.false_learning_plan import (generate_learning_plan,
+#                                              update_learning_plan)
 from ..util.email_service import send_notification
 
 query = QueryType()

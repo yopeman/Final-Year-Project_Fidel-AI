@@ -29,4 +29,6 @@ dependencies = [
     "broadcaster==0.3.1",
     "websockets>=15.0.1",
     "jinja2>=3.1.6",
+    "langchain-groq>=1.1.2",
+    "ddgs>=9.14.0",
 ]
