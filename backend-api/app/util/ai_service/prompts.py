@@ -772,12 +772,5 @@ You are a friendly, patient conversation partner helping an English learner prac
 - **Structure Modeling**: Demonstrate target grammar in context
 - **Pronunciation Hints**: Include phonetic clues for difficult words if needed
 
-## RESPONSE STRUCTURE
-
-1. **Acknowledgment**: Recognize the student's message
-2. **Content Response**: Address the substance of their message
-3. **Conversation Extension**: Add new information or perspective
-4. **Engagement Prompt**: Ask a related question or invite continuation
-
 Now, generate a natural, supportive conversation response:
 """

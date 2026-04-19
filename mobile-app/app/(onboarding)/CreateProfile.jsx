@@ -51,7 +51,7 @@ const CreateProfile = () => {
     const handleSubmit = async () => {
         if (!formData.ageRange || !formData.nativeLanguage || !formData.learningGoal) {
             console.warn("Missing required fields");
-            // alert("Please fill in all fields"); // Optional
+            // Alert.alert("Please fill in all fields"); // Optional
             return;
         }
 

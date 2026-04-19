@@ -6,6 +6,7 @@ import { useChatStore } from '../src/stores/chatStore';
 import { COLORS, BORDER_RADIUS, SPACING } from '../src/constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Audio } from 'expo-audio';
+import { Audio as AVAudio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import styles from './styles/chatStyle';
 
@@ -31,6 +32,8 @@ const ChatScreen = () => {
     // Audio recording state
     const [recording, setRecording] = useState(null);
     const [isRecording, setIsRecording] = useState(false);
+    const [playingMessageId, setPlayingMessageId] = useState(null);
+    const soundRef = useRef(null);
 
     useEffect(() => {
         const initChat = async () => {
@@ -55,6 +58,9 @@ const ChatScreen = () => {
         return () => {
             if (recording) {
                 recording.stopAndUnloadAsync();
+            }
+            if (soundRef.current) {
+                soundRef.current.unloadAsync();
             }
         };
     }, [topic]);
@@ -90,6 +96,63 @@ const ChatScreen = () => {
             }
         } catch (err) {
             console.error('Failed to start recording', err);
+        }
+    };
+
+    const playSound = async (url, messageId) => {
+        try {
+            if (soundRef.current) {
+                await soundRef.current.unloadAsync();
+                soundRef.current = null;
+                if (playingMessageId === messageId) {
+                    setPlayingMessageId(null);
+                    return;
+                }
+            }
+
+            setPlayingMessageId(messageId);
+            
+            let audioSource = { uri: url };
+
+            // Special handling for web + ngrok to skip browser warning
+            if (Platform.OS === 'web' && url.includes('ngrok-free.dev')) {
+                try {
+                    const response = await fetch(url, {
+                        headers: { 'ngrok-skip-browser-warning': 'true' }
+                    });
+                    const blob = await response.blob();
+                    audioSource = { uri: URL.createObjectURL(blob) };
+                } catch (fetchError) {
+                    console.error('Failed to fetch audio for web:', fetchError);
+                }
+            }
+
+            await AVAudio.setAudioModeAsync({
+                playsInSilentModeIOS: true,
+                staysActiveInBackground: false,
+                shouldRouteThroughEarpieceAndroid: false
+            });
+
+            const { sound } = await AVAudio.Sound.createAsync(
+                audioSource,
+                { shouldPlay: true }
+            );
+            
+            soundRef.current = sound;
+
+            sound.setOnPlaybackStatusUpdate((status) => {
+                if (status.didJustFinish) {
+                    setPlayingMessageId(null);
+                    // Revoke object URL if it was created
+                    if (Platform.OS === 'web' && audioSource.uri.startsWith('blob:')) {
+                        URL.revokeObjectURL(audioSource.uri);
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Failed to play sound', error);
+            setPlayingMessageId(null);
         }
     };
 
@@ -173,13 +236,15 @@ const ChatScreen = () => {
                 id: `${msg.id}-student`,
                 text: msg.studentText || (msg.studentAudioUrl ? "🎤 [Audio Message]" : ""),
                 sender: 'user',
-                time: msg.createdAt
+                time: msg.createdAt,
+                audioUrl: msg.studentAudioUrl
             });
             uiMessages.push({
                 id: `${msg.id}-ai`,
                 text: msg.aiText,
                 sender: 'ai',
-                time: msg.createdAt
+                time: msg.createdAt,
+                audioUrl: msg.aiAudioUrl
             });
         });
 
@@ -194,6 +259,23 @@ const ChatScreen = () => {
                     <Text style={[styles.messageText, msg.sender === 'user' && styles.userMessageText]}>
                         {msg.text}
                     </Text>
+                    {msg.audioUrl && (
+                        <View style={styles.messageFooter}>
+                            <TouchableOpacity 
+                                onPress={() => playSound(msg.audioUrl, msg.id)}
+                                style={styles.speakerButton}
+                            >
+                                <Ionicons 
+                                    name={playingMessageId === msg.id ? "stop-circle" : "volume-medium"} 
+                                    size={20} 
+                                    color={msg.sender === 'user' ? COLORS.primary : "#fff"} 
+                                />
+                                <Text style={[styles.audioLabel, msg.sender === 'user' && styles.userAudioLabel]}>
+                                    {playingMessageId === msg.id ? "Playing..." : "Listen"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
             </View>
         ));
@@ -244,7 +326,10 @@ const ChatScreen = () => {
                     )}
                 </ScrollView>
 
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <KeyboardAvoidingView 
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                    keyboardVerticalOffset={0}
+                >
                     <View style={styles.footer}>
                         {suggestions.length > 0 && !isLoading && (
                             <View style={styles.suggestionsWrapper}>
