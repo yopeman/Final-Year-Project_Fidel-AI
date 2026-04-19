@@ -262,7 +262,7 @@ def resolve_get_batch_meeting_link(_, info, batchId: str):
             # Schedule.is_deleted == False
         ).first()
         
-        if schedule and schedule.day_of_week.value.upper() == current_day:
+        if schedule and schedule.day_of_week.value.upper() == current_day or True:
             start_time = schedule.start_time
             end_time = schedule.end_time
             
@@ -345,6 +345,8 @@ def resolve_get_batch_meeting_link(_, info, batchId: str):
                 content=f"You have been marked absent for the {active_schedule.day_of_week.value} class at {active_schedule.start_time.strftime('%H:%M')}. Please contact your instructor if this is an error.",
                 db=db
             )
+
+    print('\n'*10, attendance_record.__dict__, '\n'*10)
             
     return {
         "attendance": attendance_record,
