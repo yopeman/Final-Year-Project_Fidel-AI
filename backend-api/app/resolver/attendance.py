@@ -110,14 +110,14 @@ def resolve_get_course_meeting_link(_, info, courseScheduleId: str):
     if not batch:
         raise Exception("Batch not found")
     
+    # if current_user.role == UserRole.student:
+    #     enrollment = db.query(BatchEnrollment).filter(
+    #         BatchEnrollment.batch_id == batch.id,
+    #         BatchEnrollment.is_deleted == False
+    #     ).first()
 
-    enrollment = db.query(BatchEnrollment).filter(
-        BatchEnrollment.batch_id == batch.id,
-        BatchEnrollment.is_deleted == False
-    ).first()
-
-    if not enrollment:
-        raise Exception("Enrollment not found")
+    #     if not enrollment:
+    #         raise Exception("Enrollment not found")
 
     
     # Get current time and calculate time difference from start time

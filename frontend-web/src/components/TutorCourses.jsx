@@ -24,8 +24,7 @@ import {
   FileText as FileTextIcon
 } from 'lucide-react';
 import { useQuery, useMutation } from '@apollo/client';
-import { GET_COURSES } from '../graphql/course';
-import { ME_QUERY } from '../graphql/instructor';
+import { GET_MY_COURSES } from '../graphql/course';
 import { BASE_URL } from '../lib/apollo-client';
 import useContentStore from '../store/contentStore';
 
@@ -38,42 +37,28 @@ const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Get tutor's associated batch courses using the new ME query
-  const { data: meData, loading: meLoading } = useQuery(ME_QUERY);
+  // Get tutor's assigned courses using myCourses query
+  const { data: myCoursesData, loading: myCoursesLoading } = useQuery(GET_MY_COURSES);
 
-  // Get all courses for reference
-  const { data: coursesData, loading: coursesLoading } = useQuery(GET_COURSES);
-
-  // Combine data to get tutor's courses
+  // Map myCourses data to the expected format
   const tutorCourses = React.useMemo(() => {
-    if (!meData?.me || !coursesData?.courses) {
+    if (!myCoursesData?.myCourses) {
       return [];
     }
 
-    const batchInstructors = meData.me.batchInstructors || [];
-    const batchCourses = batchInstructors
-      .filter(instructor => instructor.role === 'MAIN' || instructor.role === 'ASSISTANT')
-      .map(instructor => instructor.batchCourse);
-
-    const courses = coursesData.courses;
-
-    return batchCourses.map(bc => {
-      const course = courses.find(c => c.id === bc.courseId);
-
-      return {
-        ...bc,
-        course: course,
-        courseName: course?.name || 'Unknown Course',
-        courseDescription: course?.description || '',
-        batchName: bc.batch?.name || 'Unknown Batch',
-        batchLevel: bc.batch?.level || 'Unknown',
-        batchLanguage: bc.batch?.language || 'Unknown',
-        startDate: bc.batch?.startDate,
-        endDate: bc.batch?.endDate,
-        schedules: bc.schedules || []
-      };
-    });
-  }, [meData, coursesData]);
+    return myCoursesData.myCourses.map(bc => ({
+      ...bc,
+      course: bc.course,
+      courseName: bc.course?.name || 'Unknown Course',
+      courseDescription: bc.course?.description || '',
+      batchName: bc.batch?.name || 'Unknown Batch',
+      batchLevel: bc.batch?.level || 'Unknown',
+      batchLanguage: bc.batch?.language || 'Unknown',
+      startDate: bc.batch?.startDate,
+      endDate: bc.batch?.endDate,
+      schedules: bc.schedules || []
+    }));
+  }, [myCoursesData]);
 
   useEffect(() => {
     if (tutorCourses.length > 0) {
@@ -148,7 +133,7 @@ const TutorCourses = ({ onCourseAction, onViewCourse, onEditCourse }) => {
     return `${formattedHour}:${minutes} ${ampm}`;
   };
 
-  if (meLoading || coursesLoading) {
+  if (myCoursesLoading) {
     return (
       <div className="glass-premium rounded-3xl border border-white/10 p-10 shadow-2xl bg-white/5">
         <div className="flex flex-col items-center justify-center py-10 space-y-4">

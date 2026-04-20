@@ -58,7 +58,7 @@ export const AssignCourseModal = ({ isOpen, onClose, onSubmit, batchId, courses,
               <option value="" className="bg-[#080C14]">Choose a course archive...</option>
               {courses.map((course) => (
                 <option key={course.id} value={course.id} className="bg-[#080C14]">
-                  {course.name} ({course.level})
+                  {course.name}
                 </option>
               ))}
             </select>

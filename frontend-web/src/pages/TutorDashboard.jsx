@@ -23,6 +23,7 @@ import UpdateProfilePopup from '../components/UpdateProfilePopup';
 import NotificationBell from '../components/NotificationBell';
 import TutorCourses from '../components/TutorCourses';
 import TutorBatches from '../components/TutorBatches';
+import TutorSchedules from '../components/TutorSchedules';
 import useAuthStore from '../store/authStore';
 import useTutorStore from '../store/tutorStore';
 import useSessionStore from '../store/sessionStore';
@@ -337,6 +338,7 @@ const TutorDashboard = () => {
               {[
                 { id: 'overview', name: 'Overview', icon: GraduationCap },
                 { id: 'courses', name: 'Courses', icon: BookOpen },
+                { id: 'schedules', name: 'Schedules', icon: Calendar },
                 { id: 'batches', name: 'Batches', icon: Users }
               ].map((tab) => (
                 <button
@@ -358,6 +360,8 @@ const TutorDashboard = () => {
             {activeTab === 'courses' && <TutorCourses />}
 
             {activeTab === 'batches' && <TutorBatches />}
+            
+            {activeTab === 'schedules' && <TutorSchedules />}
 
             {activeTab === 'overview' && (
               <div className="space-y-8">

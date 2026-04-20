@@ -872,6 +872,7 @@ type Course {
 extend type Query {
   courses: [Course!]!
   course(id: ID!): Course
+  myCourses: [BatchCourse!]!
 }
 
 extend type Mutation {
