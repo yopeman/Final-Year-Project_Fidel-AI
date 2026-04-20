@@ -214,30 +214,39 @@ def test_unverified_user(db_session, create_test_user):
 
 
 @pytest.fixture
-def user_auth_token(test_user):
+def user_auth_token(test_user, db_session):
     """Generate an auth token for the test user."""
-    return create_access_token(
+    token = create_access_token(
         data={"sub": test_user.email},
         expires_delta=timedelta(days=1)
     )
+    test_user.access_token = token
+    db_session.commit()
+    return token
 
 
 @pytest.fixture
-def admin_auth_token(test_admin):
+def admin_auth_token(test_admin, db_session):
     """Generate an auth token for the test admin."""
-    return create_access_token(
+    token = create_access_token(
         data={"sub": test_admin.email},
         expires_delta=timedelta(days=1)
     )
+    test_admin.access_token = token
+    db_session.commit()
+    return token
 
 
 @pytest.fixture
-def tutor_auth_token(test_tutor):
+def tutor_auth_token(test_tutor, db_session):
     """Generate an auth token for the test tutor."""
-    return create_access_token(
+    token = create_access_token(
         data={"sub": test_tutor.email},
         expires_delta=timedelta(days=1)
     )
+    test_tutor.access_token = token
+    db_session.commit()
+    return token
 
 
 @pytest.fixture
