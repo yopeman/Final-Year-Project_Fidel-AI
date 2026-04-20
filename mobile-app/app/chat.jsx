@@ -5,9 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useChatStore } from '../src/stores/chatStore';
 import { COLORS, BORDER_RADIUS, SPACING } from '../src/constants';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Audio } from 'expo-audio';
-import { Audio as AVAudio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
 import styles from './styles/chatStyle';
 
 const ChatScreen = () => {
@@ -95,7 +94,21 @@ const ChatScreen = () => {
         }
     }, [messages, isLoading]);
 
+    const toggleRecording = async () => {
+        if (isRecording) {
+            await stopRecording();
+        } else {
+            await startRecording();
+        }
+    };
+
     const startRecording = async () => {
+        // Prevent double-start
+        if (recording || isRecording) {
+            console.log('Already recording, ignoring start request');
+            return;
+        }
+
         try {
             console.log('Requesting permissions..');
             const permission = await Audio.requestPermissionsAsync();
@@ -107,17 +120,20 @@ const ChatScreen = () => {
                 });
 
                 console.log('Starting recording..');
-                const { recording } = await Audio.Recording.createAsync(
+                const { recording: newRecording } = await Audio.Recording.createAsync(
                     Audio.RecordingOptionsPresets.HIGH_QUALITY
                 );
-                setRecording(recording);
-                setIsRecording(true);
                 console.log('Recording started');
+                setRecording(newRecording);
+                setIsRecording(true);
             } else {
                 console.error('Permission not granted');
             }
         } catch (err) {
             console.error('Failed to start recording', err);
+            // Reset state on failure
+            setRecording(null);
+            setIsRecording(false);
         }
     };
 
@@ -149,13 +165,13 @@ const ChatScreen = () => {
                 }
             }
 
-            await AVAudio.setAudioModeAsync({
+            await Audio.setAudioModeAsync({
                 playsInSilentModeIOS: true,
                 staysActiveInBackground: false,
                 shouldRouteThroughEarpieceAndroid: false
             });
 
-            const { sound } = await AVAudio.Sound.createAsync(
+            const { sound } = await Audio.Sound.createAsync(
                 audioSource,
                 { shouldPlay: true }
             );
@@ -180,12 +196,21 @@ const ChatScreen = () => {
 
     const stopRecording = async () => {
         console.log('Stopping recording..');
+
+        // Capture recording reference before clearing state
+        const currentRecording = recording;
+        if (!currentRecording) {
+            console.log('No active recording to stop');
+            return;
+        }
+
+        // Clear state first to prevent concurrent operations
         setIsRecording(false);
         setRecording(null);
 
         try {
-            await recording.stopAndUnloadAsync();
-            const uri = recording.getURI();
+            await currentRecording.stopAndUnloadAsync();
+            const uri = currentRecording.getURI();
             console.log('Recording stopped and stored at', uri);
 
             let base64Audio = '';
@@ -392,8 +417,7 @@ const ChatScreen = () => {
                         <View style={styles.inputContainer}>
                             <TouchableOpacity
                                 style={[styles.iconButton, isRecording && styles.recordingButton]}
-                                onPressIn={startRecording}
-                                onPressOut={stopRecording}
+                                onPress={toggleRecording}
                             >
                                 <Ionicons
                                     name={isRecording ? "mic" : "mic-outline"}
