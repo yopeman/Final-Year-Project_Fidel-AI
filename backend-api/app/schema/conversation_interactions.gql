@@ -26,6 +26,6 @@ extend type Query {
 
 extend type Mutation {
   talkWithAi(input: CreateConversationInteractionInput!): ConversationInteractions!
-  possibleTalk(conversationId: ID!): String!
+  possibleTalk(conversationId: ID!): [String!]!
   deleteConversationInteraction(id: ID!): Boolean!
 }

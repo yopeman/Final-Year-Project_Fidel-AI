@@ -110,7 +110,10 @@ export const useChatStore = create(
                 try {
                     set({ isLoading: true, error: null });
                     const response = await aiAPI.possibleTalk(conversationId);
-                    return { success: true, topic: response.data.topic };
+                    // Backend now returns array of suggestions directly
+                    const suggestions = response.data.suggestions || [];
+                    set({ isLoading: false });
+                    return { success: true, suggestions };
                 } catch (error) {
                     set({ isLoading: false });
                     return { success: false, error: error.message || 'Failed to get topics' };

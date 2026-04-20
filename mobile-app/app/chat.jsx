@@ -200,8 +200,9 @@ const ChatScreen = () => {
         if (!audioBase64) setInput('');
 
         const res = await talkWithAi(currentConversation.id, messageText, audioBase64);
+        // Clear suggestions when user sends a new message
         if (res.success) {
-            handleGetSuggestions();
+            setSuggestions([]);
         }
     };
 
@@ -209,8 +210,9 @@ const ChatScreen = () => {
         if (!currentConversation || isGeneratingSuggestions) return;
         setIsGeneratingSuggestions(true);
         const res = await getTopics(currentConversation.id);
-        if (res.success && res.topic) {
-            setSuggestions(res.topic.split("\n").filter(s => s.trim() !== "").slice(0, 3));
+        if (res.success && res.suggestions && res.suggestions.length > 0) {
+            // Take first 3 suggestions from the array
+            setSuggestions(res.suggestions.slice(0, 3));
         }
         setIsGeneratingSuggestions(false);
     };
@@ -326,7 +328,7 @@ const ChatScreen = () => {
                     )}
                 </ScrollView>
 
-                <KeyboardAvoidingView 
+                <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
                     keyboardVerticalOffset={0}
                 >
@@ -345,6 +347,24 @@ const ChatScreen = () => {
                                     ))}
                                 </ScrollView>
                             </View>
+                        )}
+
+                        {/* Bulb icon to generate suggestions */}
+                        {messages.length > 0 && !isLoading && (
+                            <TouchableOpacity
+                                style={styles.suggestionBulbButton}
+                                onPress={handleGetSuggestions}
+                                disabled={isGeneratingSuggestions}
+                            >
+                                {isGeneratingSuggestions ? (
+                                    <ActivityIndicator size="small" color={COLORS.primary} />
+                                ) : (
+                                    <Ionicons name="bulb" size={22} color={COLORS.primary} />
+                                )}
+                                <Text style={styles.suggestionBulbText}>
+                                    {isGeneratingSuggestions ? 'Thinking...' : 'Get ideas'}
+                                </Text>
+                            </TouchableOpacity>
                         )}
 
                         <View style={styles.inputContainer}>

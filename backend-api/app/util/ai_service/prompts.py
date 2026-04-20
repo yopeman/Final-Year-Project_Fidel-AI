@@ -237,3 +237,27 @@ Student: "{question}"
 
 Output ONLY the response. No "That's a great question", no explicit corrections.
 """
+
+POSSIBLE_TALK_PROMPT = """Generate 3 possible things the student could say or ask about in this conversation.
+
+Student: {proficiency}, age {age_range}, native {native_language}, goal: {learning_goal}
+Theme: {topic_summary_phrase}
+Topic: {starting_topic}
+
+Rules:
+- Provide EXACTLY 3 suggestions
+- Each suggestion should be 1-2 sentences the student could say
+- Frame from student's perspective (use "I", "my", "me")
+- Make them natural responses or follow-up questions
+- Match the student's {proficiency} level
+- Stay relevant to the topic theme
+
+History:
+{prev_lesson_interactions}
+
+Output format - EXACTLY 3 lines, one suggestion per line:
+1. First suggestion text
+2. Second suggestion text
+3. Third suggestion text
+
+No numbering, no prefixes, no explanations. Just 3 plain sentences/phrases."""
