@@ -9,7 +9,7 @@ from app.config.database import Base
 class BaseModel(Base):
     __abstract__ = True
 
-    id = Column(String(36), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     is_deleted = Column(Boolean, default=False)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
