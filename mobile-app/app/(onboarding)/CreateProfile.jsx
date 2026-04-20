@@ -83,6 +83,7 @@ const CreateProfile = () => {
                         <TextInput
                             style={styles.input}
                             placeholder="e.g. Amharic, Oromo"
+                            placeholderTextColor="rgba(255, 255, 255, 0.4)"
                             value={formData.nativeLanguage}
                             onChangeText={(text) => setFormData({ ...formData, nativeLanguage: text })}
                         />
@@ -131,6 +132,7 @@ const CreateProfile = () => {
                         <TextInput
                             style={[styles.input, { height: 100 }]}
                             placeholder="e.g. For travel, career, or fun"
+                            placeholderTextColor="rgba(255, 255, 255, 0.4)"
                             multiline
                             value={formData.learningGoal}
                             onChangeText={(text) => setFormData({ ...formData, learningGoal: text })}
@@ -145,6 +147,7 @@ const CreateProfile = () => {
                             <TextInput
                                 style={[styles.input, { flex: 1, marginBottom: 0 }]}
                                 placeholder="30"
+                                placeholderTextColor="rgba(255, 255, 255, 0.4)"
                                 keyboardType="numeric"
                                 value={formData.targetDuration.toString()}
                                 onChangeText={(text) => setFormData({ ...formData, targetDuration: text.replace(/[^0-9]/g, '') })}
@@ -169,6 +172,7 @@ const CreateProfile = () => {
                         <TextInput
                             style={[styles.input, { height: 80 }]}
                             placeholder="e.g. Only available on weekends, etc."
+                            placeholderTextColor="rgba(255, 255, 255, 0.4)"
                             multiline
                             value={formData.constraints}
                             onChangeText={(text) => setFormData({ ...formData, constraints: text })}
