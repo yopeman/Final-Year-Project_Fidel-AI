@@ -49,10 +49,6 @@ def ai_generated_topic(profile: StudentProfile) -> str:
             "proficiency": profile.proficiency,
             "native_language": profile.native_language,
             "learning_goal": profile.learning_goal,
-            "target_duration": profile.target_duration,
-            "duration_unit": profile.duration_unit,
-            "constraints": profile.constraints,
-            "learning_plan": profile.ai_learning_plan,
         }
     )
     return response.content
@@ -94,10 +90,6 @@ def ask_on_conversation(
                 "proficiency": profile.proficiency,
                 "native_language": profile.native_language,
                 "learning_goal": profile.learning_goal,
-                "target_duration": profile.target_duration,
-                "duration_unit": profile.duration_unit,
-                "constraints": profile.constraints,
-                "learning_plan": profile.ai_learning_plan,
                 "starting_topic": conversation.starting_topic,
                 "topic_summary_phrase": conversation.topic_summary_phrase,
                 "prev_lesson_interactions": prev_interactions_str,
@@ -163,10 +155,6 @@ def generate_possible_talk(
                 "proficiency": profile.proficiency,
                 "native_language": profile.native_language,
                 "learning_goal": profile.learning_goal,
-                "target_duration": profile.target_duration,
-                "duration_unit": profile.duration_unit,
-                "constraints": profile.constraints,
-                "learning_plan": profile.ai_learning_plan,
                 "starting_topic": conversation.starting_topic,
                 "topic_summary_phrase": conversation.topic_summary_phrase,
                 "prev_lesson_interactions": prev_interactions_str,

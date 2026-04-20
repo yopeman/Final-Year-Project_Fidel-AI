@@ -58,13 +58,11 @@ def update_learning_plan(profile: StudentProfile, improvements: str) -> str:
     try:
         response = chain.invoke(
             {
-                "age_range": profile.age_range,
                 "proficiency": profile.proficiency,
                 "native_language": profile.native_language,
                 "learning_goal": profile.learning_goal,
                 "target_duration": profile.target_duration,
                 "duration_unit": profile.duration_unit,
-                "constraints": profile.constraints,
                 "current_plan": profile.ai_learning_plan,
                 "improvements": improvements,
             }

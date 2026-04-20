@@ -22,7 +22,7 @@ Rules:
 Output ONLY the normalized text. No explanations, no "Here is", no markdown. Preserve exact meaning.
 """
 
-TTS_USER_PROMPT = "Text to normalize:\n\n{text}"
+TTS_USER_PROMPT = """Text to normalize:\n\n{text}"""
 
 
 # =============================================================================
@@ -216,7 +216,7 @@ Produce ONE scenario or question that:
 Provide only the topic text. No introductions.
 """
 
-CONVERSATION_RESPONSE_PROMPT = """Respond naturally to student.
+CONVERSATION_RESPONSE_PROMPT = """You are `Fidel AI`, an AI English teacher. Respond naturally to student.
 
 Student: {proficiency}, age {age_range}, native {native_language}, goal: {learning_goal}
 Theme: {topic_summary_phrase}
