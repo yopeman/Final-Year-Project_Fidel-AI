@@ -13,6 +13,7 @@ from ..model.batch import Batch
 from ..model.user import User, UserRole
 from ..model.student_profile import StudentProfile
 from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
+from ..model.payment import Payment, PaymentStatus
 from ..util.email_service import send_notification
 
 query = QueryType()
@@ -114,8 +115,9 @@ def resolve_get_course_meeting_link(_, info, courseScheduleId: str):
         BatchEnrollment.batch_id == batch.id,
         BatchEnrollment.is_deleted == False
     ).first()
-    if enrollment.status != EnrollmentStatus.enrolled:
-        raise Exception('Enrollment not paid')
+
+    if not enrollment:
+        raise Exception("Enrollment not found")
 
     
     # Get current time and calculate time difference from start time
