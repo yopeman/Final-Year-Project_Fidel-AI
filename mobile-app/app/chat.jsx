@@ -33,6 +33,7 @@ const ChatScreen = () => {
     const [recording, setRecording] = useState(null);
     const [isRecording, setIsRecording] = useState(false);
     const [playingMessageId, setPlayingMessageId] = useState(null);
+    const [autoPlayedIds, setAutoPlayedIds] = useState(new Set());
     const soundRef = useRef(null);
 
     useEffect(() => {
@@ -70,6 +71,27 @@ const ChatScreen = () => {
             setTimeout(() => {
                 scrollViewRef.current.scrollToEnd({ animated: true });
             }, 100);
+        }
+    }, [messages, isLoading]);
+
+    // Auto-play latest AI message audio
+    useEffect(() => {
+        const autoPlayLatestAiAudio = async () => {
+            // Find the most recent AI message with audio that hasn't been auto-played
+            for (let i = messages.length - 1; i >= 0; i--) {
+                const msg = messages[i];
+                if (msg.aiAudioUrl && !autoPlayedIds.has(msg.id)) {
+                    // Mark as auto-played
+                    setAutoPlayedIds(prev => new Set(prev).add(msg.id));
+                    // Play the audio
+                    await playSound(msg.aiAudioUrl, `${msg.id}-ai`);
+                    break; // Only play the latest one
+                }
+            }
+        };
+
+        if (messages.length > 0 && !isLoading) {
+            autoPlayLatestAiAudio();
         }
     }, [messages, isLoading]);
 

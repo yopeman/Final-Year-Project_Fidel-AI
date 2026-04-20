@@ -214,7 +214,6 @@ async def resolve_talk_with_ai(_, info, input):
 
 @mutation.field("possibleTalk")
 def resolve_possible_talk(_, info, conversationId: str):
-    print(0)
     current_user: User = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -255,7 +254,6 @@ def resolve_possible_talk(_, info, conversationId: str):
     ai_response = generate_possible_talk(profile, conversation, prev_interactions)
     # Split the newline-separated string into an array and filter out empty lines
     suggestions = [s.strip() for s in ai_response.split("\n") if s.strip()]
-    print(suggestions)
     return suggestions
 
 
