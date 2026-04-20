@@ -86,9 +86,6 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
             "proficiency": profile.proficiency,
             "native_language": profile.native_language,
             "learning_goal": profile.learning_goal,
-            "target_duration": profile.target_duration,
-            "duration_unit": profile.duration_unit,
-            "constraints": profile.constraints,
             "learning_plan": profile.ai_learning_plan,
         }
     )
@@ -188,18 +185,12 @@ def _generate_content(
 ) -> str:
     prompts = PromptTemplate.from_template(LESSON_CONTENT_GENERATION_PROMPT).format(
         **{
-            "target_language": "the target language",  # You might want to add this to profile
             "age_range": profile.age_range,
             "proficiency": profile.proficiency,
             "native_language": profile.native_language,
             "learning_goal": profile.learning_goal,
-            "constraints": profile.constraints,
-            "target_duration": profile.target_duration,
-            "learning_plan": profile.ai_learning_plan,
             "module_title": module.name,
-            "module_description": module.description,
             "lesson_title": lesson.name,
-            "lesson_description": lesson.description,
         }
     )
 
@@ -215,16 +206,9 @@ def _generate_vocabularies(
 ) -> str:
     prompts = PromptTemplate.from_template(VOCABULARY_GENERATION_PROMPT).format(
         **{
-            "age_range": profile.age_range,
             "proficiency": profile.proficiency,
             "native_language": profile.native_language,
-            "learning_goal": profile.learning_goal,
-            "constraints": profile.constraints,
-            "module_title": module.name,
-            "module_description": module.description,
             "lesson_title": lesson.name,
-            "lesson_description": lesson.description,
-            "lesson_content": content,
         }
     )
 
