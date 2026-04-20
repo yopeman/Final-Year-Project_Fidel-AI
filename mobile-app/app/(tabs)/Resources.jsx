@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, StatusBar, Animated, RefreshControl
+    ActivityIndicator, StatusBar, Animated, RefreshControl, Linking
 } from 'react-native';
 import { useMaterialStore } from '../../src/stores/materialStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING } from '../../src/constants/theme';
+import { API_BASE_URL } from '../../src/constants';
 import { useBatchStore } from '../../src/stores/batchStore';
-import FileViewerModal from '../../src/components/FileViewerModal';
 import styles, { DARK_BG, DARK_CARD, DARK_BORDER, ACCENT, GOLD, INDIGO } from '../styles/resourcesStyle';
 
 // Per-course palette cycling
@@ -177,9 +177,6 @@ export default function ResourcesScreen() {
     const [selectedCourse, setSelectedCourse] = useState(null);
     const scrollY = useRef(new Animated.Value(0)).current;
 
-    const [viewFileModalVisible, setViewFileModalVisible] = useState(false);
-    const [viewFileUrl, setViewFileUrl] = useState('');
-    const [viewFileTitle, setViewFileTitle] = useState('');
 
     useEffect(() => {
         getCourses(activeBatchId);
@@ -354,9 +351,10 @@ export default function ResourcesScreen() {
                                     index={i}
                                     courseAccent={selectedPalette.accent}
                                     onFilePress={(file) => {
-                                        setViewFileUrl(file.filePath);
-                                        setViewFileTitle(file.fileName);
-                                        setViewFileModalVisible(true);
+                                        if (file.filePath) {
+                                            const baseUrl = API_BASE_URL.replace('/graphql', '');
+                                            Linking.openURL(`${baseUrl}/${file.filePath}`);
+                                        }
                                     }}
                                 />
                             ))
@@ -375,13 +373,6 @@ export default function ResourcesScreen() {
                 )}
             </Animated.ScrollView>
 
-            {/* File Viewer Modal */}
-            <FileViewerModal
-                visible={viewFileModalVisible}
-                onClose={() => setViewFileModalVisible(false)}
-                fileUrl={viewFileUrl}
-                title={viewFileTitle}
-            />
         </View>
     );
 }

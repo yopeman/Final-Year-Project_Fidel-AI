@@ -515,6 +515,7 @@ input UpdateEnrollmentInput {
 extend type Query {
   enrollments(batchId: ID!): [BatchEnrollment!]!
   enrollment(id: ID!): BatchEnrollment!
+  myEnrollments: [BatchEnrollment!]!
 }
 
 extend type Mutation {
@@ -594,6 +595,7 @@ type Batch {
 extend type Query {
   batches: [Batch!]!
   batch(id: ID!): Batch
+  myBatches: [Batch!]!
 }
 
 extend type Mutation {

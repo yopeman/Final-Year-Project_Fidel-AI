@@ -32,6 +32,7 @@ input UpdateEnrollmentInput {
 extend type Query {
   enrollments(batchId: ID!): [BatchEnrollment!]!
   enrollment(id: ID!): BatchEnrollment!
+  myEnrollments: [BatchEnrollment!]!
 }
 
 extend type Mutation {

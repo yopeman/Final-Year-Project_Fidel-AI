@@ -3,14 +3,8 @@ import axios from 'axios';
 import { API_BASE_URL } from '../constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Storage keys for persistence
+// Storage keys for persistence - minimal keys only
 const STORAGE_KEYS = {
-    PREMIUM_UNLOCKED: 'batch_premium_unlocked',
-    ENROLLMENTS: 'batch_enrollments',
-    ENROLLMENT_STATUS: 'batch_enrollment_status',
-    BATCHES: 'batches_cache',
-    LAST_SYNC: 'batch_last_sync',
-    PAYMENTS: 'batch_payments_cache',
     ACTIVE_BATCH_ID: 'batch_active_id'
 };
 
@@ -49,49 +43,6 @@ const graphQLRequest = async (query, variables = {}) => {
     }
 };
 
-// Helper to load persisted data
-const loadPersistedData = async () => {
-    try {
-        const [
-            premiumUnlocked,
-            enrollments,
-            enrollmentStatus,
-            batches,
-            lastSync,
-            payments,
-            activeBatchId
-        ] = await Promise.all([
-            AsyncStorage.getItem(STORAGE_KEYS.PREMIUM_UNLOCKED),
-            AsyncStorage.getItem(STORAGE_KEYS.ENROLLMENTS),
-            AsyncStorage.getItem(STORAGE_KEYS.ENROLLMENT_STATUS),
-            AsyncStorage.getItem(STORAGE_KEYS.BATCHES),
-            AsyncStorage.getItem(STORAGE_KEYS.LAST_SYNC),
-            AsyncStorage.getItem(STORAGE_KEYS.PAYMENTS),
-            AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_BATCH_ID)
-        ]);
-
-        return {
-            premiumUnlocked: premiumUnlocked ? JSON.parse(premiumUnlocked) : false,
-            enrollments: enrollments ? JSON.parse(enrollments) : [],
-            enrollmentStatusGlobal: enrollmentStatus || null,
-            batchesCache: batches ? JSON.parse(batches) : [],
-            paymentsCache: payments ? JSON.parse(payments) : [],
-            lastSync: lastSync || null,
-            activeBatchId: activeBatchId || null
-        };
-    } catch (error) {
-        console.error('Error loading persisted data:', error);
-        return {
-            premiumUnlocked: false,
-            enrollments: [],
-            enrollmentStatusGlobal: null,
-            batchesCache: [],
-            paymentsCache: [],
-            lastSync: null
-        };
-    }
-};
-
 export const useBatchStore = create((set, get) => ({
     // State
     batches: [],
@@ -108,28 +59,24 @@ export const useBatchStore = create((set, get) => ({
     lastSync: null,
     currentPayment: null,
 
-    // Initialize store with persisted data
+    // Initialize store - fetch fresh data on demand instead of loading from cache
     initializeStore: async () => {
         try {
             set({ isLoading: true });
-            const persisted = await loadPersistedData();
-
+            
+            // Initialize with empty state - data will be fetched on demand
             set({
-                premiumUnlocked: persisted.premiumUnlocked,
-                enrollments: persisted.enrollments,
-                enrollmentStatusGlobal: persisted.enrollmentStatusGlobal,
-                batches: persisted.batchesCache,
-                payments: persisted.paymentsCache,
-                lastSync: persisted.lastSync,
-                activeBatchId: persisted.activeBatchId,
+                batches: [],
+                enrollments: [],
+                payments: [],
+                premiumUnlocked: false,
+                enrollmentStatusGlobal: null,
+                lastSync: null,
+                activeBatchId: null,
                 isLoading: false
             });
 
-            console.log('[BatchStore] Initialized with persisted data:', {
-                premiumUnlocked: persisted.premiumUnlocked,
-                enrollmentsCount: persisted.enrollments.length,
-                batchesCount: persisted.batchesCache.length
-            });
+            console.log('[BatchStore] Initialized with empty state - will fetch fresh data on demand');
 
             return { success: true };
         } catch (error) {
@@ -139,39 +86,24 @@ export const useBatchStore = create((set, get) => ({
         }
     },
 
-    // Save current state to persistence
+    // Save current state to persistence - minimal persistence only
     persistState: async () => {
         try {
             const state = get();
+            // Only persist minimal state - batch data is fetched fresh from API
             await Promise.all([
-                AsyncStorage.setItem(STORAGE_KEYS.PREMIUM_UNLOCKED, JSON.stringify(state.premiumUnlocked)),
-                AsyncStorage.setItem(STORAGE_KEYS.ENROLLMENTS, JSON.stringify(state.enrollments)),
-                AsyncStorage.setItem(STORAGE_KEYS.ENROLLMENT_STATUS, JSON.stringify(state.enrollmentStatusGlobal)),
-                AsyncStorage.setItem(STORAGE_KEYS.BATCHES, JSON.stringify(state.batches)),
-                AsyncStorage.setItem(STORAGE_KEYS.PAYMENTS, JSON.stringify(state.payments)),
                 AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_BATCH_ID, state.activeBatchId || ''),
-                AsyncStorage.setItem(STORAGE_KEYS.LAST_SYNC, new Date().toISOString())
             ]);
-            console.log('[BatchStore] State persisted successfully');
+            console.log('[BatchStore] Minimal state persisted successfully');
         } catch (error) {
             console.error('[BatchStore] Persistence error:', error);
         }
     },
 
-    // Fetch all batches with cache support
-    getBatches: async (language = "English", forceRefresh = false) => {
+    // Fetch all batches - always fetch fresh data from API
+    getBatches: async (language = "English") => {
         try {
             set({ isLoading: true, error: null });
-
-            // Check cache
-            const state = get();
-            const cacheAge = state.lastSync ? (Date.now() - new Date(state.lastSync).getTime()) / 1000 : null;
-
-            if (!forceRefresh && state.batches.length > 0 && cacheAge && cacheAge < 300) {
-                console.log('[BatchStore] Using cached batches');
-                set({ isLoading: false });
-                return { success: true, batches: state.batches, cached: true };
-            }
 
             const query = `
                 query GetBatches {
@@ -198,15 +130,53 @@ export const useBatchStore = create((set, get) => ({
 
             set({
                 batches: data.batches,
-                isLoading: false,
-                lastSync: new Date().toISOString()
+                isLoading: false
             });
-
-            await get().persistState();
 
             return { success: true, batches: data.batches };
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch batches';
+            set({ error: errorMsg, isLoading: false });
+            return { success: false, error: errorMsg };
+        }
+    },
+
+    // Fetch current user's enrolled batches only
+    getMyBatches: async () => {
+        try {
+            set({ isLoading: true, error: null });
+
+            const query = `
+                query GetMyBatches {
+                    myBatches {
+                        id
+                        name
+                        description
+                        level
+                        language
+                        startDate
+                        endDate
+                        status
+                        feeAmount
+                        maxStudents
+                        enrollments {
+                            id
+                            status
+                        }
+                    }
+                }
+            `;
+
+            const data = await graphQLRequest(query);
+
+            set({
+                batches: data.myBatches,
+                isLoading: false
+            });
+
+            return { success: true, batches: data.myBatches };
+        } catch (error) {
+            const errorMsg = error.message || 'Failed to fetch my batches';
             set({ error: errorMsg, isLoading: false });
             return { success: false, error: errorMsg };
         }
@@ -271,72 +241,50 @@ export const useBatchStore = create((set, get) => ({
         }
     },
 
-    // Check enrollment status
+    // Check enrollment status - always fetch from server using myEnrollments
     checkEnrollmentStatus: async (batchId) => {
         try {
             set({ isLoading: true, error: null });
 
-            // Check local enrollments first
-            const state = get();
-            const localEnrollment = state.enrollments.find(e => e.batch?.id === batchId);
-
-            if (localEnrollment) {
-                const isPremium = localEnrollment.status === 'ENROLLED' || localEnrollment.status === 'COMPLETED';
-                set({
-                    isLoading: false,
-                    premiumUnlocked: isPremium || state.premiumUnlocked,
-                    enrollmentStatusGlobal: isPremium ? 'ENROLLED' : state.enrollmentStatusGlobal
-                });
-                return {
-                    isEnrolled: true,
-                    status: localEnrollment.status,
-                    enrollmentId: localEnrollment.id,
-                    cached: true
-                };
-            }
-
-            // Fetch from API
+            // Always fetch from API using myEnrollments query
             const query = `
                 query GetMyEnrollments {
-                    me {
-                        batchEnrollments {
+                    myEnrollments {
+                        id
+                        status
+                        enrollmentDate
+                        batch {
+                            id
+                            name
+                            feeAmount
+                        }
+                        payments {
                             id
                             status
-                            enrollmentDate
-                            batch {
-                                id
-                                name
-                                feeAmount
-                            }
-                            payments {
-                                id
-                                status
-                                amount
-                            }
+                            amount
                         }
                     }
                 }
             `;
 
             const data = await graphQLRequest(query);
-            const enrollments = data?.me?.batchEnrollments || [];
+            const enrollments = data?.myEnrollments || [];
+
+            // Update local state with fresh data
+            set({ enrollments: enrollments });
 
             // Find enrollment for this batch
             const enrollment = enrollments.find(e => e.batch.id === batchId);
 
             if (enrollment) {
                 const uiStatus = enrollment.status === 'APPLIED' ? 'PENDING' : enrollment.status;
-
-                // Update local enrollments and global state
                 const isPremium = enrollment.status === 'ENROLLED' || enrollment.status === 'COMPLETED';
-                set(state => ({
-                    enrollments: [...state.enrollments, enrollment],
-                    premiumUnlocked: isPremium || state.premiumUnlocked,
-                    enrollmentStatusGlobal: isPremium ? 'ENROLLED' : state.enrollmentStatusGlobal,
-                    isLoading: false
-                }));
 
-                await get().persistState();
+                set({
+                    premiumUnlocked: isPremium,
+                    enrollmentStatusGlobal: isPremium ? 'ENROLLED' : uiStatus,
+                    isLoading: false
+                });
 
                 return {
                     isEnrolled: true,
@@ -351,6 +299,54 @@ export const useBatchStore = create((set, get) => ({
             console.error("Check enrollment failed", error);
             set({ isLoading: false, error: error.message });
             return { isEnrolled: false, status: null, error: error.message };
+        }
+    },
+
+    // Fetch current user's enrollments only
+    getMyEnrollments: async () => {
+        try {
+            set({ isLoading: true, error: null });
+
+            const query = `
+                query GetMyEnrollments {
+                    myEnrollments {
+                        id
+                        status
+                        enrollmentDate
+                        batch {
+                            id
+                            name
+                            feeAmount
+                        }
+                        payments {
+                            id
+                            status
+                            amount
+                        }
+                    }
+                }
+            `;
+
+            const data = await graphQLRequest(query);
+            const enrollments = data?.myEnrollments || [];
+
+            // Check for any enrolled/completed status
+            const hasPremium = enrollments.some(e =>
+                e.status === 'ENROLLED' || e.status === 'COMPLETED'
+            );
+
+            set({
+                enrollments: enrollments,
+                premiumUnlocked: hasPremium,
+                enrollmentStatusGlobal: hasPremium ? 'ENROLLED' : (enrollments[0]?.status || null),
+                isLoading: false
+            });
+
+            return { success: true, enrollments };
+        } catch (error) {
+            const errorMsg = error.message || 'Failed to fetch my enrollments';
+            set({ error: errorMsg, isLoading: false });
+            return { success: false, error: errorMsg };
         }
     },
 
@@ -382,8 +378,6 @@ export const useBatchStore = create((set, get) => ({
                 enrollmentStatusGlobal: newEnrollment.status,
                 isLoading: false
             }));
-
-            await get().persistState();
 
             return { success: true, enrollment: newEnrollment };
         } catch (error) {
@@ -436,8 +430,6 @@ export const useBatchStore = create((set, get) => ({
                 isLoading: false
             }));
 
-            await get().persistState();
-
             return { success: true, payment };
         } catch (error) {
             const errorMsg = error.message || 'Failed to initiate payment';
@@ -469,8 +461,6 @@ export const useBatchStore = create((set, get) => ({
                 payments: state.payments.map(p => p.id === paymentId ? canceledPayment : p),
                 isLoading: false
             }));
-
-            await get().persistState();
 
             return { success: true, payment: canceledPayment };
         } catch (error) {
@@ -548,8 +538,6 @@ export const useBatchStore = create((set, get) => ({
                     };
                 });
 
-                // Persist the unlocked state
-                await get().persistState();
 
                 return {
                     success: true,
@@ -599,12 +587,11 @@ export const useBatchStore = create((set, get) => ({
         }
     },
 
-    // Also fix checkPaymentStatus to not auto-verify
+    // Check payment status - query server for current status
     checkPaymentStatus: async (enrollmentId) => {
         try {
             set({ isLoading: true, error: null });
 
-            // Query for payment status only - don't auto-verify
             const paymentQuery = `
             query GetPayments($enrollmentId: ID!) {
                 payments(enrollmentId: $enrollmentId) {
@@ -629,40 +616,18 @@ export const useBatchStore = create((set, get) => ({
             const payments = paymentData?.payments || [];
             const completedPayment = payments.find(p => p.status === 'COMPLETED');
 
-            // Check if enrollment already shows premium
-            const hasPremiumEnrollment = payments.some(p =>
-                p.enrollment?.status === 'ENROLLED'
-            );
-
-            // CRITICAL FIX: Don't auto-verify here - just report status
-            if (hasPremiumEnrollment || completedPayment) {
-                set({
-                    premiumUnlocked: true,
-                    enrollmentStatusGlobal: 'ENROLLED',
-                    payments: payments,
-                    currentPayment: completedPayment || payments[0],
-                    isLoading: false
-                });
-
-                return {
-                    success: true,
-                    status: 'COMPLETED',
-                    payment: completedPayment,
-                    verified: true // Already verified
-                };
-            }
-
+            // Update state with server data
             set({
-                isLoading: false,
                 payments: payments,
-                currentPayment: payments[0] || null
+                currentPayment: completedPayment || payments[0] || null,
+                isLoading: false
             });
 
             return {
                 success: true,
-                status: payments[0]?.status || 'PENDING',
+                status: completedPayment ? 'COMPLETED' : (payments[0]?.status || 'PENDING'),
                 payments,
-                payment: payments[0] || null
+                payment: completedPayment || payments[0] || null
             };
 
         } catch (error) {
@@ -721,8 +686,6 @@ export const useBatchStore = create((set, get) => ({
                     isLoading: false
                 }));
             }
-
-            await get().persistState();
 
             return { success: true, payment };
         } catch (error) {
@@ -942,7 +905,6 @@ export const useBatchStore = create((set, get) => ({
                 enrollmentStatusGlobal: hasPremium ? 'ENROLLED' : (enrollments[0]?.status || null)
             });
 
-            await get().persistState();
             return { success: true };
         } catch (error) {
             console.error('[BatchStore] Sync error:', error);
@@ -950,12 +912,12 @@ export const useBatchStore = create((set, get) => ({
         }
     },
 
-    // Set active batch and persist
+    // Set active batch
     setActiveBatchId: async (batchId) => {
         try {
             console.log('[BatchStore] Setting active batch ID:', batchId);
             set({ activeBatchId: batchId });
-            await get().persistState();
+            await get().persistState(); // Keep persisting activeBatchId for UX continuity
             return { success: true };
         } catch (error) {
             console.error('[BatchStore] Error setting active batch:', error);
@@ -1003,12 +965,7 @@ export const useBatchStore = create((set, get) => ({
     clearPersistedData: async () => {
         try {
             await Promise.all([
-                AsyncStorage.removeItem(STORAGE_KEYS.PREMIUM_UNLOCKED),
-                AsyncStorage.removeItem(STORAGE_KEYS.ENROLLMENTS),
-                AsyncStorage.removeItem(STORAGE_KEYS.ENROLLMENT_STATUS),
-                AsyncStorage.removeItem(STORAGE_KEYS.BATCHES),
-                AsyncStorage.removeItem(STORAGE_KEYS.PAYMENTS),
-                AsyncStorage.removeItem(STORAGE_KEYS.LAST_SYNC)
+                AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_BATCH_ID)
             ]);
 
             // Reset state
@@ -1023,6 +980,7 @@ export const useBatchStore = create((set, get) => ({
                 enrollmentStatusGlobal: null,
                 lastSync: null,
                 currentPayment: null,
+                activeBatchId: null,
                 error: null
             });
 
@@ -1041,7 +999,6 @@ export const useBatchStore = create((set, get) => ({
             enrollmentStatusGlobal: null,
             currentPayment: null
         });
-        await get().persistState();
     },
 
     // Clear error
