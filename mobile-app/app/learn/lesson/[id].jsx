@@ -123,6 +123,7 @@ function AskAITab({ lessonId }) {
                     value={message}
                     onChangeText={setMessage}
                     placeholder="Ask a question..."
+                    placeholderTextColor="rgba(255, 255, 255, 0.4)"
                     style={styles.chatInput}
                 />
                 <Button

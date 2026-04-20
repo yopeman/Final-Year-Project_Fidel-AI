@@ -1,4 +1,5 @@
 from typing import List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_core.messages import HumanMessage
@@ -62,6 +63,22 @@ def youtube_search(search_terms: str, max_results=5, retries=3):
     return videos
 
 
+def _process_lesson_resources(profile: StudentProfile, module: ModuleOutput, lesson: LessonOutput, content: str):
+    """Process vocabulary generation, web search, and YouTube search in parallel for a lesson."""
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        vocab_future = executor.submit(
+            _generate_vocabularies, profile, module, lesson, content
+        )
+        articles_future = executor.submit(web_search.invoke, lesson.name)
+        videos_future = executor.submit(youtube_search, lesson.name)
+        
+        vocabularies = vocab_future.result()
+        articles = articles_future.result()[:5]
+        videos = videos_future.result()[:5]
+    
+    return vocabularies, articles, videos
+
+
 def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
     prompts = PromptTemplate.from_template(INSTALL_LEARNING_PLAN_PROMPT).format(
         **{
@@ -92,8 +109,26 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
         db.add(new_module)
         db.flush()
 
-        for j, lesson in enumerate(module.lessons, start=1):
-            content = _generate_content(profile, module, lesson)
+        # Generate content for all lessons in parallel
+        lesson_data = []
+        with ThreadPoolExecutor() as executor:
+            future_to_lesson = {
+                executor.submit(_generate_content, profile, module, lesson): (j, lesson)
+                for j, lesson in enumerate(module.lessons, start=1)
+            }
+            
+            for future in as_completed(future_to_lesson):
+                j, lesson = future_to_lesson[future]
+                try:
+                    content = future.result()
+                    lesson_data.append((j, lesson, content))
+                except Exception as e:
+                    print(f"Error generating content for lesson {lesson.name}: {e}")
+        
+        # Sort lessons by display order to maintain sequence
+        lesson_data.sort(key=lambda x: x[0])
+        
+        for j, lesson, content in lesson_data:
             new_lesson = ModuleLessons(
                 module_id=new_module.id,
                 title=lesson.name,
@@ -104,9 +139,11 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
             db.add(new_lesson)
             db.flush()
 
-            vocabularies: VocabularyResponse = _generate_vocabularies(
+            # Process vocabularies, articles, and videos in parallel
+            vocabularies, articles, videos = _process_lesson_resources(
                 profile, module, lesson, content
             )
+            
             for vocabulary in vocabularies.vocabularies:
                 new_vocabulary = LessonVocabularies(
                     lesson_id=new_lesson.id,
@@ -115,9 +152,7 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
                     description=vocabulary.description,
                 )
                 db.add(new_vocabulary)
-                db.flush()
 
-            articles = web_search.invoke(lesson.name)[:5]
             for article in articles:
                 new_article = LessonOnlineArticles(
                     lesson_id=new_lesson.id,
@@ -127,9 +162,7 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
                     page_url=article.get("link", ""),
                 )
                 db.add(new_article)
-                db.flush()
 
-            videos = youtube_search(lesson.name)[:5]
             for video in videos:
                 new_video = LessonYouTubeVideos(
                     lesson_id=new_lesson.id,
@@ -143,7 +176,8 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
                     video_url=video.get("full_url", ""),
                 )
                 db.add(new_video)
-                db.flush()
+            
+            db.flush()
 
     db.commit()
     return True

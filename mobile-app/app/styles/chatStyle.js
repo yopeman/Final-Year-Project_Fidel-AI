@@ -105,6 +105,29 @@ export default StyleSheet.create({
         color: '#fff',
         lineHeight: 22,
     },
+    messageFooter: {
+        marginTop: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+    },
+    speakerButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: 12,
+    },
+    audioLabel: {
+        fontSize: 12,
+        color: 'rgba(255, 255, 255, 0.8)',
+        marginLeft: 6,
+        fontWeight: '500',
+    },
+    userAudioLabel: {
+        color: COLORS.primary,
+    },
     userMessageText: {
         color: COLORS.primary,
     },
@@ -141,6 +164,25 @@ export default StyleSheet.create({
     suggestionText: {
         color: '#D1D5DB',
         fontSize: 14,
+    },
+    suggestionBulbButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 8,
+        marginBottom: 12,
+        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(251, 191, 36, 0.3)',
+        alignSelf: 'flex-start',
+        paddingHorizontal: 14,
+    },
+    suggestionBulbText: {
+        color: COLORS.primary,
+        fontSize: 13,
+        marginLeft: 6,
+        fontWeight: '500',
     },
     inputContainer: {
         flexDirection: 'row',

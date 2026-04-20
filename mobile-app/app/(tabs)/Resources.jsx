@@ -1,14 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, StatusBar, Animated, RefreshControl
+    ActivityIndicator, StatusBar, Animated, RefreshControl, Linking
 } from 'react-native';
 import { useMaterialStore } from '../../src/stores/materialStore';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING } from '../../src/constants/theme';
+import { API_BASE_URL } from '../../src/constants';
 import { useBatchStore } from '../../src/stores/batchStore';
-import FileViewerModal from '../../src/components/FileViewerModal';
+import PremiumMenu from '../../src/components/PremiumMenu';
 import styles, { DARK_BG, DARK_CARD, DARK_BORDER, ACCENT, GOLD, INDIGO } from '../styles/resourcesStyle';
 
 // Per-course palette cycling
@@ -175,11 +176,9 @@ export default function ResourcesScreen() {
     const { courses, materials, isLoading, getCourses, getMaterials } = useMaterialStore();
     const { activeBatchId } = useBatchStore();
     const [selectedCourse, setSelectedCourse] = useState(null);
+    const [menuVisible, setMenuVisible] = useState(false);
     const scrollY = useRef(new Animated.Value(0)).current;
 
-    const [viewFileModalVisible, setViewFileModalVisible] = useState(false);
-    const [viewFileUrl, setViewFileUrl] = useState('');
-    const [viewFileTitle, setViewFileTitle] = useState('');
 
     useEffect(() => {
         getCourses(activeBatchId);
@@ -216,12 +215,28 @@ export default function ResourcesScreen() {
         <View style={styles.root}>
             <StatusBar barStyle="light-content" />
 
+            <PremiumMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
+
             {/* ── Hero Banner ── */}
             <LinearGradient colors={['#0A2540', '#0D1B2A', '#080C14']}
                 style={styles.heroBanner} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 {/* Glow blob */}
                 <View style={styles.glowBlob} />
                 <View style={styles.glowBlob2} />
+
+                {/* Header Row with Menu */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                    <TouchableOpacity
+                        onPress={() => setMenuVisible(true)}
+                        style={{
+                            width: 40, height: 40, borderRadius: 12,
+                            backgroundColor: 'rgba(255,255,255,0.08)',
+                            alignItems: 'center', justifyContent: 'center',
+                        }}
+                    >
+                        <Ionicons name="menu" size={26} color="#fff" />
+                    </TouchableOpacity>
+                </View>
 
                 <Animated.View style={{ transform: [{ translateY: headerTranslate }], opacity: headerOpacity }}>
                     {/* Eyebrow */}
@@ -354,9 +369,10 @@ export default function ResourcesScreen() {
                                     index={i}
                                     courseAccent={selectedPalette.accent}
                                     onFilePress={(file) => {
-                                        setViewFileUrl(file.filePath);
-                                        setViewFileTitle(file.fileName);
-                                        setViewFileModalVisible(true);
+                                        if (file.filePath) {
+                                            const baseUrl = API_BASE_URL.replace('/graphql', '');
+                                            Linking.openURL(`${baseUrl}/${file.filePath}`);
+                                        }
                                     }}
                                 />
                             ))
@@ -375,13 +391,6 @@ export default function ResourcesScreen() {
                 )}
             </Animated.ScrollView>
 
-            {/* File Viewer Modal */}
-            <FileViewerModal
-                visible={viewFileModalVisible}
-                onClose={() => setViewFileModalVisible(false)}
-                fileUrl={viewFileUrl}
-                title={viewFileTitle}
-            />
         </View>
     );
 }

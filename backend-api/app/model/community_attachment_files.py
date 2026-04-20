@@ -8,7 +8,7 @@ class CommunityAttachmentFiles(BaseModel):
     __tablename__ = "community_attachment_files"
 
     community_id = Column(
-        String(36), ForeignKey("batch_communities.id"), nullable=False
+        String(36), ForeignKey("batch_communities.id", ondelete="CASCADE"), nullable=False
     )
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=False)

@@ -213,7 +213,7 @@ def resolve_get_exam_link(_, info, enrollmentId):
             raise Exception("Unauthorized: You can only view your own exam link")
     
     # Return the exam link
-    return f"https://meet.jit.si/{enrollmentId}"
+    return f"{settings.frontend_url}/exam/{enrollmentId}"
 
 
 @mutation.field("createSkill")
@@ -653,7 +653,7 @@ def resolve_send_exam_link(_, info, input):
     ).first()
     
     # Create the exam link
-    exam_link = f"{settings.frontend_url}/exam/{enrollment_id}?link=https://meet.jit.si/{enrollment_id}"
+    exam_link = f"{settings.frontend_url}/exam/{enrollment_id}"
     
     # Format exam date for notification
     exam_date_str = ""

@@ -14,8 +14,8 @@ class InstructorRole(PyEnum):
 class BatchInstructor(BaseModel):
     __tablename__ = "batch_instructors"
 
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
-    batch_course_id = Column(String(36), ForeignKey("batch_courses.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    batch_course_id = Column(String(36), ForeignKey("batch_courses.id", ondelete="CASCADE"), nullable=False)
     role = Column(Enum(InstructorRole), nullable=False)
 
     # Relationships

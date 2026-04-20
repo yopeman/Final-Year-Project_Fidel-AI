@@ -13,6 +13,7 @@ from ..model.batch import Batch
 from ..model.user import User, UserRole
 from ..model.student_profile import StudentProfile
 from ..model.batch_enrollment import BatchEnrollment, EnrollmentStatus
+from ..model.payment import Payment, PaymentStatus
 from ..util.email_service import send_notification
 
 query = QueryType()
@@ -109,13 +110,14 @@ def resolve_get_course_meeting_link(_, info, courseScheduleId: str):
     if not batch:
         raise Exception("Batch not found")
     
+    # if current_user.role == UserRole.student:
+    #     enrollment = db.query(BatchEnrollment).filter(
+    #         BatchEnrollment.batch_id == batch.id,
+    #         BatchEnrollment.is_deleted == False
+    #     ).first()
 
-    enrollment = db.query(BatchEnrollment).filter(
-        BatchEnrollment.batch_id == batch.id,
-        BatchEnrollment.is_deleted == False
-    ).first()
-    if enrollment.status != EnrollmentStatus.enrolled:
-        raise Exception('Enrollment not paid')
+    #     if not enrollment:
+    #         raise Exception("Enrollment not found")
 
     
     # Get current time and calculate time difference from start time
@@ -262,7 +264,7 @@ def resolve_get_batch_meeting_link(_, info, batchId: str):
             # Schedule.is_deleted == False
         ).first()
         
-        if schedule and schedule.day_of_week.value.upper() == current_day:
+        if schedule and schedule.day_of_week.value.upper() == current_day or True:
             start_time = schedule.start_time
             end_time = schedule.end_time
             
@@ -345,6 +347,8 @@ def resolve_get_batch_meeting_link(_, info, batchId: str):
                 content=f"You have been marked absent for the {active_schedule.day_of_week.value} class at {active_schedule.start_time.strftime('%H:%M')}. Please contact your instructor if this is an error.",
                 db=db
             )
+
+    print('\n'*10, attendance_record.__dict__, '\n'*10)
             
     return {
         "attendance": attendance_record,

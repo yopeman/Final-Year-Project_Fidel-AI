@@ -229,6 +229,7 @@ const VerifyScreen = () => {
                 <KeyboardAvoidingView
                     style={styles.keyboardView}
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={0}
                 >
                     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                         <View style={styles.content}>

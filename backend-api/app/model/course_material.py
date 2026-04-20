@@ -7,10 +7,15 @@ from .base import BaseModel
 class CourseMaterial(BaseModel):
     __tablename__ = "course_materials"
 
-    course_id = Column(String(36), ForeignKey("courses.id"), nullable=False)
+    course_id = Column(String(36), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
 
     # Relationships
     course = relationship("Course", back_populates="materials")
-    files = relationship("MaterialFiles", back_populates="material")
+    files = relationship(
+        "MaterialFiles",
+        back_populates="material",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

@@ -515,6 +515,7 @@ input UpdateEnrollmentInput {
 extend type Query {
   enrollments(batchId: ID!): [BatchEnrollment!]!
   enrollment(id: ID!): BatchEnrollment!
+  myEnrollments: [BatchEnrollment!]!
 }
 
 extend type Mutation {
@@ -594,6 +595,7 @@ type Batch {
 extend type Query {
   batches: [Batch!]!
   batch(id: ID!): Batch
+  myBatches: [Batch!]!
 }
 
 extend type Mutation {
@@ -655,7 +657,7 @@ extend type Query {
 
 extend type Mutation {
   talkWithAi(input: CreateConversationInteractionInput!): ConversationInteractions!
-  possibleTalk(conversationId: ID!): String!
+  possibleTalk(conversationId: ID!): [String!]!
   deleteConversationInteraction(id: ID!): Boolean!
 }
 
@@ -870,6 +872,7 @@ type Course {
 extend type Query {
   courses: [Course!]!
   course(id: ID!): Course
+  myCourses: [BatchCourse!]!
 }
 
 extend type Mutation {
@@ -1639,4 +1642,21 @@ extend type Query {
 extend type Mutation {
   updateArticle(id: ID!, input: UpdateArticleInput!): LessonOnlineArticles!
   deleteArticle(id: ID!): Boolean!
+}
+
+
+type ExamMessage {
+    id: String!
+    roomId: String!
+    senderName: String!
+    content: String!
+    createdAt: DateTime!
+}
+
+extend type Mutation {
+    sendExamMessage(roomId: String!, content: String!, senderName: String!): ExamMessage!
+}
+
+extend type Subscription {
+    examMessageReceived(roomId: String!): ExamMessage!
 }

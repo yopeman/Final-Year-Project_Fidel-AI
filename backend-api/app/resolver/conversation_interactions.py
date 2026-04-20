@@ -252,7 +252,9 @@ def resolve_possible_talk(_, info, conversationId: str):
 
     # Generate possible talk idea
     ai_response = generate_possible_talk(profile, conversation, prev_interactions)
-    return ai_response
+    # Split the newline-separated string into an array and filter out empty lines
+    suggestions = [s.strip() for s in ai_response.split("\n") if s.strip()]
+    return suggestions
 
 
 @mutation.field("deleteConversationInteraction")

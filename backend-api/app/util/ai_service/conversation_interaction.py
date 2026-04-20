@@ -15,6 +15,7 @@ from .prompts import (
     TOPIC_SUMMARY_PROMPT,
     TOPIC_GENERATION_PROMPT,
     CONVERSATION_RESPONSE_PROMPT,
+    POSSIBLE_TALK_PROMPT,
 )
 
 # Prompt templates imported from .prompts module
@@ -133,7 +134,8 @@ def generate_possible_talk(
     prev_conversation_interactions: List[ConversationInteractions],
 ) -> str:
     """
-    Generate an AI response for language learning conversation interactions.
+    Generate 3 possible things the student could say in this conversation.
+    Returns newline-separated suggestions that will be split into an array by the resolver.
     """
     if not profile:
         raise ValueError("Student profile is required")
@@ -141,17 +143,18 @@ def generate_possible_talk(
     if not conversation:
         raise ValueError("Conversation is required")
 
-    # Format previous interactions
+    # Format previous interactions (last 3 exchanges for context)
     prev_interactions_str = ""
-    interaction = None
     if prev_conversation_interactions:
         interactions = []
-        for interaction in prev_conversation_interactions:
-            interactions.append(f"AI: {interaction.student_text}")
-            interactions.append(f"Student: {interaction.ai_text}")
+        # Take last 3 exchanges only to keep context relevant
+        recent = prev_conversation_interactions[-3:] if len(prev_conversation_interactions) > 3 else prev_conversation_interactions
+        for interaction in recent:
+            interactions.append(f"Student: {interaction.student_text}")
+            interactions.append(f"AI: {interaction.ai_text}")
         prev_interactions_str = "\n".join(interactions) + "\n"
 
-    prompts = PromptTemplate.from_template(CONVERSATION_RESPONSE_PROMPT)
+    prompts = PromptTemplate.from_template(POSSIBLE_TALK_PROMPT)
     try:
         chain = prompts | llm
         response = chain.invoke(
@@ -167,11 +170,10 @@ def generate_possible_talk(
                 "starting_topic": conversation.starting_topic,
                 "topic_summary_phrase": conversation.topic_summary_phrase,
                 "prev_lesson_interactions": prev_interactions_str,
-                "question": '' if interaction is None else interaction.ai_text,
             }
         )
         return response.content.strip()
 
     except Exception as e:
         print(e)
-        return f"I'm sorry, I encountered an issue while processing your question. Please try again or contact support. Error: {str(e)}"
+        return "What do you think about this?\nCan you tell me more?\nI have a question about that."

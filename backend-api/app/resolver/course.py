@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from ..model.course import Course
 from ..model.course_material import CourseMaterial
 from ..model.batch_course import BatchCourse
+from ..model.batch_instructor import BatchInstructor
 from ..model.user import User
 
 
@@ -38,6 +39,26 @@ def resolve_course(_, info, id):
     if not course:
         raise Exception("Course not found")
     return course
+
+@query.field("myCourses")
+def resolve_my_courses(_, info):
+    current_user = info.context.get("current_user")
+    if not current_user:
+        raise Exception("Not authenticated")
+
+    db: Session = info.context["db"]
+
+    # Get batch courses where the current user is an instructor
+    batch_courses = db.query(BatchCourse).join(
+        BatchInstructor,
+        BatchInstructor.batch_course_id == BatchCourse.id
+    ).filter(
+        BatchInstructor.user_id == current_user.id,
+        BatchCourse.is_deleted == False,
+        BatchInstructor.is_deleted == False
+    ).all()
+
+    return batch_courses
 
 @mutation.field("createCourse")
 def resolve_create_course(_, info, input):

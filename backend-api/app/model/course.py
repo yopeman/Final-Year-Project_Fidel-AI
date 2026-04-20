@@ -11,5 +11,15 @@ class Course(BaseModel):
     description = Column(Text, nullable=True)
 
     # Relationships
-    materials = relationship("CourseMaterial", back_populates="course")
-    batch_courses = relationship("BatchCourse", back_populates="course")
+    materials = relationship(
+        "CourseMaterial",
+        back_populates="course",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    batch_courses = relationship(
+        "BatchCourse",
+        back_populates="course",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

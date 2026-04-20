@@ -7,7 +7,9 @@ from .base import BaseModel
 class Modules(BaseModel):
     __tablename__ = "modules"
 
-    profile_id = Column(String(36), ForeignKey("student_profiles.id"), nullable=False)
+    profile_id = Column(
+        String(36), ForeignKey("student_profiles.id", ondelete="CASCADE"), nullable=False
+    )
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
     display_order = Column(Integer, nullable=False)
@@ -15,4 +17,9 @@ class Modules(BaseModel):
 
     # Relationships
     profile = relationship("StudentProfile", back_populates="modules")
-    lessons = relationship("ModuleLessons", back_populates="module")
+    lessons = relationship(
+        "ModuleLessons",
+        back_populates="module",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

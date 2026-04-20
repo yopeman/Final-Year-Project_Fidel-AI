@@ -8,13 +8,18 @@ class CommunityComment(BaseModel):
     __tablename__ = "community_comments"
 
     community_id = Column(
-        String(36), ForeignKey("batch_communities.id"), nullable=False
+        String(36), ForeignKey("batch_communities.id", ondelete="CASCADE"), nullable=False
     )
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content = Column(Text, nullable=False)
     is_edited = Column(Boolean, default=False)
 
     # Relationships
     community = relationship("BatchCommunity", back_populates="comments")
     user = relationship("User", back_populates="community_comments")
-    reactions = relationship("CommentReactions", back_populates="comment")
+    reactions = relationship(
+        "CommentReactions",
+        back_populates="comment",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

@@ -7,7 +7,7 @@ from .base import BaseModel
 class LessonOnlineArticles(BaseModel):
     __tablename__ = "lesson_online_articles"
 
-    lesson_id = Column(String(36), ForeignKey("module_lessons.id"), nullable=False)
+    lesson_id = Column(String(36), ForeignKey("module_lessons.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(200), nullable=False)
     favicon_url = Column(String(500), nullable=True)
     description = Column(Text, nullable=True)

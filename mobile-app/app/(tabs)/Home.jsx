@@ -47,11 +47,11 @@ const HomeScreen = () => {
     const {
         batches,
         enrollments,
-        getBatches,
+        getMyBatches,
+        getMyEnrollments,
         isLoading: batchLoading,
         premiumUnlocked,
-        initializeStore,
-        syncWithProfile
+        initializeStore
     } = useBatchStore();
 
     // Initialize store with persisted data
@@ -59,11 +59,10 @@ const HomeScreen = () => {
         const init = async () => {
             try {
                 await initializeStore();
-                if (user?.profile) {
-                    await syncWithProfile(user.profile);
-                }
+                // Fetch user's enrollments directly from API
+                await getMyEnrollments();
                 setIsInitialized(true);
-                console.log('[Home] Store initialized, premium status:', premiumUnlocked);
+                console.log('[Home] Store initialized, enrollments loaded:', enrollments.length);
             } catch (error) {
                 console.error('[Home] Initialization error:', error);
                 setIsInitialized(true);
@@ -73,16 +72,16 @@ const HomeScreen = () => {
         init();
     }, []);
 
-    // Re-sync when user changes
+    // Re-fetch when user changes
     useEffect(() => {
         const syncUserData = async () => {
-            if (user?.profile && isInitialized) {
-                await syncWithProfile(user.profile);
+            if (user?.id && isInitialized) {
+                await getMyEnrollments();
             }
         };
 
         syncUserData();
-    }, [user?.id, user?.profile, isInitialized]);
+    }, [user?.id, isInitialized]);
 
     // Fetch data on mount
     useEffect(() => {
@@ -93,7 +92,8 @@ const HomeScreen = () => {
         await Promise.all([
             getModules(),
             getProgress(),
-            getBatches(),
+            getMyEnrollments(),
+            getMyBatches(),
             getNotifications()
         ]);
     };
@@ -112,10 +112,7 @@ const HomeScreen = () => {
 
     const onRefresh = React.useCallback(async () => {
         await fetchData();
-        if (user?.profile) {
-            await syncWithProfile(user.profile);
-        }
-    }, [user?.profile]);
+    }, []);
 
     // Get enrolled batches with full details
     const enrolledBatches = React.useMemo(() => {

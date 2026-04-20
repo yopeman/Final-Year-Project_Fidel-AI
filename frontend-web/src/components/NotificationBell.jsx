@@ -195,7 +195,7 @@ const NotificationBell = ({ userId }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="fixed w-96 max-w-[calc(100vw-1rem)] glass-premium rounded-[1.5rem] shadow-2xl border border-white/10 z-[1000] overflow-hidden bg-[#0D1B2A]/95 backdrop-blur-xl"
+            className="fixed w-96 max-w-[calc(100vw-1rem)] glass-premium rounded-[1.5rem] shadow-2xl border border-white/10 z-[9999] overflow-hidden bg-[#0D1B2A]/95 backdrop-blur-xl"
             style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
           >
             <div className="flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-white/5 to-transparent">
@@ -309,7 +309,7 @@ const NotificationBell = ({ userId }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[1100] p-4"
+            className="fixed inset-0 bg-[#080C14]/80 backdrop-blur-md flex items-center justify-center z-[10000] p-4"
             onClick={() => setSelectedNotification(null)}
           >
             <motion.div

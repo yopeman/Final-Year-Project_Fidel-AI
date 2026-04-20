@@ -5,8 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useChatStore } from '../src/stores/chatStore';
 import { COLORS, BORDER_RADIUS, SPACING } from '../src/constants';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Audio } from 'expo-audio';
-import * as FileSystem from 'expo-file-system';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
 import styles from './styles/chatStyle';
 
 const ChatScreen = () => {
@@ -31,6 +31,9 @@ const ChatScreen = () => {
     // Audio recording state
     const [recording, setRecording] = useState(null);
     const [isRecording, setIsRecording] = useState(false);
+    const [playingMessageId, setPlayingMessageId] = useState(null);
+    const [autoPlayedIds, setAutoPlayedIds] = useState(new Set());
+    const soundRef = useRef(null);
 
     useEffect(() => {
         const initChat = async () => {
@@ -56,6 +59,9 @@ const ChatScreen = () => {
             if (recording) {
                 recording.stopAndUnloadAsync();
             }
+            if (soundRef.current) {
+                soundRef.current.unloadAsync();
+            }
         };
     }, [topic]);
 
@@ -67,7 +73,42 @@ const ChatScreen = () => {
         }
     }, [messages, isLoading]);
 
+    // Auto-play latest AI message audio
+    useEffect(() => {
+        const autoPlayLatestAiAudio = async () => {
+            // Find the most recent AI message with audio that hasn't been auto-played
+            for (let i = messages.length - 1; i >= 0; i--) {
+                const msg = messages[i];
+                if (msg.aiAudioUrl && !autoPlayedIds.has(msg.id)) {
+                    // Mark as auto-played
+                    setAutoPlayedIds(prev => new Set(prev).add(msg.id));
+                    // Play the audio
+                    await playSound(msg.aiAudioUrl, `${msg.id}-ai`);
+                    break; // Only play the latest one
+                }
+            }
+        };
+
+        if (messages.length > 0 && !isLoading) {
+            autoPlayLatestAiAudio();
+        }
+    }, [messages, isLoading]);
+
+    const toggleRecording = async () => {
+        if (isRecording) {
+            await stopRecording();
+        } else {
+            await startRecording();
+        }
+    };
+
     const startRecording = async () => {
+        // Prevent double-start
+        if (recording || isRecording) {
+            console.log('Already recording, ignoring start request');
+            return;
+        }
+
         try {
             console.log('Requesting permissions..');
             const permission = await Audio.requestPermissionsAsync();
@@ -79,28 +120,97 @@ const ChatScreen = () => {
                 });
 
                 console.log('Starting recording..');
-                const { recording } = await Audio.Recording.createAsync(
+                const { recording: newRecording } = await Audio.Recording.createAsync(
                     Audio.RecordingOptionsPresets.HIGH_QUALITY
                 );
-                setRecording(recording);
-                setIsRecording(true);
                 console.log('Recording started');
+                setRecording(newRecording);
+                setIsRecording(true);
             } else {
                 console.error('Permission not granted');
             }
         } catch (err) {
             console.error('Failed to start recording', err);
+            // Reset state on failure
+            setRecording(null);
+            setIsRecording(false);
+        }
+    };
+
+    const playSound = async (url, messageId) => {
+        try {
+            if (soundRef.current) {
+                await soundRef.current.unloadAsync();
+                soundRef.current = null;
+                if (playingMessageId === messageId) {
+                    setPlayingMessageId(null);
+                    return;
+                }
+            }
+
+            setPlayingMessageId(messageId);
+            
+            let audioSource = { uri: url };
+
+            // Special handling for web + ngrok to skip browser warning
+            if (Platform.OS === 'web' && url.includes('ngrok-free.dev')) {
+                try {
+                    const response = await fetch(url, {
+                        headers: { 'ngrok-skip-browser-warning': 'true' }
+                    });
+                    const blob = await response.blob();
+                    audioSource = { uri: URL.createObjectURL(blob) };
+                } catch (fetchError) {
+                    console.error('Failed to fetch audio for web:', fetchError);
+                }
+            }
+
+            await Audio.setAudioModeAsync({
+                playsInSilentModeIOS: true,
+                staysActiveInBackground: false,
+                shouldRouteThroughEarpieceAndroid: false
+            });
+
+            const { sound } = await Audio.Sound.createAsync(
+                audioSource,
+                { shouldPlay: true }
+            );
+            
+            soundRef.current = sound;
+
+            sound.setOnPlaybackStatusUpdate((status) => {
+                if (status.didJustFinish) {
+                    setPlayingMessageId(null);
+                    // Revoke object URL if it was created
+                    if (Platform.OS === 'web' && audioSource.uri.startsWith('blob:')) {
+                        URL.revokeObjectURL(audioSource.uri);
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Failed to play sound', error);
+            setPlayingMessageId(null);
         }
     };
 
     const stopRecording = async () => {
         console.log('Stopping recording..');
+
+        // Capture recording reference before clearing state
+        const currentRecording = recording;
+        if (!currentRecording) {
+            console.log('No active recording to stop');
+            return;
+        }
+
+        // Clear state first to prevent concurrent operations
         setIsRecording(false);
         setRecording(null);
 
         try {
-            await recording.stopAndUnloadAsync();
-            const uri = recording.getURI();
+            await currentRecording.stopAndUnloadAsync();
+            const uri = currentRecording.getURI();
             console.log('Recording stopped and stored at', uri);
 
             let base64Audio = '';
@@ -137,8 +247,9 @@ const ChatScreen = () => {
         if (!audioBase64) setInput('');
 
         const res = await talkWithAi(currentConversation.id, messageText, audioBase64);
+        // Clear suggestions when user sends a new message
         if (res.success) {
-            handleGetSuggestions();
+            setSuggestions([]);
         }
     };
 
@@ -146,8 +257,9 @@ const ChatScreen = () => {
         if (!currentConversation || isGeneratingSuggestions) return;
         setIsGeneratingSuggestions(true);
         const res = await getTopics(currentConversation.id);
-        if (res.success && res.topic) {
-            setSuggestions(res.topic.split("\n").filter(s => s.trim() !== "").slice(0, 3));
+        if (res.success && res.suggestions && res.suggestions.length > 0) {
+            // Take first 3 suggestions from the array
+            setSuggestions(res.suggestions.slice(0, 3));
         }
         setIsGeneratingSuggestions(false);
     };
@@ -173,13 +285,15 @@ const ChatScreen = () => {
                 id: `${msg.id}-student`,
                 text: msg.studentText || (msg.studentAudioUrl ? "🎤 [Audio Message]" : ""),
                 sender: 'user',
-                time: msg.createdAt
+                time: msg.createdAt,
+                audioUrl: msg.studentAudioUrl
             });
             uiMessages.push({
                 id: `${msg.id}-ai`,
                 text: msg.aiText,
                 sender: 'ai',
-                time: msg.createdAt
+                time: msg.createdAt,
+                audioUrl: msg.aiAudioUrl
             });
         });
 
@@ -194,6 +308,23 @@ const ChatScreen = () => {
                     <Text style={[styles.messageText, msg.sender === 'user' && styles.userMessageText]}>
                         {msg.text}
                     </Text>
+                    {msg.audioUrl && (
+                        <View style={styles.messageFooter}>
+                            <TouchableOpacity 
+                                onPress={() => playSound(msg.audioUrl, msg.id)}
+                                style={styles.speakerButton}
+                            >
+                                <Ionicons 
+                                    name={playingMessageId === msg.id ? "stop-circle" : "volume-medium"} 
+                                    size={20} 
+                                    color={msg.sender === 'user' ? COLORS.primary : "#fff"} 
+                                />
+                                <Text style={[styles.audioLabel, msg.sender === 'user' && styles.userAudioLabel]}>
+                                    {playingMessageId === msg.id ? "Playing..." : "Listen"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
             </View>
         ));
@@ -244,7 +375,10 @@ const ChatScreen = () => {
                     )}
                 </ScrollView>
 
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                    keyboardVerticalOffset={0}
+                >
                     <View style={styles.footer}>
                         {suggestions.length > 0 && !isLoading && (
                             <View style={styles.suggestionsWrapper}>
@@ -262,11 +396,28 @@ const ChatScreen = () => {
                             </View>
                         )}
 
+                        {/* Bulb icon to generate suggestions */}
+                        {messages.length > 0 && !isLoading && (
+                            <TouchableOpacity
+                                style={styles.suggestionBulbButton}
+                                onPress={handleGetSuggestions}
+                                disabled={isGeneratingSuggestions}
+                            >
+                                {isGeneratingSuggestions ? (
+                                    <ActivityIndicator size="small" color={COLORS.primary} />
+                                ) : (
+                                    <Ionicons name="bulb" size={22} color={COLORS.primary} />
+                                )}
+                                <Text style={styles.suggestionBulbText}>
+                                    {isGeneratingSuggestions ? 'Thinking...' : 'Get ideas'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+
                         <View style={styles.inputContainer}>
                             <TouchableOpacity
                                 style={[styles.iconButton, isRecording && styles.recordingButton]}
-                                onPressIn={startRecording}
-                                onPressOut={stopRecording}
+                                onPress={toggleRecording}
                             >
                                 <Ionicons
                                     name={isRecording ? "mic" : "mic-outline"}

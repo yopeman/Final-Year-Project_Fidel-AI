@@ -15,9 +15,9 @@ class ReactionType(PyEnum):
 class CommunityReactions(BaseModel):
     __tablename__ = "community_reactions"
 
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     community_id = Column(
-        String(36), ForeignKey("batch_communities.id"), nullable=False
+        String(36), ForeignKey("batch_communities.id", ondelete="CASCADE"), nullable=False
     )
     reaction_type = Column(Enum(ReactionType), nullable=False)
 

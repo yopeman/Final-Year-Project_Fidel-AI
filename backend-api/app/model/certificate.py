@@ -8,7 +8,7 @@ class Certificate(BaseModel):
     __tablename__ = "certificates"
 
     skill_id = Column(
-        String(36), ForeignKey("skills.id"), nullable=False, unique=True
+        String(36), ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, unique=True
     )
     result = Column(Text, nullable=False)
     certificate_html = Column(Text, nullable=False)

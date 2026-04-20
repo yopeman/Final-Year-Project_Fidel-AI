@@ -23,6 +23,7 @@ import UpdateProfilePopup from '../components/UpdateProfilePopup';
 import NotificationBell from '../components/NotificationBell';
 import TutorCourses from '../components/TutorCourses';
 import TutorBatches from '../components/TutorBatches';
+import TutorSchedules from '../components/TutorSchedules';
 import useAuthStore from '../store/authStore';
 import useTutorStore from '../store/tutorStore';
 import useSessionStore from '../store/sessionStore';
@@ -277,7 +278,7 @@ const TutorDashboard = () => {
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Error Loading Dashboard</h2>
           <p className="text-accent-secondary mb-6">Please try again or contact support.</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="bg-brand-yellow text-black px-5 py-3 rounded-2xl font-black hover:scale-105 transition-all"
           >
@@ -296,7 +297,7 @@ const TutorDashboard = () => {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[500px] bg-white/5 rounded-[100%] blur-[120px] rotate-45 opacity-20"></div>
       </div>
 
-      <header className="border-b border-white/10 bg-[#080C14]/80 backdrop-blur-xl shadow-2xl">
+      <header className="border-b border-white/10 bg-[#080C14]/80 backdrop-blur-xl shadow-2xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="glass-premium rounded-3xl border border-white/10 p-5 bg-white/5">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -315,7 +316,7 @@ const TutorDashboard = () => {
                 <span className="px-4 py-2 bg-green-500/10 text-green-300 text-sm font-black rounded-2xl border border-green-500/20 uppercase tracking-wider">
                   Tutor
                 </span>
-                <button 
+                <button
                   onClick={() => {
                     logout();
                     navigate('/login', { replace: true });
@@ -337,16 +338,16 @@ const TutorDashboard = () => {
               {[
                 { id: 'overview', name: 'Overview', icon: GraduationCap },
                 { id: 'courses', name: 'Courses', icon: BookOpen },
+                { id: 'schedules', name: 'Schedules', icon: Calendar },
                 { id: 'batches', name: 'Batches', icon: Users }
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-5 py-3 rounded-2xl font-bold text-sm flex items-center space-x-2 transition-all ${
-                    activeTab === tab.id
+                  className={`px-5 py-3 rounded-2xl font-bold text-sm flex items-center space-x-2 transition-all ${activeTab === tab.id
                       ? 'bg-brand-yellow text-black shadow-[0_0_20px_rgba(255,193,7,0.25)]'
                       : 'bg-white/5 text-accent-muted hover:text-white hover:bg-white/10 border border-white/10'
-                  }`}
+                    }`}
                 >
                   <tab.icon className="w-4 h-4" />
                   <span>{tab.name}</span>
@@ -359,6 +360,8 @@ const TutorDashboard = () => {
             {activeTab === 'courses' && <TutorCourses />}
 
             {activeTab === 'batches' && <TutorBatches />}
+            
+            {activeTab === 'schedules' && <TutorSchedules />}
 
             {activeTab === 'overview' && (
               <div className="space-y-8">
@@ -382,14 +385,14 @@ const TutorDashboard = () => {
                     </div>
 
                     <div className="flex flex-wrap gap-3">
-                      <button 
+                      <button
                         onClick={() => setShowUpdatePopup(true)}
                         className="flex items-center space-x-2 px-5 py-3 bg-green-500/10 text-green-300 rounded-2xl border border-green-500/20 hover:bg-green-500/20 transition-all font-bold"
                       >
                         <UserCog className="w-4 h-4" />
                         <span>Update Profile</span>
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           setShowDeleteConfirmation(true);
                         }}
@@ -594,11 +597,11 @@ const TutorDashboard = () => {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            
+
             <p className="text-accent-secondary mb-6">
               Are you sure you want to delete your profile? This will permanently remove your account and all associated data.
             </p>
-            
+
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowDeleteConfirmation(false)}

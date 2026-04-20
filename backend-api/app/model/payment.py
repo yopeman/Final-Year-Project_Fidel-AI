@@ -17,7 +17,7 @@ class Payment(BaseModel):
     __tablename__ = "payments"
 
     enrollment_id = Column(
-        String(36), ForeignKey("batch_enrollments.id"), nullable=False
+        String(36), ForeignKey("batch_enrollments.id", ondelete="CASCADE"), nullable=False
     )
     amount = Column(Float, nullable=False)
     currency = Column(String(5), nullable=False)

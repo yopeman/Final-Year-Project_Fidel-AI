@@ -57,13 +57,41 @@ def resolve_enrollment(_, info, id):
 
     db: Session = info.context["db"]
     enrollment = db.query(BatchEnrollment).filter(
-        BatchEnrollment.id == id, 
+        BatchEnrollment.id == id,
         BatchEnrollment.is_deleted == False
     ).first()
 
     if not enrollment:
         raise Exception("Enrollment not found")
     return enrollment
+
+
+@query.field("myEnrollments")
+def resolve_my_enrollments(_, info):
+    """Return enrollments for the current user only."""
+    current_user: User = info.context.get("current_user")
+    if not current_user:
+        raise Exception("Not authenticated")
+
+    db: Session = info.context["db"]
+
+    # Get user's profile
+    from ..model.student_profile import StudentProfile
+    profile = db.query(StudentProfile).filter(
+        StudentProfile.user_id == current_user.id,
+        StudentProfile.is_deleted == False
+    ).first()
+
+    if not profile:
+        return []
+
+    # Get enrollments for this profile
+    enrollments = db.query(BatchEnrollment).filter(
+        BatchEnrollment.profile_id == profile.id,
+        BatchEnrollment.is_deleted == False
+    ).all()
+
+    return enrollments
 
 
 @mutation.field("createEnrollment")

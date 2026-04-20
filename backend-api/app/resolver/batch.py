@@ -78,6 +78,41 @@ def resolve_batch(_, info, id):
     return batch_obj
 
 
+@query.field("myBatches")
+def resolve_my_batches(_, info):
+    """Return batches that the current user is enrolled in."""
+    current_user: User = info.context.get("current_user")
+    if not current_user:
+        raise Exception("Not authenticated")
+
+    db: Session = info.context["db"]
+
+    # Get user's profile
+    from ..model.student_profile import StudentProfile
+    profile = db.query(StudentProfile).filter(
+        StudentProfile.user_id == current_user.id,
+        StudentProfile.is_deleted == False
+    ).first()
+
+    if not profile:
+        return []
+
+    # Get batches through enrollments
+    enrollments = db.query(BatchEnrollment).filter(
+        BatchEnrollment.profile_id == profile.id,
+        BatchEnrollment.is_deleted == False
+    ).all()
+
+    # Return unique batches
+    batch_ids = set(e.batch_id for e in enrollments)
+    batches = db.query(Batch).filter(
+        Batch.id.in_(batch_ids),
+        Batch.is_deleted == False
+    ).all()
+
+    return batches
+
+
 @mutation.field("createBatch")
 def resolve_create_batch(_, info, input):
     current_user = info.context.get("current_user")

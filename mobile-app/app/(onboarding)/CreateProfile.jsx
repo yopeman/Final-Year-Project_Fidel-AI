@@ -10,6 +10,7 @@ import styles from '../styles/createProfileStyle';
 const steps = [
     { key: 'basics', title: 'Basic Info' },
     { key: 'language', title: 'Language & Goals' },
+    { key: 'duration', title: 'Schedule & Constraints' },
 ];
 
 const CreateProfile = () => {
@@ -31,6 +32,7 @@ const CreateProfile = () => {
         ageRange: '',
         targetDuration: 30,
         durationUnit: 'DAYS', // Uppercase Enum
+        constraints: '',
         interests: []
     });
 
@@ -51,7 +53,7 @@ const CreateProfile = () => {
     const handleSubmit = async () => {
         if (!formData.ageRange || !formData.nativeLanguage || !formData.learningGoal) {
             console.warn("Missing required fields");
-            // alert("Please fill in all fields"); // Optional
+            // Alert.alert("Please fill in all fields"); // Optional
             return;
         }
 
@@ -61,9 +63,9 @@ const CreateProfile = () => {
             proficiency: formData.proficiency,
             nativeLanguage: formData.nativeLanguage,
             learningGoal: formData.learningGoal,
-            targetDuration: formData.targetDuration,
+            targetDuration: parseInt(formData.targetDuration),
             durationUnit: formData.durationUnit,
-            // constraints: '' // Optional, we can omit if empty
+            constraints: formData.constraints || ''
         };
 
         const result = await createProfile(payload);
@@ -80,7 +82,8 @@ const CreateProfile = () => {
                         <Text style={styles.label}>What is your native language?</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="e.g. Spanish, French"
+                            placeholder="e.g. Amharic, Oromo"
+                            placeholderTextColor="rgba(255, 255, 255, 0.4)"
                             value={formData.nativeLanguage}
                             onChangeText={(text) => setFormData({ ...formData, nativeLanguage: text })}
                         />
@@ -129,9 +132,50 @@ const CreateProfile = () => {
                         <TextInput
                             style={[styles.input, { height: 100 }]}
                             placeholder="e.g. For travel, career, or fun"
+                            placeholderTextColor="rgba(255, 255, 255, 0.4)"
                             multiline
                             value={formData.learningGoal}
                             onChangeText={(text) => setFormData({ ...formData, learningGoal: text })}
+                        />
+                    </View>
+                );
+            case 2:
+                return (
+                    <View style={styles.stepContainer}>
+                        <Text style={styles.label}>Target Learning Duration</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+                            <TextInput
+                                style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                                placeholder="30"
+                                placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                                keyboardType="numeric"
+                                value={formData.targetDuration.toString()}
+                                onChangeText={(text) => setFormData({ ...formData, targetDuration: text.replace(/[^0-9]/g, '') })}
+                            />
+                            <View style={{ width: 10 }} />
+                            <View style={[styles.optionsContainer, { flex: 2, marginBottom: 0 }]}>
+                                {['DAYS', 'WEEKS', 'MONTHS'].map((unit) => (
+                                    <TouchableOpacity
+                                        key={unit}
+                                        style={[styles.optionChip, formData.durationUnit === unit && styles.selectedOption]}
+                                        onPress={() => setFormData({ ...formData, durationUnit: unit })}
+                                    >
+                                        <Text style={[styles.optionText, formData.durationUnit === unit && styles.selectedOptionText]}>
+                                            {unit.charAt(0) + unit.slice(1).toLowerCase()}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+
+                        <Text style={styles.label}>Any learning constraints? (Optional)</Text>
+                        <TextInput
+                            style={[styles.input, { height: 80 }]}
+                            placeholder="e.g. Only available on weekends, etc."
+                            placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                            multiline
+                            value={formData.constraints}
+                            onChangeText={(text) => setFormData({ ...formData, constraints: text })}
                         />
                     </View>
                 );

@@ -23,4 +23,9 @@ class Schedule(BaseModel):
     end_time = Column(Time, nullable=False)
 
     # Relationships
-    course_schedules = relationship("CourseSchedule", back_populates="schedule")
+    course_schedules = relationship(
+        "CourseSchedule",
+        back_populates="schedule",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

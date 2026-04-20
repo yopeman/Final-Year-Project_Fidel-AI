@@ -21,9 +21,9 @@ class Attendance(BaseModel):
     __tablename__ = "attendances"
 
     course_schedule_id = Column(
-        String(36), ForeignKey("course_schedules.id"), nullable=False
+        String(36), ForeignKey("course_schedules.id", ondelete="CASCADE"), nullable=False
     )
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     user_type = Column(Enum(UserType), nullable=False)
     status = Column(Enum(AttendanceStatus), nullable=False)
     attendance_date = Column(Date, nullable=False)
