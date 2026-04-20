@@ -398,7 +398,9 @@ export default function LessonScreen() {
                                 <Ionicons name="sparkles" size={12} color={GOLD} />
                             </View>
                             <View style={styles.aiMessage}>
-                                <Text style={styles.messageText}>{msg.text}</Text>
+                                <Markdown style={{ body: { color: AI_TEXT, fontSize: 14, lineHeight: 20 }, strong: { fontWeight: '700', color: '#F8FAFC' }, em: { fontStyle: 'italic' }, bullet_list: { marginBottom: 8 }, list_item: { flexDirection: 'row', marginBottom: 4 }, bullet_list_icon: { marginRight: 6, color: GOLD }, code_inline: { backgroundColor: '#1C2A3A', color: '#FCD34D', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3, fontSize: 12 }, link: { color: '#60A5FA', textDecorationLine: 'underline' } }}>
+                                    {msg.text}
+                                </Markdown>
                             </View>
                         </View>
                     )
