@@ -7,6 +7,8 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import styles from '../styles/reviewPlanStyle';
+import Markdown from 'react-native-markdown-display';
+
 
 export default function ReviewPlan() {
     const router = useRouter();
@@ -49,24 +51,33 @@ export default function ReviewPlan() {
         );
     }
 
-    // A very basic markdown-lite renderer for the plan text
-    const renderPlan = (text) => {
-        if (!text) return null;
-
-        const lines = text.split('\n');
-        return lines.map((line, index) => {
-            if (line.startsWith('###')) {
-                return <Text key={index} style={styles.h3}>{line.replace('###', '').trim()}</Text>;
-            } else if (line.startsWith('####')) {
-                return <Text key={index} style={styles.h4}>{line.replace('####', '').trim()}</Text>;
-            } else if (line.startsWith('**')) {
-                return <Text key={index} style={styles.boldLine}>{line.replace(/\*\*/g, '').trim()}</Text>;
-            } else if (line.startsWith('-')) {
-                return <Text key={index} style={styles.bullet}>{line}</Text>;
-            }
-            return <Text key={index} style={styles.textLine}>{line}</Text>;
-        });
+    const markdownStyles = {
+        body: {
+            color: 'rgba(255,255,255,0.7)',
+            fontSize: 15,
+        },
+        heading3: styles.h3,
+        heading4: styles.h4,
+        strong: styles.boldLine,
+        paragraph: styles.textLine,
+        bullet_list: {
+            marginVertical: 10,
+        },
+        bullet_list_icon: {
+            color: COLORS.primary,
+            fontSize: 15,
+            fontWeight: 'bold',
+        },
+        bullet_list_content: {
+            color: 'rgba(255,255,255,0.7)',
+            fontSize: 15,
+            lineHeight: 24,
+        },
+        list_item: {
+            marginBottom: 8,
+        },
     };
+
 
     return (
         <View style={styles.container}>
@@ -92,8 +103,11 @@ export default function ReviewPlan() {
                     </View>
                 ) : (
                     <View style={styles.planCard}>
-                        {renderPlan(learningPlan)}
+                        <Markdown style={markdownStyles}>
+                            {learningPlan}
+                        </Markdown>
                     </View>
+
                 )}
             </ScrollView>
 

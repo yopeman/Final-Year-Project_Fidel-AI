@@ -7,7 +7,7 @@ from .base import BaseModel
 class LessonInteractions(BaseModel):
     __tablename__ = "lesson_interactions"
 
-    lesson_id = Column(String(36), ForeignKey("module_lessons.id"), nullable=False)
+    lesson_id = Column(String(36), ForeignKey("module_lessons.id", ondelete="CASCADE"), nullable=False)
     student_question = Column(Text, nullable=False)
     ai_answer = Column(Text, nullable=False)
 

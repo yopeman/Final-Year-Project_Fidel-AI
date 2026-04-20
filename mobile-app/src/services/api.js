@@ -70,7 +70,7 @@ const graphQLRequest = async (query, variables = {}) => {
         }
 
         // Enhance Network Error message
-        if (error.message.toLowerCase() === 'network error' || error.message.toLowerCase() === 'timeout exceeded') {
+        if (error.message?.toLowerCase() === 'network error' || error.message?.toLowerCase() === 'timeout exceeded') {
             throw new Error('Unable to connect to the server. Please check your internet connection or verify the API URL.');
         }
 

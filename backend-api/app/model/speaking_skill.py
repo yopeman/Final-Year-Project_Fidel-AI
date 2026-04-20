@@ -8,7 +8,7 @@ from .skill import Grade
 class SpeakingSkill(BaseModel):
     __tablename__ = "speaking_skills"
 
-    skill_id = Column(String(36), ForeignKey("skills.id"), nullable=False, unique=True)
+    skill_id = Column(String(36), ForeignKey("skills.id", ondelete="CASCADE"), nullable=False, unique=True)
     pronunciation = Column(Enum(Grade), nullable=False)  # Grade
     fluency = Column(Enum(Grade), nullable=False)  # Grade
     grammar = Column(Enum(Grade), nullable=False)  # Grade

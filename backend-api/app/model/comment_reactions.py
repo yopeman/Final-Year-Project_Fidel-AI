@@ -15,8 +15,8 @@ class ReactionType(PyEnum):
 class CommentReactions(BaseModel):
     __tablename__ = "comment_reactions"
 
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
-    comment_id = Column(String(36), ForeignKey("community_comments.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    comment_id = Column(String(36), ForeignKey("community_comments.id", ondelete="CASCADE"), nullable=False)
     reaction_type = Column(Enum(ReactionType), nullable=False)
 
     # Relationships

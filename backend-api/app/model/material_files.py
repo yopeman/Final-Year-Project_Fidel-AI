@@ -7,7 +7,7 @@ from .base import BaseModel
 class MaterialFiles(BaseModel):
     __tablename__ = "material_files"
 
-    material_id = Column(String(36), ForeignKey("course_materials.id"), nullable=False)
+    material_id = Column(String(36), ForeignKey("course_materials.id", ondelete="CASCADE"), nullable=False)
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=False)
     file_extension = Column(String(10), nullable=False)
