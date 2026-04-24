@@ -50,7 +50,7 @@ export const useAuthStore = create((set, get) => ({
                 set({ isLoading: false });
             }
         } catch (error) {
-            console.error('Init auth error:', error);
+            console.log('Init auth error:', error);
             set({ isLoading: false });
         }
     },

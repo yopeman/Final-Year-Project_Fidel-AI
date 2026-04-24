@@ -39,7 +39,7 @@ export const useNotificationStore = create((set, get) => ({
             await notificationAPI.markAsRead(id);
             return { success: true };
         } catch (error) {
-            console.error('Mark as read failed', error);
+            console.log('Mark as read failed', error);
             // Revert or refresh
             get().getNotifications();
             return { success: false };
@@ -57,7 +57,7 @@ export const useNotificationStore = create((set, get) => ({
             console.log('markAllAsRead: API success.');
             return { success: true };
         } catch (error) {
-            console.error('markAllAsRead: API failed', error);
+            console.log('markAllAsRead: API failed', error);
             get().getNotifications();
             return { success: false };
         }

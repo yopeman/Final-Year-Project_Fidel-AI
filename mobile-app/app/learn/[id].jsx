@@ -245,7 +245,7 @@ export default function LessonScreen() {
                     {processedContent ? (
                         <Markdown
                             style={getMarkdownStyles()}
-                            onLinkPress={(url) => { Linking.openURL(url).catch(console.error); return true; }}
+                            onLinkPress={(url) => { Linking.openURL(url).catch(console.log); return true; }}
                             rules={{
                                 list_item: (node, children, parent, s) => (
                                     <View key={node.key} style={s.list_item}>

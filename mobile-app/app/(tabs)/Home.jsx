@@ -64,7 +64,7 @@ const HomeScreen = () => {
                 setIsInitialized(true);
                 console.log('[Home] Store initialized, enrollments loaded:', enrollments.length);
             } catch (error) {
-                console.error('[Home] Initialization error:', error);
+                console.log('[Home] Initialization error:', error);
                 setIsInitialized(true);
             }
         };

@@ -95,7 +95,7 @@ const CommunityScreen = () => {
                 addFiles(files);
             }
         } catch (error) {
-            console.error("File pick error:", error);
+            console.log("File pick error:", error);
         }
     };
 
