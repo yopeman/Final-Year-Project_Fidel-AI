@@ -1,3 +1,4 @@
+import json
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -90,10 +91,58 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
         }
     )
 
-    response: ModuleResponse = (
-        llm.with_structured_output(ModuleResponse)
-        .invoke([HumanMessage(content=prompts)])
-    )
+    try:
+        # Use JSON mode instead of structured output to avoid function call confusion
+        json_prompt = prompts + "\n\nIMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no preamble. Use this exact format:\n{\"modules\": [{\"name\": \"module_name\", \"description\": \"module_description\", \"lessons\": [{\"name\": \"lesson_name\", \"description\": \"lesson_description\"}]}]}"
+        
+        response = llm.invoke([HumanMessage(content=json_prompt)])
+        
+        # Debug logging
+        print(f"LLM raw response: {repr(response.content)}")
+        
+        # Handle empty response
+        if not response.content or not response.content.strip():
+            print("Error: LLM returned empty response")
+            return False
+        
+        # Clean up response - remove markdown code blocks if present
+        content = response.content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+        
+        print(f"Cleaned content for parsing: {repr(content[:200])}...")
+        
+        # Parse the JSON response
+        response_data = json.loads(content)
+        
+        # Create ModuleResponse object
+        modules = []
+        for module_data in response_data.get("modules", []):
+            lessons = []
+            for lesson_data in module_data.get("lessons", []):
+                lessons.append(LessonOutput(
+                    name=lesson_data.get("name", ""),
+                    description=lesson_data.get("description", "")
+                ))
+            
+            modules.append(ModuleOutput(
+                name=module_data.get("name", ""),
+                description=module_data.get("description", ""),
+                lessons=lessons
+            ))
+        
+        response = ModuleResponse(modules=modules)
+        print(f"Successfully parsed {len(modules)} modules")
+    except Exception as e:
+        print(f"Error generating modules: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
     for i, module in enumerate(response.modules, start=1):
         new_module = Modules(
@@ -203,7 +252,7 @@ def _generate_content(
 
 def _generate_vocabularies(
     profile: StudentProfile, module: ModuleOutput, lesson: LessonOutput, content: str
-) -> str:
+) -> VocabularyResponse:
     prompts = PromptTemplate.from_template(VOCABULARY_GENERATION_PROMPT).format(
         **{
             "proficiency": profile.proficiency,
@@ -212,9 +261,47 @@ def _generate_vocabularies(
         }
     )
 
-    response: VocabularyResponse = (
-        llm.with_structured_output(VocabularyResponse)
-        .invoke([HumanMessage(content=prompts)])
-    )
-
-    return response
+    try:
+        # Use JSON mode instead of structured output to avoid function call confusion
+        json_prompt = prompts + "\n\nIMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no preamble. Use this exact format:\n{\"vocabularies\": [{\"vocabulary\": \"word\", \"meaning\": \"definition\", \"description\": \"description\"}]}"
+        
+        response = llm.invoke([HumanMessage(content=json_prompt)])
+        
+        # Debug logging
+        print(f"Vocabulary LLM raw response: {repr(response.content)}")
+        
+        # Handle empty response
+        if not response.content or not response.content.strip():
+            print(f"Error: LLM returned empty vocabulary response for lesson {lesson.name}")
+            return VocabularyResponse(vocabularies=[])
+        
+        # Clean up response - remove markdown code blocks if present
+        content = response.content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        if content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+        
+        # Parse the JSON response
+        response_data = json.loads(content)
+        
+        # Create VocabularyResponse object
+        vocabularies = []
+        for vocab_data in response_data.get("vocabularies", []):
+            vocabularies.append(VocabularyOutput(
+                vocabulary=vocab_data.get("vocabulary", ""),
+                meaning=vocab_data.get("meaning", ""),
+                description=vocab_data.get("description", "")
+            ))
+        
+        print(f"Successfully parsed {len(vocabularies)} vocabularies for lesson {lesson.name}")
+        return VocabularyResponse(vocabularies=vocabularies)
+    except Exception as e:
+        print(f"Error generating vocabularies for lesson {lesson.name}: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return empty response as fallback
+        return VocabularyResponse(vocabularies=[])
