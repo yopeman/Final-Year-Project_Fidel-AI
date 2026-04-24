@@ -139,7 +139,12 @@ Fidel AI is built as a multi-platform application with the following architectur
    python -c "from app.config.database import create_table; create_table()"
    ```
 
-5. **Start the server**
+5. **Run tests (optional)**
+   ```bash
+   uv run pytest tests/ -v
+   ```
+
+6. **Start the server**
    ```bash
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
@@ -312,6 +317,39 @@ Real-time text translation with pronunciation guides and cultural context.
 ### Content Generation
 AI-assisted content creation for lessons and learning materials.
 
+## 🧪 Testing
+
+The backend includes a comprehensive test suite covering authentication, resolvers, utilities, and business logic.
+
+### Running Tests
+
+```bash
+# Run all tests with verbose output
+cd backend-api && uv run pytest tests/ -v
+
+# Run specific test files
+uv run pytest tests/test_auth.py -v
+uv run pytest tests/test_resolvers/ -v
+uv run pytest tests/test_utils/ -v
+
+# Run tests with coverage
+uv run pytest tests/ --cov=app --cov-report=html
+
+# Run tests with specific markers
+uv run pytest tests/ -m "unit"
+uv run pytest tests/ -m "integration"
+```
+
+### Test Coverage
+
+The test suite includes:
+- **Authentication Tests**: JWT token handling, password hashing, user verification
+- **Resolver Tests**: GraphQL query and mutation testing for all modules
+- **Utility Tests**: Helper functions and business logic validation
+- **Integration Tests**: End-to-end API functionality testing
+
+Currently **141 tests** are passing, covering core functionality across all major components.
+
 ## 📈 Monitoring & Development
 
 ### Development Tools
@@ -319,6 +357,7 @@ AI-assisted content creation for lessons and learning materials.
 - **GraphQL Playground**: Interactive API testing interface
 - **WebSocket Debugging**: Real-time communication monitoring
 - **Database Migrations**: SQLAlchemy Alembic for schema management
+- **Comprehensive Testing**: 141+ tests with pytest framework
 
 ### Production Deployment
 - **Docker Support**: Containerized deployment
