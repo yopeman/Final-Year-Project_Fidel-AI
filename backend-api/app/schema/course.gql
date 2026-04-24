@@ -10,3 +10,25 @@ type Course {
   materials: [CourseMaterial!]!
   batchCourses: [BatchCourse!]!
 }
+
+extend type Query {
+  courses: [Course!]!
+  course(id: ID!): Course
+  myCourses: [BatchCourse!]!
+}
+
+extend type Mutation {
+  createCourse(input: CreateCourseInput!): Course!
+  updateCourse(id: ID!, input: UpdateCourseInput!): Course!
+  deleteCourse(id: ID!): Boolean!
+}
+
+input CreateCourseInput {
+  name: String!
+  description: String
+}
+
+input UpdateCourseInput {
+  name: String
+  description: String
+}

@@ -4,8 +4,8 @@ from ariadne import MutationType, ObjectType, QueryType
 from sqlalchemy.orm import Session
 
 from ..model.lesson_interactions import LessonInteractions
-from ..model.modules import Modules
 from ..model.module_lessons import ModuleLessons
+from ..model.modules import Modules
 from ..model.student_profile import StudentProfile
 from ..model.user import User, UserRole
 from ..util.ai_service.lesson_interaction import ask_on_lesson
@@ -103,7 +103,9 @@ def resolve_create_lesson_interaction(_, info, input):
     # Check if the lesson exists and user has access
     lesson = (
         db.query(ModuleLessons)
-        .filter(ModuleLessons.id == input["lessonId"], ModuleLessons.is_deleted == False)
+        .filter(
+            ModuleLessons.id == input["lessonId"], ModuleLessons.is_deleted == False
+        )
         .first()
     )
 
@@ -116,7 +118,7 @@ def resolve_create_lesson_interaction(_, info, input):
         .first()
     )
 
-    if not lesson:
+    if not module:
         raise Exception("Module not found")
 
     # Check ownership through profile
@@ -126,22 +128,33 @@ def resolve_create_lesson_interaction(_, info, input):
         .first()
     )
 
+    if not profile:
+        raise Exception("Student profile not found")
+
     prev_lesson_interactions = (
         db.query(LessonInteractions)
-        .filter(LessonInteractions.lesson_id == lesson.id, LessonInteractions.is_deleted == False)
+        .filter(
+            LessonInteractions.lesson_id == lesson.id,
+            LessonInteractions.is_deleted == False,
+        )
         .all()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
         raise Exception("Unauthorized")
 
-    answer = ask_on_lesson(input["question"], profile, module, lesson, prev_lesson_interactions)
+    answer = ask_on_lesson(
+        input["question"], profile, module, lesson, prev_lesson_interactions
+    )
+
+    if not answer:
+        answer = "I'm sorry, I couldn't generate an answer right now. Please try again later."
 
     # Create interaction
     interaction = LessonInteractions(
         lesson_id=input["lessonId"],
-        question=input["question"],
-        answer=answer
+        student_question=input["question"],
+        ai_answer=answer,
     )
 
     db.add(interaction)
@@ -201,14 +214,14 @@ def resolve_lesson_id(interaction, info):
     return interaction.lesson_id
 
 
-@lesson_interactions.field("question")
-def resolve_question(interaction, info):
-    return interaction.question
+@lesson_interactions.field("studentQuestion")
+def resolve_student_question(interaction, info):
+    return interaction.student_question
 
 
-@lesson_interactions.field("answer")
-def resolve_answer(interaction, info):
-    return interaction.answer
+@lesson_interactions.field("aiAnswer")
+def resolve_ai_answer(interaction, info):
+    return interaction.ai_answer
 
 
 @lesson_interactions.field("createdAt")

@@ -38,13 +38,28 @@ class Batch(BaseModel):
     fee_amount = Column(Float, nullable=False)
 
     # Relationships
-    batch_courses = relationship("BatchCourse", back_populates="batch")
-    enrollments = relationship("BatchEnrollment", back_populates="batch")
-    communities = relationship("BatchCommunity", back_populates="batch")
+    batch_courses = relationship(
+        "BatchCourse",
+        back_populates="batch",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    enrollments = relationship(
+        "BatchEnrollment",
+        back_populates="batch",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    communities = relationship(
+        "BatchCommunity",
+        back_populates="batch",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     instructors = relationship(
         "BatchInstructor",
         secondary="batch_courses",
         primaryjoin="Batch.id == BatchCourse.batch_id",
         secondaryjoin="BatchCourse.id == BatchInstructor.batch_course_id",
-        viewonly=True
+        viewonly=True,
     )

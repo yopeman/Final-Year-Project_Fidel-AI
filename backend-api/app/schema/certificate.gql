@@ -1,6 +1,6 @@
 type Certificate {
   id: ID!
-  enrollmentId: ID!
+  skillId: ID!
   result: String!
   certificateHtml: String!
   createdAt: DateTime!
@@ -8,5 +8,19 @@ type Certificate {
   isDeleted: Boolean!
   deletedAt: DateTime
   # Relationships
-  enrollment: BatchEnrollment!
+  skill: Skill!
+}
+
+extend type Query {
+  certificates(batchId: ID): [Certificate!]!
+  certificate(id: ID!): Certificate
+}
+
+extend type Mutation {
+  generateCertificate(input: GenerateCertificateInput!): Certificate!
+  deleteCertificate(id: ID!): Boolean!
+}
+
+input GenerateCertificateInput {
+  skillId: ID!
 }

@@ -19,8 +19,24 @@ type BatchEnrollment {
   # Relationships
   profile: StudentProfile!
   batch: Batch!
-  quizResults: [QuizResults!]!
-  skillResults: [SkillResult!]!
+  skill: Skill
   payments: [Payment!]!
-  certificates: [Certificate!]!
+}
+
+input UpdateEnrollmentInput {
+  batchId: ID
+  profileId: ID
+  status: EnrollmentStatus
+}
+
+extend type Query {
+  enrollments(batchId: ID!): [BatchEnrollment!]!
+  enrollment(id: ID!): BatchEnrollment!
+  myEnrollments: [BatchEnrollment!]!
+}
+
+extend type Mutation {
+  createEnrollment(batchId: ID!, studentId: ID): BatchEnrollment!
+  updateEnrollment(id: ID!, input: UpdateEnrollmentInput!): BatchEnrollment!
+  deleteEnrollment(id: ID!): Boolean!
 }

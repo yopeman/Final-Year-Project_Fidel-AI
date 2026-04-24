@@ -13,3 +13,14 @@ type CommunityComment {
   user: User!
   reactions: [CommentReactions!]!
 }
+
+extend type Query {
+  comments(communityId: ID): [CommunityComment!]!
+  comment(id: ID!): CommunityComment!
+}
+
+extend type Mutation {
+  postComment(communityId: ID!, content: String!): CommunityComment!
+  updateComment(id: ID!, content: String!): CommunityComment!
+  deleteComment(id: ID!): Boolean!
+}

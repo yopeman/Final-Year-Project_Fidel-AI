@@ -9,6 +9,7 @@ from .base import BaseModel
 class PaymentStatus(PyEnum):
     pending = "pending"
     completed = "completed"
+    canceled = "canceled"
     failed = "failed"
 
 
@@ -16,14 +17,15 @@ class Payment(BaseModel):
     __tablename__ = "payments"
 
     enrollment_id = Column(
-        String(36), ForeignKey("batch_enrollments.id"), nullable=False
+        String(36), ForeignKey("batch_enrollments.id", ondelete="CASCADE"), nullable=False
     )
     amount = Column(Float, nullable=False)
-    currency = Column(String(3), nullable=False)
-    method = Column(String(50), nullable=False)
+    currency = Column(String(5), nullable=False)
+    method = Column(String(50), nullable=True)
     status = Column(Enum(PaymentStatus), nullable=False)
     paid_at = Column(DateTime(timezone=True), nullable=True)
-    transaction_id = Column(String(100), nullable=True)
+    transaction_id = Column(String(500), nullable=True)
+    checkout_url = Column(String(500), nullable=True)
     receipt_url = Column(String(500), nullable=True)
 
     # Relationships

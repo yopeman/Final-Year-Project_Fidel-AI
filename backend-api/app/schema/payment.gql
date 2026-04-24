@@ -2,6 +2,7 @@ enum PaymentStatus {
   PENDING
   COMPLETED
   FAILED
+  CANCELED
 }
 
 type Payment {
@@ -9,10 +10,11 @@ type Payment {
   enrollmentId: ID!
   amount: Float!
   currency: String!
-  method: String!
+  method: String
   status: PaymentStatus!
   paidAt: DateTime
   transactionId: String
+  checkoutUrl: String
   receiptUrl: String
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -20,4 +22,16 @@ type Payment {
   deletedAt: DateTime
   # Relationships
   enrollment: BatchEnrollment!
+}
+
+extend type Query {
+  payments(enrollmentId: ID, status: PaymentStatus): [Payment!]!
+  payment(id: ID!): Payment!
+}
+
+extend type Mutation {
+  makePayment(enrollmentId: ID!): Payment!
+  verifyPayment(enrollmentId: ID!): Payment!
+  cancelPayment(id: ID!): Payment!
+  deletePayment(id: ID!): Boolean!
 }

@@ -1,8 +1,10 @@
 type ConversationInteractions {
   id: ID!
   conversationId: ID!
-  question: String!
-  answer: String!
+  studentText: String!
+  studentAudioUrl: String!
+  aiText: String!
+  aiAudioUrl: String!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!
@@ -13,7 +15,8 @@ type ConversationInteractions {
 
 input CreateConversationInteractionInput {
   conversationId: ID!
-  question: String!
+  text: String
+  audioFile: String
 }
 
 extend type Query {
@@ -22,6 +25,7 @@ extend type Query {
 }
 
 extend type Mutation {
-  createConversationInteraction(input: CreateConversationInteractionInput!): ConversationInteractions!
+  talkWithAi(input: CreateConversationInteractionInput!): ConversationInteractions!
+  possibleTalk(conversationId: ID!): [String!]!
   deleteConversationInteraction(id: ID!): Boolean!
 }

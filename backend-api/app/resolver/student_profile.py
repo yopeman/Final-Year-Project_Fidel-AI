@@ -3,14 +3,19 @@ from datetime import datetime
 from ariadne import MutationType, ObjectType, QueryType
 from sqlalchemy.orm import Session
 
-from ..model.student_profile import AgeRange, DurationUnit, Proficiency, StudentProfile
-from ..model.user import User, UserRole
-from ..model.modules import Modules
-from ..model.free_conversation import FreeConversation
 from ..model.batch_enrollment import BatchEnrollment
-from ..util.ai_service.learning_plan import generate_learning_plan, update_learning_plan
-# from ..util.ai_service.install_learning_plan import install_learning_plan
-from ..util.ai_service.false_install_learning_plan import install_learning_plan
+from ..model.free_conversation import FreeConversation
+from ..model.modules import Modules
+from ..model.student_profile import (AgeRange, DurationUnit, Proficiency,
+                                     StudentProfile)
+from ..model.user import User, UserRole
+from ..util.ai_service.install_learning_plan import install_learning_plan
+# from ..util.ai_service.false_install_learning_plan import install_learning_plan
+from ..util.ai_service.learning_plan import (generate_learning_plan,
+                                             update_learning_plan)
+# from ..util.ai_service.false_learning_plan import (generate_learning_plan,
+#                                              update_learning_plan)
+from ..util.email_service import send_notification
 
 query = QueryType()
 mutation = MutationType()
@@ -137,12 +142,16 @@ def resolve_create_profile(_, info, input):
     )
 
     if existing_profile:
-        sample_module = db.query(Modules).filter(
-            Modules.profile_id == existing_profile.id,
-            Modules.is_deleted == False,
-        ).first()
+        sample_module = (
+            db.query(Modules)
+            .filter(
+                Modules.profile_id == existing_profile.id,
+                Modules.is_deleted == False,
+            )
+            .first()
+        )
         if sample_module:
-            raise Exception('Already you install learning plan!')
+            raise Exception("Already you install learning plan!")
 
         if existing_profile.is_deleted:
             existing_profile.age_range = map_age_range(input["ageRange"])
@@ -169,7 +178,7 @@ def resolve_create_profile(_, info, input):
         learning_goal=input["learningGoal"],
         target_duration=input["targetDuration"],
         duration_unit=map_duration_unit(input["durationUnit"]),
-        constraints=input.get("constraints")
+        constraints=input.get("constraints"),
     )
 
     db.add(profile)
@@ -199,13 +208,16 @@ def resolve_update_profile(_, info, input):
     if not profile:
         raise Exception("Profile not found. Create a profile first.")
 
-    sample_module = db.query(Modules).filter(
-        Modules.profile_id == profile.id,
-        Modules.is_deleted == False,
-    ).first()
+    sample_module = (
+        db.query(Modules)
+        .filter(
+            Modules.profile_id == profile.id,
+            Modules.is_deleted == False,
+        )
+        .first()
+    )
     if sample_module:
-        raise Exception('Already you install learning plan!')
-
+        raise Exception("Already you install learning plan!")
 
     # Update fields if provided
     if "ageRange" in input:
@@ -248,12 +260,23 @@ def resolve_generate_learning_plan(_, info):
 
     if not profile:
         raise Exception("Profile not found. Create a profile first.")
+    
+    if profile.ai_learning_plan:
+        return profile
 
     learning_plan = generate_learning_plan(profile)
 
     profile.ai_learning_plan = learning_plan
     db.commit()
     db.refresh(profile)
+
+    # Send notification to student about learning plan generation
+    send_notification(
+        user_id=current_user.id,
+        title="Learning Plan Generated",
+        content="Your personalized learning plan has been successfully generated based on your profile and goals. Review it and let us know if you'd like any adjustments.",
+        db=db
+    )
 
     return profile
 
@@ -278,20 +301,31 @@ def resolve_update_learning_plan(_, info, input):
     if not profile:
         raise Exception("Profile not found. Create a profile first.")
 
-    sample_module = db.query(Modules).filter(
-        Modules.profile_id == profile.id,
-        Modules.is_deleted == False,
-    ).first()
+    sample_module = (
+        db.query(Modules)
+        .filter(
+            Modules.profile_id == profile.id,
+            Modules.is_deleted == False,
+        )
+        .first()
+    )
     if sample_module:
-        raise Exception('Already you install learning plan!')
-
+        raise Exception("Already you install learning plan!")
 
     if "improvements" not in input:
         raise Exception("Learning improvement is required")
 
-    profile.ai_learning_plan = update_learning_plan(profile, input['improvements'])
+    profile.ai_learning_plan = update_learning_plan(profile, input["improvements"])
     db.commit()
     db.refresh(profile)
+
+    # Send notification to student about learning plan update
+    send_notification(
+        user_id=current_user.id,
+        title="Learning Plan Updated",
+        content="Your learning plan has been successfully updated based on your feedback. Review the changes and let us know if you need any further adjustments.",
+        db=db
+    )
 
     return profile
 
@@ -321,15 +355,27 @@ def resolve_install_learning_plan(_, info):
             "No learning plan to install. Generate or update a learning plan first."
         )
 
-    sample_module = db.query(Modules).filter(
-        Modules.profile_id == profile.id,
-        Modules.is_deleted == False,
-    ).first()
+    sample_module = (
+        db.query(Modules)
+        .filter(
+            Modules.profile_id == profile.id,
+            Modules.is_deleted == False,
+        )
+        .first()
+    )
     if sample_module:
         return profile
 
     if not install_learning_plan(profile, db):
-        raise Exception('Error when installing the plan')
+        raise Exception("Error when installing the plan")
+
+    # Send notification to student about learning plan installation
+    send_notification(
+        user_id=current_user.id,
+        title="Learning Plan Installed",
+        content="Your personalized learning plan has been successfully installed! You can now start following your customized learning modules and track your progress.",
+        db=db
+    )
 
     return profile
 
@@ -373,8 +419,9 @@ def resolve_delete_profile(_, info):
         db.query(StudentProfile)
         .filter(
             StudentProfile.user_id == current_user.id,
-            StudentProfile.is_deleted == False
-        ).first()
+            StudentProfile.is_deleted == False,
+        )
+        .first()
     )
 
     if not profile:
@@ -474,12 +521,18 @@ def resolve_modules(profile, info):
 @student_profile.field("freeConversations")
 def resolve_free_conversations(profile, info):
     db: Session = info.context["db"]
-    free_conversations = db.query(FreeConversation).filter(FreeConversation.profile_id == profile.id).all()
+    free_conversations = (
+        db.query(FreeConversation)
+        .filter(FreeConversation.profile_id == profile.id)
+        .all()
+    )
     return free_conversations
 
 
 @student_profile.field("batchEnrollments")
 def resolve_batch_enrollments(profile, info):
     db: Session = info.context["db"]
-    batch_enrollments = db.query(BatchEnrollment).filter(BatchEnrollment.profile_id == profile.id).all()
+    batch_enrollments = (
+        db.query(BatchEnrollment).filter(BatchEnrollment.profile_id == profile.id).all()
+    )
     return batch_enrollments

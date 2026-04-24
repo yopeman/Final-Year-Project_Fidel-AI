@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Integer, ForeignKey
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from .base import BaseModel
@@ -12,7 +12,7 @@ class VerificationCode(BaseModel):
     expires_at = Column(DateTime, nullable=False)
     is_used = Column(Integer, default=0)  # 0 = not used, 1 = used
 
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="verification_codes")

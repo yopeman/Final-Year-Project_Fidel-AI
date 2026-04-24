@@ -12,18 +12,13 @@ type FreeConversation {
   interactions: [ConversationInteractions!]!
 }
 
-input CreateConversationInput {
-  profileId: ID!
-  startingTopic: String!
-}
-
 extend type Query {
   freeConversations(profileId: ID!): [FreeConversation!]!
   freeConversation(id: ID!): FreeConversation
 }
 
 extend type Mutation {
-  createConversation(input: CreateConversationInput!): FreeConversation!
-  generateConversation(profileId: ID!): FreeConversation!
+  createConversation(startingTopic: String!): FreeConversation!
+  generateIdea: String!
   deleteConversation(id: ID!): Boolean!
 }

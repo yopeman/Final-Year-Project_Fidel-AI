@@ -1,0 +1,27 @@
+type SpeakingSkill {
+  id: ID!
+  skillId: ID!
+  pronunciation: Grade!
+  fluency: Grade!
+  grammar: Grade!
+  vocabulary: Grade!
+  coherence: Grade!
+  finalResult: Grade!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isDeleted: Boolean!
+  deletedAt: DateTime
+  # Relationships
+  skill: Skill!
+}
+
+extend type Query {
+  speakingSkills(skillId: ID!): [SpeakingSkill!]!
+  speakingSkill(id: ID!): SpeakingSkill
+}
+
+extend type Mutation {
+  createSpeakingSkill(input: CreateSpeakingSkillInput!): SpeakingSkill!
+  updateSpeakingSkill(id: ID!, input: UpdateSpeakingSkillInput!): SpeakingSkill!
+  deleteSpeakingSkill(id: ID!): Boolean!
+}

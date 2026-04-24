@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from ..model.free_conversation import FreeConversation
 from ..model.student_profile import StudentProfile
 from ..model.user import User, UserRole
-from ..util.ai_service.conversation_interaction import ai_topic_summary, ai_generated_topic
+from ..util.ai_service.conversation_interaction import (ai_generated_topic,
+                                                        ai_topic_summary)
 
 query = QueryType()
 mutation = MutationType()
@@ -24,7 +25,10 @@ def resolve_free_conversations(_, info, profileId: str):
     # Check if the profile exists and user has access
     profile = (
         db.query(StudentProfile)
-        .filter(StudentProfile.id == profileId, StudentProfile.is_deleted == False)
+        .filter(
+            StudentProfile.id == profileId,
+            StudentProfile.is_deleted == False,
+        )
         .first()
     )
 
@@ -37,7 +41,10 @@ def resolve_free_conversations(_, info, profileId: str):
 
     conversations = (
         db.query(FreeConversation)
-        .filter(FreeConversation.profile_id == profileId, FreeConversation.is_deleted == False)
+        .filter(
+            FreeConversation.profile_id == profile.id,
+            FreeConversation.is_deleted == False,
+        )
         .order_by(FreeConversation.created_at.desc())
         .all()
     )
@@ -76,7 +83,7 @@ def resolve_free_conversation(_, info, id: str):
 
 
 @mutation.field("createConversation")
-def resolve_create_conversation(_, info, input):
+def resolve_create_conversation(_, info, startingTopic: str):
     current_user: User = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -86,7 +93,10 @@ def resolve_create_conversation(_, info, input):
     # Check if the profile exists and user has access
     profile = (
         db.query(StudentProfile)
-        .filter(StudentProfile.id == input["profileId"], StudentProfile.is_deleted == False)
+        .filter(
+            StudentProfile.user_id == current_user.id,
+            StudentProfile.is_deleted == False,
+        )
         .first()
     )
 
@@ -96,12 +106,27 @@ def resolve_create_conversation(_, info, input):
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
         raise Exception("Unauthorized")
 
-    topic_summary_phrase = ai_topic_summary(input["startingTopic"])
+    # Check for existing conversation with same topic
+    existing_conversation = (
+        db.query(FreeConversation)
+        .filter(
+            FreeConversation.profile_id == profile.id,
+            FreeConversation.starting_topic == startingTopic,
+            FreeConversation.is_deleted == False
+        )
+        .order_by(FreeConversation.created_at.desc())
+        .first()
+    )
+
+    if existing_conversation:
+        return existing_conversation
+
+    topic_summary_phrase = ai_topic_summary(startingTopic)
     # Create conversation
     conversation = FreeConversation(
-        profile_id=input["profileId"],
-        starting_topic=input["startingTopic"],
-        topic_summary_phrase=topic_summary_phrase
+        profile_id=profile.id,
+        starting_topic=startingTopic,
+        topic_summary_phrase=topic_summary_phrase,
     )
 
     db.add(conversation)
@@ -111,8 +136,8 @@ def resolve_create_conversation(_, info, input):
     return conversation
 
 
-@mutation.field("generateConversation")
-def resolve_generate_conversation(_, info, profileId: str):
+@mutation.field("generateIdea")
+def resolve_generate_idea(_, info):
     current_user: User = info.context.get("current_user")
     if not current_user:
         raise Exception("Not authenticated")
@@ -122,7 +147,10 @@ def resolve_generate_conversation(_, info, profileId: str):
     # Check if the profile exists and user has access
     profile = (
         db.query(StudentProfile)
-        .filter(StudentProfile.id == profileId, StudentProfile.is_deleted == False)
+        .filter(
+            StudentProfile.user_id == current_user.id,
+            StudentProfile.is_deleted == False,
+        )
         .first()
     )
 
@@ -132,21 +160,8 @@ def resolve_generate_conversation(_, info, profileId: str):
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
         raise Exception("Unauthorized")
 
-    # Generate topic and summary
-    generated_topic = ai_generated_topic(profile)
-
-    # Create conversation
-    conversation = FreeConversation(
-        profile_id=profileId,
-        starting_topic=generated_topic['starting_topic'],
-        topic_summary_phrase=generated_topic['topic_summary_phrase']
-    )
-
-    db.add(conversation)
-    db.commit()
-    db.refresh(conversation)
-
-    return conversation
+    generated_idea = ai_generated_topic(profile)
+    return generated_idea
 
 
 @mutation.field("deleteConversation")
@@ -238,6 +253,7 @@ def resolve_profile(conversation, info):
 def resolve_interactions(conversation, info):
     db: Session = info.context["db"]
     from ..model.conversation_interactions import ConversationInteractions
+
     interactions = (
         db.query(ConversationInteractions)
         .filter(ConversationInteractions.conversation_id == conversation.id)

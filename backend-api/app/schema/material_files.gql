@@ -4,10 +4,21 @@ type MaterialFiles {
   fileName: String!
   filePath: String!
   fileExtension: String!
+  fileSize: Int!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!
   deletedAt: DateTime
   # Relationships
   material: CourseMaterial!
+}
+
+extend type Query {
+  materialFiles(materialId: ID!): [MaterialFiles!]!
+  materialFile(id: ID!): MaterialFiles
+}
+
+extend type Mutation {
+  uploadMaterialFiles(materialId: ID!, files: [Upload!]!): MaterialFiles!
+  deleteMaterialFile(id: ID!): Boolean!
 }

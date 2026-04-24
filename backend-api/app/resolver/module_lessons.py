@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..model.module_lessons import ModuleLessons
 from ..model.modules import Modules
 from ..model.user import User, UserRole
+from ..util.email_service import send_notification
 
 query = QueryType()
 mutation = MutationType()
@@ -32,10 +33,9 @@ def resolve_lessons(_, info, moduleId: str):
 
     # Check ownership through profile
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -69,17 +69,12 @@ def resolve_lesson(_, info, id: str):
         raise Exception("Lesson not found")
 
     # Check ownership through module and profile
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -113,10 +108,9 @@ def resolve_complete_lesson(_, info, id: str):
     )
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -129,26 +123,56 @@ def resolve_complete_lesson(_, info, id: str):
     next_lesson = (
         db.query(ModuleLessons)
         .filter(
-            ModuleLessons.module_id == module.id, 
-            ModuleLessons.display_order == (lesson.display_order + 1), 
-            ModuleLessons.is_deleted == False
+            ModuleLessons.module_id == module.id,
+            ModuleLessons.display_order == (lesson.display_order + 1),
+            ModuleLessons.is_deleted == False,
         )
         .first()
     )
 
-    if not next_lesson:
+    if next_lesson:
+        next_lesson.is_locked = False
+        db.commit()
+        db.refresh(next_lesson)
+
+    else:
         next_module = (
             db.query(Modules)
             .filter(
-                Modules.profile_id == module.profile_id, 
-                Modules.display_order == (module.display_order + 1), 
-                Modules.is_deleted == False
+                Modules.profile_id == module.profile_id,
+                Modules.display_order == (module.display_order + 1),
+                Modules.is_deleted == False,
             )
             .first()
         )
-        next_module.is_locked = False
-        db.commit()
-        db.refresh(next_module)
+        
+        if next_module:
+            next_module.is_locked = False
+            db.commit()
+            db.refresh(next_module)
+            
+            next_module_lesson = (
+                db.query(ModuleLessons)
+                .filter(
+                    ModuleLessons.module_id == next_module.id,
+                    ModuleLessons.display_order == 1,
+                    ModuleLessons.is_deleted == False,
+                )
+                .first()
+            )
+            
+            if next_module_lesson:
+                next_module_lesson.is_locked = False
+                db.commit()
+                db.refresh(next_module_lesson)
+
+    # Send notification to student about lesson completion
+    send_notification(
+        user_id=profile.user_id,
+        title="Lesson Completed",
+        content=f"Congratulations! You have successfully completed lesson '{lesson.title}' in module '{module.name}'. Keep up the great work!",
+        db=db
+    )
 
     return lesson
 
@@ -171,17 +195,12 @@ def resolve_update_lesson(_, info, id: str, input):
         raise Exception("Lesson not found")
 
     # Check ownership
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -223,17 +242,12 @@ def resolve_delete_lesson(_, info, id: str):
         raise Exception("Lesson not found")
 
     # Check ownership
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
+
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.id == module.profile_id)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.id == module.profile_id).first()
     )
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
@@ -304,11 +318,7 @@ def resolve_deleted_at(lesson, info):
 @module_lessons.field("module")
 def resolve_module(lesson, info):
     db: Session = info.context["db"]
-    module = (
-        db.query(Modules)
-        .filter(Modules.id == lesson.module_id)
-        .first()
-    )
+    module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
     return module
 
 
@@ -316,9 +326,13 @@ def resolve_module(lesson, info):
 def resolve_vocabularies(lesson, info):
     db: Session = info.context["db"]
     from ..model.lesson_vocabularies import LessonVocabularies
+
     vocabularies = (
         db.query(LessonVocabularies)
-        .filter(LessonVocabularies.lesson_id == lesson.id, LessonVocabularies.is_deleted == False)
+        .filter(
+            LessonVocabularies.lesson_id == lesson.id,
+            LessonVocabularies.is_deleted == False,
+        )
         .all()
     )
     return vocabularies
@@ -328,9 +342,13 @@ def resolve_vocabularies(lesson, info):
 def resolve_online_articles(lesson, info):
     db: Session = info.context["db"]
     from ..model.lesson_online_articles import LessonOnlineArticles
+
     articles = (
         db.query(LessonOnlineArticles)
-        .filter(LessonOnlineArticles.lesson_id == lesson.id, LessonOnlineArticles.is_deleted == False)
+        .filter(
+            LessonOnlineArticles.lesson_id == lesson.id,
+            LessonOnlineArticles.is_deleted == False,
+        )
         .all()
     )
     return articles
@@ -340,9 +358,13 @@ def resolve_online_articles(lesson, info):
 def resolve_youtube_videos(lesson, info):
     db: Session = info.context["db"]
     from ..model.lesson_youtube_videos import LessonYouTubeVideos
+
     videos = (
         db.query(LessonYouTubeVideos)
-        .filter(LessonYouTubeVideos.lesson_id == lesson.id, LessonYouTubeVideos.is_deleted == False)
+        .filter(
+            LessonYouTubeVideos.lesson_id == lesson.id,
+            LessonYouTubeVideos.is_deleted == False,
+        )
         .all()
     )
     return videos
@@ -352,12 +374,17 @@ def resolve_youtube_videos(lesson, info):
 def resolve_interactions(lesson, info):
     db: Session = info.context["db"]
     from ..model.lesson_interactions import LessonInteractions
+
     interactions = (
         db.query(LessonInteractions)
-        .filter(LessonInteractions.lesson_id == lesson.id, LessonInteractions.is_deleted == False)
+        .filter(
+            LessonInteractions.lesson_id == lesson.id,
+            LessonInteractions.is_deleted == False,
+        )
         .all()
     )
     return interactions
+
 
 @query.field("studentProgress")
 def resolve_get_student_progress(_, info, studentId: str):
@@ -372,14 +399,12 @@ def resolve_get_student_progress(_, info, studentId: str):
         raise Exception("Unauthorized")
 
     # Get all modules and lessons for the student
-    from ..model.student_profile import StudentProfile
     from ..model.modules import Modules
+    from ..model.student_profile import StudentProfile
 
     # Find student profile
     profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.user_id == studentId)
-        .first()
+        db.query(StudentProfile).filter(StudentProfile.user_id == studentId).first()
     )
 
     if not profile:
@@ -396,14 +421,19 @@ def resolve_get_student_progress(_, info, studentId: str):
     # Get all lessons for these modules
     lessons = (
         db.query(ModuleLessons)
-        .filter(ModuleLessons.module_id.in_([module.id for module in modules]), ModuleLessons.is_deleted == False)
+        .filter(
+            ModuleLessons.module_id.in_([module.id for module in modules]),
+            ModuleLessons.is_deleted == False,
+        )
         .all()
     )
 
     total_lessons = len(lessons)
     completed_lessons = sum(1 for lesson in lessons if lesson.is_completed)
     remaining_lessons = total_lessons - completed_lessons
-    progress_percentage = (completed_lessons * 100 // total_lessons) if total_lessons > 0 else 0
+    progress_percentage = (
+        (completed_lessons * 100 // total_lessons) if total_lessons > 0 else 0
+    )
 
     return {
         "totalModules": total_modules,
@@ -412,6 +442,7 @@ def resolve_get_student_progress(_, info, studentId: str):
         "remainingLessons": remaining_lessons,
         "progressPercentage": progress_percentage,
     }
+
 
 @query.field("myProgress")
 def resolve_get_my_progress(_, info):

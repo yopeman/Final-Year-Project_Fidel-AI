@@ -26,13 +26,64 @@ class User(BaseModel):
     refresh_token = Column(Text, nullable=True)
 
     # Relationships
-    profile = relationship("StudentProfile", back_populates="user", uselist=False)
-    batch_instructors = relationship("BatchInstructor", back_populates="user")
-    batch_communities = relationship("BatchCommunity", back_populates="user")
-    community_reactions = relationship("CommunityReactions", back_populates="user")
-    community_comments = relationship("CommunityComment", back_populates="user")
-    comment_reactions = relationship("CommentReactions", back_populates="user")
-    feedbacks = relationship("Feedback", back_populates="user")
-    notifications = relationship("Notification", back_populates="user")
-    attendances = relationship("Attendance", back_populates="user")
-    verification_codes = relationship("VerificationCode", back_populates="user")
+    profile = relationship(
+        "StudentProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    batch_instructors = relationship(
+        "BatchInstructor",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    batch_communities = relationship(
+        "BatchCommunity",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    community_reactions = relationship(
+        "CommunityReactions",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    community_comments = relationship(
+        "CommunityComment",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    comment_reactions = relationship(
+        "CommentReactions",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    feedbacks = relationship(
+        "Feedback",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    notifications = relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    attendances = relationship(
+        "Attendance",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    verification_codes = relationship(
+        "VerificationCode",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

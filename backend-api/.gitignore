@@ -146,3 +146,7 @@ uvicorn.pid
 *.swp
 *.swo
 *~
+
+# Static
+static/
+.ruff_cache/

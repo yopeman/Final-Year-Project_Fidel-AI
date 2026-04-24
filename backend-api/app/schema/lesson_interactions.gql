@@ -1,8 +1,8 @@
 type LessonInteractions {
   id: ID!
   lessonId: ID!
-  question: String!
-  answer: String!
+  studentQuestion: String!
+  aiAnswer: String!
   createdAt: DateTime!
   updatedAt: DateTime!
   isDeleted: Boolean!

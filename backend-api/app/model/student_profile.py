@@ -31,7 +31,9 @@ class DurationUnit(PyEnum):
 class StudentProfile(BaseModel):
     __tablename__ = "student_profiles"
 
-    user_id = Column(String(36), ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = Column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False
+    )
     age_range = Column(Enum(AgeRange), nullable=False)
     proficiency = Column(Enum(Proficiency), nullable=False)
     native_language = Column(String(50), nullable=False)
@@ -43,6 +45,21 @@ class StudentProfile(BaseModel):
 
     # Relationships
     user = relationship("User", back_populates="profile")
-    modules = relationship("Modules", back_populates="profile")
-    free_conversations = relationship("FreeConversation", back_populates="profile")
-    batch_enrollments = relationship("BatchEnrollment", back_populates="profile")
+    modules = relationship(
+        "Modules",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    free_conversations = relationship(
+        "FreeConversation",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    batch_enrollments = relationship(
+        "BatchEnrollment",
+        back_populates="profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

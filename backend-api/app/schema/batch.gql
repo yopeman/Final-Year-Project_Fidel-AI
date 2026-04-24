@@ -33,3 +33,40 @@ type Batch {
   communities: [BatchCommunity!]!
   instructors: [BatchInstructor!]!
 }
+
+
+extend type Query {
+  batches: [Batch!]!
+  batch(id: ID!): Batch
+  myBatches: [Batch!]!
+}
+
+extend type Mutation {
+  createBatch(input: CreateBatchInput!): Batch!
+  updateBatch(id: ID!, input: UpdateBatchInput!): Batch!
+  deleteBatch(id: ID!): Boolean!
+}
+
+
+input CreateBatchInput {
+  name: String!
+  description: String
+  level: BatchLevel!
+  language: String! = "English"
+  startDate: Date!
+  endDate: Date
+  maxStudents: Int!
+  feeAmount: Float!
+}
+
+input UpdateBatchInput {
+  name: String
+  description: String
+  level: BatchLevel
+  language: String
+  startDate: Date
+  endDate: Date
+  maxStudents: Int
+  feeAmount: Float
+  status: BatchStatus
+}
