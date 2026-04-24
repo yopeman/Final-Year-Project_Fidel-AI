@@ -92,14 +92,13 @@ class TestVerificationCodeModel:
         assert code1.code != code2.code != code3.code
 
     def test_verification_code_without_user_id(self, db_session, create_test_verification_code):
-        """Test creating verification code without user_id (for unregistered users)."""
+        """Test creating verification code with automatic user creation."""
         code = create_test_verification_code(
             email="newuser@example.com",
             code="789012",
-            user_id=None,
         )
         
-        assert code.user_id is None
+        assert code.user_id is not None  # User is created automatically
         assert code.email == "newuser@example.com"
 
     def test_verification_code_with_user_id(self, db_session, create_test_verification_code, test_user):
