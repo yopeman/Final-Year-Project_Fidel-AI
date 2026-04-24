@@ -175,7 +175,7 @@ export default function PaymentScreen() {
                             try {
                                 await Linking.openURL(statusCheck.payment.checkoutUrl);
                             } catch (err) {
-                                console.error('Failed to auto-open checkout URL:', err);
+                                console.log('Failed to auto-open checkout URL:', err);
                             }
                         }
                         setPaymentInitiated(true);
@@ -202,7 +202,7 @@ export default function PaymentScreen() {
                         try {
                             await Linking.openURL(result.payment.checkoutUrl);
                         } catch (err) {
-                            console.error('Failed to auto-open checkout URL:', err);
+                            console.log('Failed to auto-open checkout URL:', err);
                         }
                     }
                     setPaymentInitiated(true);
@@ -257,7 +257,7 @@ export default function PaymentScreen() {
                 }
             }
         } catch (error) {
-            console.error('Error in successful verification:', error);
+            console.log('Error in successful verification:', error);
             setShowSuccess(true); // Still show success if payment was confirmed
         }
     };
@@ -283,7 +283,7 @@ export default function PaymentScreen() {
         if (verifying) return;
 
         if (!id) {
-            console.error('Payment Error: enrollmentId (id) is missing from URL params');
+            console.log('Payment Error: enrollmentId (id) is missing from URL params');
             Alert.alert('Error', 'Missing enrollment ID. Please go back and try again.');
             return;
         }
@@ -342,7 +342,7 @@ export default function PaymentScreen() {
                 }
             }
         } catch (error) {
-            console.error('Verification Error Detail:', error);
+            console.log('Verification Error Detail:', error);
             Alert.alert(
                 'Verification Error',
                 `Failed to verify payment: ${error.message || 'Unknown error'}`

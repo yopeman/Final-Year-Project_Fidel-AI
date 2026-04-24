@@ -57,7 +57,7 @@ const graphQLRequest = async (query, variables = {}) => {
         return response.data;
     } catch (error) {
         // Detailed logging
-        console.error('GraphQL Request Error:', {
+        console.log('GraphQL Request Error:', {
             message: error.message,
             response: error.response?.data,
             status: error.response?.status,
@@ -126,7 +126,7 @@ const uploadGraphQLRequest = async (query, variables = {}, files = []) => {
         }
         return response.data;
     } catch (error) {
-        console.error('Upload GraphQL Request Error:', error.response?.data || error.message);
+        console.log('Upload GraphQL Request Error:', error.response?.data || error.message);
         throw error;
     }
 }

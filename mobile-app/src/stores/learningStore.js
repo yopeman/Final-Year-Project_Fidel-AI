@@ -180,7 +180,7 @@ export const useLearningStore = create((set, get) => ({
 
             return { success: true };
         } catch (error) {
-            console.error('Complete lesson failed', error);
+            console.log('Complete lesson failed', error);
             return { success: false };
         }
     },

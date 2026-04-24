@@ -48,7 +48,7 @@ export const useCommunityStore = create((set, get) => ({
                         isLoading: false
                     }));
                 } catch (uploadError) {
-                    console.error("Attachment upload failed:", uploadError);
+                    console.log("Attachment upload failed:", uploadError);
                     // Still add the post, but notify about attachments failure
                     set(state => ({
                         posts: [createdPost, ...state.posts],

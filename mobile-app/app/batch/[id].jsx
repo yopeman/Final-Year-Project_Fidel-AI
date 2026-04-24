@@ -283,7 +283,7 @@ export default function BatchDetails() {
                 router.push(`/payment/${enrollmentId}`);
             }
         } catch (error) {
-            console.error('Payment Error:', error);
+            console.log('Payment Error:', error);
             router.push(`/payment/${enrollmentId}`);
         } finally {
             setEnrolling(false);

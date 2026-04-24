@@ -294,7 +294,7 @@ const ProfileScreen = () => {
                 <View style={styles.body}>
                     {isEditing ? renderEditForm() : renderDetails()}
 
-                    {profile && !isEditing && (
+                    {!isEditing && (
                         <View style={styles.menuSection}>
                             <TouchableOpacity style={styles.menuRow} onPress={() => setShowFeedbackModal(true)}>
                                 <View style={[styles.menuIcon, { backgroundColor: 'rgba(16,185,129,0.12)' }]}>

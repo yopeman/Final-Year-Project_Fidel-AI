@@ -18,14 +18,14 @@ const graphQLRequest = async (query, variables = {}) => {
         };
         const response = await axios.post(API_BASE_URL, { query, variables }, { headers });
         if (response.data.errors) {
-            console.error('GraphQL Errors:', response.data.errors);
+            console.log('GraphQL Errors:', response.data.errors);
             throw new Error(response.data.errors[0].message);
         }
         return response.data.data;
     } catch (error) {
         if (error.response) {
             // Server responded with non-2xx code
-            console.error('GraphQL API Error Response:', error.response.status, error.response.data);
+            console.log('GraphQL API Error Response:', error.response.status, error.response.data);
             if (error.response.status === 503) {
                 throw new Error("Service Temporarily Unavailable (503). Backend might be offline.");
             }
@@ -34,10 +34,10 @@ const graphQLRequest = async (query, variables = {}) => {
             throw new Error(`Server Error (${error.response.status}): ${serverMsg}`);
         } else if (error.request) {
             // Request was made but no response received
-            console.error('GraphQL Network Error (No Response):', error.message);
+            console.log('GraphQL Network Error (No Response):', error.message);
             throw new Error("Network Error: Could not connect to API. Please check your internet or if the server is running.");
         } else {
-            console.error('GraphQL Error:', error.message);
+            console.log('GraphQL Error:', error.message);
         }
         throw error;
     }
@@ -80,7 +80,7 @@ export const useBatchStore = create((set, get) => ({
 
             return { success: true };
         } catch (error) {
-            console.error('[BatchStore] Initialization error:', error);
+            console.log('[BatchStore] Initialization error:', error);
             set({ isLoading: false, error: error.message });
             return { success: false, error: error.message };
         }
@@ -96,7 +96,7 @@ export const useBatchStore = create((set, get) => ({
             ]);
             console.log('[BatchStore] Minimal state persisted successfully');
         } catch (error) {
-            console.error('[BatchStore] Persistence error:', error);
+            console.log('[BatchStore] Persistence error:', error);
         }
     },
 
@@ -296,7 +296,7 @@ export const useBatchStore = create((set, get) => ({
             set({ isLoading: false });
             return { isEnrolled: false, status: null };
         } catch (error) {
-            console.error("Check enrollment failed", error);
+            console.log("Check enrollment failed", error);
             set({ isLoading: false, error: error.message });
             return { isEnrolled: false, status: null, error: error.message };
         }
@@ -574,7 +574,7 @@ export const useBatchStore = create((set, get) => ({
             };
 
         } catch (error) {
-            console.error("verifyPaymentAndUnlock Error:", error);
+            console.log("verifyPaymentAndUnlock Error:", error);
             set({
                 error: error.message || 'Verification failed',
                 isLoading: false
@@ -631,7 +631,7 @@ export const useBatchStore = create((set, get) => ({
             };
 
         } catch (error) {
-            console.error("checkPaymentStatus Error:", error);
+            console.log("checkPaymentStatus Error:", error);
             set({
                 isLoading: false,
                 error: error.message
@@ -703,7 +703,7 @@ export const useBatchStore = create((set, get) => ({
             const result = await get().verifyPaymentAndUnlock(enrollmentId);
             return result;
         } catch (error) {
-            console.error('Webhook handling error:', error);
+            console.log('Webhook handling error:', error);
             return { success: false, error: error.message };
         }
     },
@@ -907,7 +907,7 @@ export const useBatchStore = create((set, get) => ({
 
             return { success: true };
         } catch (error) {
-            console.error('[BatchStore] Sync error:', error);
+            console.log('[BatchStore] Sync error:', error);
             return { success: false, error: error.message };
         }
     },
@@ -920,7 +920,7 @@ export const useBatchStore = create((set, get) => ({
             await get().persistState(); // Keep persisting activeBatchId for UX continuity
             return { success: true };
         } catch (error) {
-            console.error('[BatchStore] Error setting active batch:', error);
+            console.log('[BatchStore] Error setting active batch:', error);
             return { success: false, error: error.message };
         }
     },
@@ -987,7 +987,7 @@ export const useBatchStore = create((set, get) => ({
             console.log('[BatchStore] Persisted data cleared');
             return { success: true };
         } catch (error) {
-            console.error('[BatchStore] Error clearing persisted data:', error);
+            console.log('[BatchStore] Error clearing persisted data:', error);
             return { success: false, error: error.message };
         }
     },

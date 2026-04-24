@@ -46,7 +46,7 @@ const ChatScreen = () => {
             clearMessages();
             const res = await createConversation(topic || "General practice");
             if (!res.success) {
-                console.error("Failed to start conversation:", res.error);
+                console.log("Failed to start conversation:", res.error);
             }
         };
 
@@ -127,10 +127,10 @@ const ChatScreen = () => {
                 setRecording(newRecording);
                 setIsRecording(true);
             } else {
-                console.error('Permission not granted');
+                console.log('Permission not granted');
             }
         } catch (err) {
-            console.error('Failed to start recording', err);
+            console.log('Failed to start recording', err);
             // Reset state on failure
             setRecording(null);
             setIsRecording(false);
@@ -161,7 +161,7 @@ const ChatScreen = () => {
                     const blob = await response.blob();
                     audioSource = { uri: URL.createObjectURL(blob) };
                 } catch (fetchError) {
-                    console.error('Failed to fetch audio for web:', fetchError);
+                    console.log('Failed to fetch audio for web:', fetchError);
                 }
             }
 
@@ -189,7 +189,7 @@ const ChatScreen = () => {
             });
 
         } catch (error) {
-            console.error('Failed to play sound', error);
+            console.log('Failed to play sound', error);
             setPlayingMessageId(null);
         }
     };
@@ -235,7 +235,7 @@ const ChatScreen = () => {
 
             handleSend(null, base64Audio);
         } catch (error) {
-            console.error('Failed to stop recording', error);
+            console.log('Failed to stop recording', error);
         }
     };
 
