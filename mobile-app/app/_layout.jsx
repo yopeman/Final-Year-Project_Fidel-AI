@@ -54,18 +54,15 @@ export default function Layout() {
     }
 
     return (
-        <>
-            <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-            <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS.background } }}>
-                    <Stack.Screen name="index" />
-                    <Stack.Screen name="(auth)" />
-                    <Stack.Screen name="(tabs)" />
-                    <Stack.Screen name="(onboarding)" />
-                    <Stack.Screen name="learn" />
-                    <Stack.Screen name="chat" />
-                </Stack>
-            </SafeAreaView>
-        </>
+        <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background }} edges={['top', 'bottom']}>
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS.background } }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="(onboarding)" />
+                <Stack.Screen name="learn" />
+                <Stack.Screen name="chat" />
+            </Stack>
+        </SafeAreaView>
     );
 }
