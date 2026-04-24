@@ -92,7 +92,7 @@ const ChatScreen = () => {
         if (messages.length > 0 && !isLoading) {
             autoPlayLatestAiAudio();
         }
-    }, [messages, isLoading]);
+    }, [messages]);
 
     const toggleRecording = async () => {
         if (isRecording) {

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { useNotificationStore } from '../src/stores/notificationStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ const formatDate = (dateString) => {
 };
 
 const NotificationsScreen = () => {
+    const router = useRouter();
     const {
         notifications,
         getNotifications,
@@ -88,6 +90,9 @@ const NotificationsScreen = () => {
             />
 
             <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={28} color="#fff" />
+                </TouchableOpacity>
                 <View>
                     <Text style={styles.headerTitle}>Notifications</Text>
                     <Text style={styles.headerSubtitle}>

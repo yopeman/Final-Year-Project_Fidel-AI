@@ -175,9 +175,9 @@ const ProfileScreen = () => {
         <View style={styles.card}>
             <Text style={styles.cardTitle}>Learning Profile</Text>
             {[
-                { label: 'Native Language', value: profile?.nativeLanguage },
-                { label: 'Proficiency', value: PROFICIENCY_LEVELS[profile?.proficiency] || profile?.proficiency },
-                { label: 'Goal', value: profile?.learningGoal },
+                { label: 'Native Language', value: profile?.nativeLanguage || 'Not set' },
+                { label: 'Proficiency', value: PROFICIENCY_LEVELS[profile?.proficiency] || profile?.proficiency || 'Not set' },
+                { label: 'Goal', value: profile?.learningGoal || 'Not set' },
             ].map(({ label, value }, i, arr) => (
                 <View key={label}>
                     <View style={styles.detailRow}>
@@ -292,7 +292,7 @@ const ProfileScreen = () => {
 
                 {/* ── Body ── */}
                 <View style={styles.body}>
-                    {isEditing || !profile ? renderEditForm() : renderDetails()}
+                    {isEditing ? renderEditForm() : renderDetails()}
 
                     {profile && !isEditing && (
                         <View style={styles.menuSection}>

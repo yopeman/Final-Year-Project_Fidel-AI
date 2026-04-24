@@ -14,14 +14,15 @@ export default function TabLayout() {
                     borderTopWidth: 1,
                     borderTopColor: COLORS.border,
                     backgroundColor: COLORS.surface,
-                    height: Platform.OS === 'ios' ? 85 : 65,
-                    paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+                    height: Platform.OS === 'ios' ? 90 : 70,
+                    paddingBottom: Platform.OS === 'ios' ? 30 : 10,
                     paddingTop: 10,
                 },
                 tabBarLabelStyle: {
                     fontSize: 12,
                     fontWeight: '500',
                 },
+                tabBarHideOnKeyboard: true,
             }}
         >
             <Tabs.Screen

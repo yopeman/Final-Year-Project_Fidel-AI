@@ -13,12 +13,20 @@ export default StyleSheet.create({
         bottom: 0,
     },
     header: {
-        paddingTop: 60,
+        paddingTop: 15,
         paddingHorizontal: SPACING.lg,
         paddingBottom: SPACING.lg,
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-end',
+        alignItems: 'center',
+        gap: SPACING.md,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
     },
     headerTitle: {
         fontSize: 28,
