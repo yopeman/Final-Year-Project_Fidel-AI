@@ -1,15 +1,15 @@
 {
   "expo": {
     "name": "Mobile-app",
-    "slug": "Mobile-app",
+    "slug": "fidel-ai",
     "scheme": "Mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/fidelai_logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/fidelai_logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,16 +18,27 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/fidelai_logo.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "package": "com.j16912031.fidelai"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/fidelai_logo.png"
     },
     "plugins": [
       "expo-audio"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0acd3a55-a102-4915-9c90-b37804cc6f57"
+      }
+    },
+    "owner": "j16912031"
   }
 }
