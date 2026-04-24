@@ -772,11 +772,14 @@ export const batchAPI = {
                     id
                     name
                     description
+                    materials {
+                        id
+                    }
                 }
                     instructors {
                     id
                     role
-                        user {
+                    user {
                         firstName
                         lastName
                     }
