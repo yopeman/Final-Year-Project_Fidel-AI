@@ -384,7 +384,8 @@ const AdminPayments = ({
                         </button>
                         {payment.receiptUrl && (
                           <a
-                            href={payment.receiptUrl}
+                            // href={payment.receiptUrl}
+                            href='https://chapa.link/payment-receipt/APQ1kcaiCZi2'
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl transition-all border border-blue-500/20"
