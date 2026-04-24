@@ -2,6 +2,7 @@ import { Stack, useSegments, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { useAuthStore } from '../src/stores/authStore';
 import { View, ActivityIndicator, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../src/constants/theme';
 
 export default function Layout() {
@@ -55,14 +56,16 @@ export default function Layout() {
     return (
         <>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS.background } }}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="(auth)" />
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="(onboarding)" />
-                <Stack.Screen name="learn" />
-                <Stack.Screen name="chat" />
-            </Stack>
+            <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+                <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS.background } }}>
+                    <Stack.Screen name="index" />
+                    <Stack.Screen name="(auth)" />
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="(onboarding)" />
+                    <Stack.Screen name="learn" />
+                    <Stack.Screen name="chat" />
+                </Stack>
+            </SafeAreaView>
         </>
     );
 }

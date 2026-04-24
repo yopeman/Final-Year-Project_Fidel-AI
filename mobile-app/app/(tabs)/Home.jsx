@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    RefreshControl, StatusBar, Animated, Dimensions
+    RefreshControl, StatusBar, Animated, Dimensions, ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
@@ -195,7 +195,7 @@ const HomeScreen = () => {
                 >
                     <View style={{ alignItems: 'center' }}>
                         <View style={{ width: 60, height: 60, marginBottom: 16 }}>
-                            <CircleProgress value={0} loading={true} />
+                            <ActivityIndicator size="large" color="#FFC107" />
                         </View>
                         <Text style={{ color: '#fff', fontSize: 16, opacity: 0.8 }}>Loading your profile...</Text>
                         <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 8 }}>

@@ -2,31 +2,29 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../src/constants/theme';
 import { Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
     return (
-        <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-            <Tabs
-                screenOptions={{
-                    headerShown: false,
-                    tabBarActiveTintColor: COLORS.primary,
-                    tabBarInactiveTintColor: COLORS.textSecondary,
-                    tabBarStyle: {
-                        borderTopWidth: 1,
-                        borderTopColor: COLORS.border,
-                        backgroundColor: COLORS.surface,
-                        height: Platform.OS === 'ios' ? 90 : 70,
-                        paddingBottom: Platform.OS === 'ios' ? 30 : 10,
-                        paddingTop: 10,
-                    },
-                    tabBarLabelStyle: {
-                        fontSize: 12,
-                        fontWeight: '500',
-                    },
-                    tabBarHideOnKeyboard: true,
-                }}
-            >
+        <Tabs
+            screenOptions={{
+                headerShown: false,
+                tabBarActiveTintColor: COLORS.primary,
+                tabBarInactiveTintColor: COLORS.textSecondary,
+                tabBarStyle: {
+                    borderTopWidth: 1,
+                    borderTopColor: COLORS.border,
+                    backgroundColor: COLORS.surface,
+                    height: Platform.OS === 'ios' ? 90 : 70,
+                    paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+                    paddingTop: 10,
+                },
+                tabBarLabelStyle: {
+                    fontSize: 12,
+                    fontWeight: '500',
+                },
+                tabBarHideOnKeyboard: true,
+            }}
+        >
             <Tabs.Screen
                 name="Home"
                 options={{
@@ -104,7 +102,6 @@ export default function TabLayout() {
                     ),
                 }}
             />
-            </Tabs>
-        </SafeAreaView>
+        </Tabs>
     );
 }
