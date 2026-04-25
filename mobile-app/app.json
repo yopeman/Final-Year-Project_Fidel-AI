@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Mobile-app",
+    "name": "Fidel AI",
     "slug": "fidel-ai",
-    "scheme": "Mobile-app",
+    "scheme": "fidel-ai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/fidelai_logo.png",
