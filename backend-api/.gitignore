@@ -150,3 +150,4 @@ uvicorn.pid
 # Static
 static/
 .ruff_cache/
+.github/
