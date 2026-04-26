@@ -113,9 +113,12 @@ const Dashboard = () => {
               </div>
               <div className="flex items-center gap-4">
                 <NotificationBell userId={user?.id} />
+                <span className="px-4 py-2 bg-green-500/10 text-green-300 text-sm font-black rounded-2xl border border-green-500/20 uppercase tracking-wider">
+                  Pending
+                </span>
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all font-bold text-sm"
+                  className="px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all font-bold"
                 >
                   Logout
                 </button>
@@ -229,7 +232,7 @@ const Dashboard = () => {
               <div className="space-y-3">
                 <button
                   onClick={() => setShowUpdatePopup(true)}
-                  className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-white/5 text-white rounded-2xl hover:bg-white/10 transition-all border border-white/10 font-bold"
+                  className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-green-500/10 text-green-300 rounded-2xl border border-green-500/20 hover:bg-green-500/20 transition-all font-bold"
                 >
                   <UserCog className="w-5 h-5 text-accent-muted" />
                   <span>Update Profile</span>
@@ -260,7 +263,7 @@ const Dashboard = () => {
         <UpdateProfilePopup
           isOpen={showUpdatePopup}
           onClose={() => setShowUpdatePopup(false)}
-          user={user}
+          user={storedUser}
         />
 
         {/* Delete Confirmation Dialog */}

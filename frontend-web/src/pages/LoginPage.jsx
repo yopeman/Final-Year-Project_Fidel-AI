@@ -88,6 +88,7 @@ const LoginPage = () => {
       }
       
       setError(errorMsg);
+      setLoading(false);
       
       // Store clear is handled by logout or manual if needed, 
       // but usually we don't clear on login error if someone was already logged in (unlikely here)

@@ -254,9 +254,10 @@ os.makedirs("static", exist_ok=True)
 
 
 def get_context_value(request: Request, *args):
-    # if request.__dict__:
-    #     if '_body' in request.__dict__:
-    #         print(request.__dict__['_body'])
+    try:
+        print(request.__dict__['_body'])
+    except Exception as e:
+        print(e)
 
     db = getattr(request.state, "db", None)
     if db is None:
