@@ -247,7 +247,7 @@ const ViewBatchModal = ({ isOpen, onClose, batch, onAssignCourse, onEnrollStuden
             onClick={onClose}
             className="px-12 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all border border-white/10 shadow-xl"
           >
-            Collapse Batch Overview
+            Close Batch Overview
           </button>
         </div>
       </motion.div>

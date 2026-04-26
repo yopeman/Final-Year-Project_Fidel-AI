@@ -109,17 +109,17 @@ const AdminOverview = ({ onAction }) => {
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <button 
               onClick={() => onAction('updateProfile')}
-              className="flex items-center justify-center space-x-2 px-6 py-3 bg-white/5 border border-white/10 text-white rounded-xl hover:bg-white/10 transition-all font-bold text-sm"
+              className="flex items-center space-x-2 px-5 py-3 bg-green-500/10 text-green-300 rounded-2xl border border-green-500/20 hover:bg-green-500/20 transition-all font-bold"
             >
               <Shield className="w-4 h-4 text-primary" />
-              <span>Security Settings</span>
+              <span>Update Profile</span>
             </button>
             <button 
               onClick={() => onAction('deleteProfile')}
-              className="flex items-center justify-center space-x-2 px-6 py-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl hover:bg-red-500/20 transition-all font-bold text-sm"
+              className="flex items-center space-x-2 px-5 py-3 bg-red-500/10 text-red-300 rounded-2xl border border-red-500/20 hover:bg-red-500/20 transition-all font-bold"
             >
               <AlertCircle className="w-4 h-4" />
-              <span>Remove Account</span>
+              <span>Delete Profile</span>
             </button>
           </div>
         </div>
