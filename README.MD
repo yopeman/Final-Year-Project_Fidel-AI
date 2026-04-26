@@ -141,7 +141,7 @@ Fidel AI is built as a multi-platform application with the following architectur
 
 5. **Run tests (optional)**
    ```bash
-   uv run pytest tests/ -v
+   uv run pytest
    ```
 
 6. **Start the server**
