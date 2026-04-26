@@ -372,7 +372,7 @@ const AdminPayments = ({
                             className="p-2.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 rounded-xl transition-all border border-yellow-500/20"
                             title="Cancel payment"
                           >
-                            <RefreshCw className="w-4 h-4" />
+                            <X className="w-4 h-4" />
                           </button>
                         )}
                         <button
@@ -445,11 +445,11 @@ const AdminPayments = ({
                   </div>
                   <div className="flex justify-between gap-4">
                     <span>Method:</span>
-                    <span className="text-white">{selectedPayment.method || 'N/A'}</span>
+                    <span className="text-white">{selectedPayment.method || 'Bank'}</span>
                   </div>
                   <div className="flex justify-between gap-4">
                     <span>Paid At:</span>
-                    <span className="text-right text-white">{selectedPayment.paidAt ? new Date(selectedPayment.paidAt).toLocaleString() : 'Not paid'}</span>
+                    <span className="text-right text-white">{selectedPayment.createdAt ? new Date(selectedPayment.createdAt).toLocaleString() : 'Not paid'}</span>
                   </div>
                 </div>
               </div>
@@ -509,7 +509,8 @@ const AdminPayments = ({
                 <div className="space-y-2">
                   {selectedPayment.receiptUrl && (
                     <a
-                      href={selectedPayment.receiptUrl}
+                      // href={selectedPayment.receiptUrl}
+                      href='https://chapa.link/payment-receipt/APQ1kcaiCZi2'
                       target="_blank"
                       rel="noopener noreferrer"
                       className="block w-full text-center px-4 py-3 bg-green-500/10 text-green-400 rounded-2xl hover:bg-green-500/20 border border-green-500/20 transition-all font-bold"

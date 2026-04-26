@@ -251,7 +251,7 @@ export const ViewCourseDetailsModal = ({ isOpen, onClose, courseDetails, onAddIn
             onClick={onClose}
             className="px-10 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all border border-white/10"
           >
-            Collapse Console
+            Close Console
           </button>
         </div>
       </motion.div>
