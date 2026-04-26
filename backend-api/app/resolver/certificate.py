@@ -190,33 +190,33 @@ def resolve_generate_certificate(_, info, input):
     
     # Prepare skill data for template
     speaking_skill_data = {
-        "pronunciation": {"value": skill.speaking_skill.pronunciation.value if skill.speaking_skill else "N/A"},
-        "fluency": {"value": skill.speaking_skill.fluency.value if skill.speaking_skill else "N/A"},
-        "grammar": {"value": skill.speaking_skill.grammar.value if skill.speaking_skill else "N/A"},
-        "vocabulary": {"value": skill.speaking_skill.vocabulary.value if skill.speaking_skill else "N/A"},
-        "coherence": {"value": skill.speaking_skill.coherence.value if skill.speaking_skill else "N/A"},
+        # "pronunciation": {"value": skill.speaking_skill.pronunciation.value if skill.speaking_skill else "N/A"},
+        # "fluency": {"value": skill.speaking_skill.fluency.value if skill.speaking_skill else "N/A"},
+        # "grammar": {"value": skill.speaking_skill.grammar.value if skill.speaking_skill else "N/A"},
+        # "vocabulary": {"value": skill.speaking_skill.vocabulary.value if skill.speaking_skill else "N/A"},
+        # "coherence": {"value": skill.speaking_skill.coherence.value if skill.speaking_skill else "N/A"},
         "final_result": {"value": skill.speaking_skill.final_result.value if skill.speaking_skill else "N/A"}
     } if skill.speaking_skill else None
     
     reading_skill_data = {
-        "comprehension": {"value": skill.reading_skill.comprehension.value if skill.reading_skill else "N/A"},
-        "speed": {"value": skill.reading_skill.speed.value if skill.reading_skill else "N/A"},
-        "vocabulary": {"value": skill.reading_skill.vocabulary.value if skill.reading_skill else "N/A"},
+        # "comprehension": {"value": skill.reading_skill.comprehension.value if skill.reading_skill else "N/A"},
+        # "speed": {"value": skill.reading_skill.speed.value if skill.reading_skill else "N/A"},
+        # "vocabulary": {"value": skill.reading_skill.vocabulary.value if skill.reading_skill else "N/A"},
         "final_result": {"value": skill.reading_skill.final_result.value if skill.reading_skill else "N/A"}
     } if skill.reading_skill else None
     
     writing_skill_data = {
-        "coherence": {"value": skill.writing_skill.coherence.value if skill.writing_skill else "N/A"},
-        "grammar": {"value": skill.writing_skill.grammar.value if skill.writing_skill else "N/A"},
-        "vocabulary": {"value": skill.writing_skill.vocabulary.value if skill.writing_skill else "N/A"},
-        "punctuation": {"value": skill.writing_skill.punctuation.value if skill.writing_skill else "N/A"},
+        # "coherence": {"value": skill.writing_skill.coherence.value if skill.writing_skill else "N/A"},
+        # "grammar": {"value": skill.writing_skill.grammar.value if skill.writing_skill else "N/A"},
+        # "vocabulary": {"value": skill.writing_skill.vocabulary.value if skill.writing_skill else "N/A"},
+        # "punctuation": {"value": skill.writing_skill.punctuation.value if skill.writing_skill else "N/A"},
         "final_result": {"value": skill.writing_skill.final_result.value if skill.writing_skill else "N/A"}
     } if skill.writing_skill else None
     
     listening_skill_data = {
-        "comprehension": {"value": skill.listening_skill.comprehension.value if skill.listening_skill else "N/A"},
-        "retention": {"value": skill.listening_skill.retention.value if skill.listening_skill else "N/A"},
-        "interpretation": {"value": skill.listening_skill.interpretation.value if skill.listening_skill else "N/A"},
+        # "comprehension": {"value": skill.listening_skill.comprehension.value if skill.listening_skill else "N/A"},
+        # "retention": {"value": skill.listening_skill.retention.value if skill.listening_skill else "N/A"},
+        # "interpretation": {"value": skill.listening_skill.interpretation.value if skill.listening_skill else "N/A"},
         "final_result": {"value": skill.listening_skill.final_result.value if skill.listening_skill else "N/A"}
     } if skill.listening_skill else None
     
