@@ -131,12 +131,6 @@ export const useAuthStore = create((set, get) => ({
             // api.js returns { data: { token, user } }
             const { token, user } = response.data;
 
-            // We assume api.js handles extracting accessToken/refreshToken if needed, 
-            // but looking at api.js, it returns `token: res.data.login.accessToken`.
-            // We might want to store refreshToken if api.js returned it, but currently it returns `token` and `user`.
-            // The `login` mutation in schema returns { accessToken, refreshToken, user }.
-            // Let's rely on what api.js returns for now.
-
             await AsyncStorage.setItem('accessToken', token);
             await AsyncStorage.setItem('user', JSON.stringify(user));
 
@@ -171,6 +165,28 @@ export const useAuthStore = create((set, get) => ({
             return { success: true, profile };
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || JSON.stringify(error) || 'Failed to create profile';
+            set({ error: errorMsg, isLoading: false });
+            return { success: false, error: errorMsg };
+        }
+    },
+
+    updateMe: async (data) => {
+        try {
+            // set({ isLoading: true, error: null });
+            const response = await authAPI.updateMe(data);
+            const updatedUser = response.data.user;
+
+            if (updatedUser) {
+                await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+                set({
+                    user: updatedUser,
+                    // isLoading: false
+                });
+                return { success: true, user: updatedUser };
+            }
+            return { success: false, error: 'No user data returned' };
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || error.message || 'Failed to update account';
             set({ error: errorMsg, isLoading: false });
             return { success: false, error: errorMsg };
         }
