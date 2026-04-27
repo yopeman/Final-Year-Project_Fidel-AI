@@ -17,44 +17,34 @@ import styles from '../styles/profileStyle';
 
 const ProfileScreen = () => {
     const router = useRouter();
-    const { user, logout } = useAuthStore();
-    const { profile, getProfile, createProfile, updateProfile, isLoading } = useProfileStore();
+    const { user, logout, updateMe } = useAuthStore();
+    const { profile, getProfile, createProfile, updateProfile, isLoading: profileLoading } = useProfileStore();
     const { submitFeedback, submitAnonymously, isLoading: isSubmittingFeedback } = useFeedbackStore();
     const { enrollments, premiumUnlocked } = useBatchStore();
     const [menuVisible, setMenuVisible] = useState(false);
 
     const isPremium = premiumUnlocked || enrollments.some(e => e.status === 'ENROLLED');
 
-    const [isEditing, setIsEditing] = useState(false);
     const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-    const [formData, setFormData] = useState({
-        ageRange: 'UNDER_18',
-        proficiency: 'BEGINNER',
-        nativeLanguage: '',
-        learningGoal: '',
-        targetDuration: '30',
-        durationUnit: 'DAYS',
-        constraints: ''
-    });
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [isEditingAccount, setIsEditingAccount] = useState(false);
     const [feedbackForm, setFeedbackForm] = useState({ content: '', rate: 5, isAnonymous: false });
+    const [accountForm, setAccountForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => { getProfile(); }, []);
 
-    useEffect(() => {
-        if (profile) {
-            setFormData({
-                ageRange: profile.ageRange || 'UNDER_18',
-                proficiency: profile.proficiency || 'BEGINNER',
-                nativeLanguage: profile.nativeLanguage || '',
-                learningGoal: profile.learningGoal || '',
-                targetDuration: profile.targetDuration?.toString() || '30',
-                durationUnit: profile.durationUnit || 'DAYS',
-                constraints: profile.constraints || ''
+    useEffect(() => {        
+        if (user) {
+            setAccountForm({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                email: user.email || '',
+                password: '',
+                confirmPassword: ''
             });
-        } else {
-            // logout();
         }
-    }, [profile]);
+    }, [user]);
 
     const handleLogout = () => {
         Alert.alert('Log Out', 'Are you sure you want to log out?', [
@@ -63,18 +53,48 @@ const ProfileScreen = () => {
         ]);
     };
 
-    const handleSaveProfile = async () => {
-        if (!formData.nativeLanguage || !formData.learningGoal || !formData.targetDuration) {
+    const handleSaveAccount = async () => {
+        if (!accountForm.firstName || !accountForm.lastName || !accountForm.email) {
             Alert.alert('Missing Fields', 'Please fill in all required fields.');
             return;
         }
-        const payload = { ...formData, targetDuration: parseInt(formData.targetDuration, 10) };
-        const result = profile ? await updateProfile(payload) : await createProfile(payload);
-        if (result.success) {
-            setIsEditing(false);
-            Alert.alert('Saved!', 'Profile updated successfully.');
-        } else {
-            Alert.alert('Error', result.error || 'Failed to save profile.');
+
+        if (accountForm.password && accountForm.password !== accountForm.confirmPassword) {
+            Alert.alert('Password Mismatch', 'Passwords do not match.');
+            return;
+        }
+        
+        const payload = { ...accountForm };
+        delete payload.confirmPassword;
+        
+        if (!payload.password) delete payload.password;
+        
+        try {
+            setIsLoading(true);
+            const result = await updateMe(payload);
+            if (result.success) {
+                setIsEditingAccount(false);
+                Alert.alert('Saved!', 'Account updated successfully.');
+            } else {
+                Alert.alert('Error', result.error || 'Failed to update account.');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to update account.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditingAccount(false);
+        if (user) {
+            setAccountForm({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                email: user.email || '',
+                password: '',
+                confirmPassword: ''
+            });
         }
     };
 
@@ -92,92 +112,15 @@ const ProfileScreen = () => {
         }
     };
 
-    /* ── Selection chips ── */
-    const SelectionGroup = ({ label, options, value, onChange, mapLabels }) => (
-        <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>{label}</Text>
-            <View style={styles.chipRow}>
-                {Object.keys(options).map((key) => {
-                    const active = value === key;
-                    return (
-                        <TouchableOpacity
-                            key={key}
-                            style={[styles.chip, active && styles.chipActive]}
-                            onPress={() => onChange(key)}
-                        >
-                            <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                                {mapLabels ? options[key] : key}
-                            </Text>
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
-        </View>
-    );
-
-    /* ── Edit Form ── */
-    const renderEditForm = () => (
-        <View style={styles.card}>
-            <Text style={styles.cardTitle}>{profile ? 'Edit Preferences' : 'Setup Profile'}</Text>
-
-            <SelectionGroup label="Age Range" options={AGE_RANGES} value={formData.ageRange}
-                onChange={(v) => setFormData({ ...formData, ageRange: v })} mapLabels />
-
-            <SelectionGroup label="Proficiency Level" options={PROFICIENCY_LEVELS} value={formData.proficiency}
-                onChange={(v) => setFormData({ ...formData, proficiency: v })} mapLabels />
-
-            <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Learning Goal</Text>
-                <TextInput style={styles.input} value={formData.learningGoal}
-                    onChangeText={(t) => setFormData({ ...formData, learningGoal: t })}
-                    placeholder="e.g., Speak fluently for travel" placeholderTextColor="#4B5563" />
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Daily Study Time</Text>
-                <View style={styles.chipRow}>
-                    {[['30 min', '30'], ['1 hour', '60'], ['2 hours', '120'], ['3+ hours', '180']].map(([label, val]) => (
-                        <TouchableOpacity key={val}
-                            style={[styles.chip, formData.targetDuration === val && styles.chipActive]}
-                            onPress={() => setFormData({ ...formData, targetDuration: val })}>
-                            <Text style={[styles.chipText, formData.targetDuration === val && styles.chipTextActive]}>{label}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Native Language</Text>
-                <TextInput style={styles.input} value={formData.nativeLanguage}
-                    onChangeText={(t) => setFormData({ ...formData, nativeLanguage: t })}
-                    placeholder="e.g. Amharic" placeholderTextColor="#4B5563" />
-            </View>
-
-            <View style={styles.formBtns}>
-                <TouchableOpacity style={styles.saveBtn} onPress={handleSaveProfile} disabled={isLoading}>
-                    <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.saveBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                        {isLoading
-                            ? <ActivityIndicator color="#fff" />
-                            : <Text style={styles.saveBtnText}>Save Changes</Text>}
-                    </LinearGradient>
-                </TouchableOpacity>
-                {profile && (
-                    <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsEditing(false)}>
-                        <Text style={styles.cancelBtnText}>Cancel</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
-        </View>
-    );
-
-    /* ── Profile Detail Card ── */
+    /* ── Account Details Card ── */
     const renderDetails = () => (
         <View style={styles.card}>
-            <Text style={styles.cardTitle}>Learning Profile</Text>
+            <Text style={styles.cardTitle}>Account Details</Text>
             {[
-                { label: 'Native Language', value: profile?.nativeLanguage || 'Not set' },
-                { label: 'Proficiency', value: PROFICIENCY_LEVELS[profile?.proficiency] || profile?.proficiency || 'Not set' },
-                { label: 'Goal', value: profile?.learningGoal || 'Not set' },
+                { label: 'First Name', value: user?.firstName || 'Not set' },
+                { label: 'Last Name', value: user?.lastName || 'Not set' },
+                { label: 'Email', value: user?.email || 'Not set' },
+                { label: 'Role', value: user?.role || 'Not set' },
             ].map(({ label, value }, i, arr) => (
                 <View key={label}>
                     <View style={styles.detailRow}>
@@ -187,10 +130,12 @@ const ProfileScreen = () => {
                     {i < arr.length - 1 && <View style={styles.divider} />}
                 </View>
             ))}
-            <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditing(true)}>
-                <Ionicons name="create-outline" size={16} color={COLORS.primary} />
-                <Text style={styles.editBtnText}>Edit Preferences</Text>
-            </TouchableOpacity>
+            {!isEditingAccount && (
+                <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditingAccount(true)}>
+                    <Ionicons name="create-outline" size={16} color={COLORS.primary} />
+                    <Text style={styles.editBtnText}>Edit Account</Text>
+                </TouchableOpacity>
+            )}
         </View>
     );
 
@@ -239,6 +184,106 @@ const ProfileScreen = () => {
                 </View>
             </View>
         </Modal>
+    );
+
+    /* ── Profile Modal ── */
+    const renderProfileModal = () => (
+        <Modal visible={showProfileModal} animationType="slide" transparent onRequestClose={() => setShowProfileModal(false)}>
+            <View style={styles.overlay}>
+                <View style={styles.modalBox}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>My Profile</Text>
+                        <TouchableOpacity onPress={() => setShowProfileModal(false)} style={styles.modalCloseBtn}>
+                            <Ionicons name="close" size={20} color="#9CA3AF" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                        {[
+                            { label: 'Age Range', value: AGE_RANGES[profile?.ageRange] || 'Not set' },
+                            { label: 'Native Language', value: profile?.nativeLanguage || 'Not set' },
+                            { label: 'Proficiency Level', value: PROFICIENCY_LEVELS[profile?.proficiency] || 'Not set' },
+                            { label: 'Learning Goal', value: profile?.learningGoal || 'Not set' },
+                            { label: 'Daily Study Time', value: profile?.targetDuration ? `${profile.targetDuration} ${profile.durationUnit}` : 'Not set' },
+                        ].map(({ label, value }, i, arr) => (
+                            <View key={label}>
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>{label}</Text>
+                                    <Text style={styles.detailValue} numberOfLines={2}>{value}</Text>
+                                </View>
+                                {i < arr.length - 1 && <View style={styles.divider} />}
+                            </View>
+                        ))}
+                    </ScrollView>
+
+                    <TouchableOpacity style={styles.saveBtn} onPress={() => setShowProfileModal(false)}>
+                        <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.saveBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                            <Text style={styles.saveBtnText}>Close</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+    );
+
+    /* ── Edit Account Form ── */
+    const renderEditAccountForm = () => (
+        <View style={styles.card}>
+            <Text style={styles.cardTitle}>Edit Account</Text>
+
+            <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>First Name</Text>
+                <TextInput style={styles.input} value={accountForm.firstName}
+                    onChangeText={(t) => setAccountForm({ ...accountForm, firstName: t })}
+                    placeholder="First Name" placeholderTextColor="#4B5563" />
+            </View>
+
+            <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Last Name</Text>
+                <TextInput style={styles.input} value={accountForm.lastName}
+                    onChangeText={(t) => setAccountForm({ ...accountForm, lastName: t })}
+                    placeholder="Last Name" placeholderTextColor="#4B5563" />
+            </View>
+
+            <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email</Text>
+                <TextInput style={styles.input} value={accountForm.email}
+                    onChangeText={(t) => setAccountForm({ ...accountForm, email: t })}
+                    placeholder="Email" placeholderTextColor="#4B5563" keyboardType="email-address" autoCapitalize="none" />
+            </View>
+
+            <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>New Password (optional)</Text>
+                <TextInput style={styles.input} value={accountForm.password}
+                    onChangeText={(t) => setAccountForm({ ...accountForm, password: t })}
+                    placeholder="Leave blank to keep current" placeholderTextColor="#4B5563" secureTextEntry />
+            </View>
+
+            {accountForm.password.length > 0 && (
+                <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Confirm Password</Text>
+                    <TextInput style={styles.input} value={accountForm.confirmPassword}
+                        onChangeText={(t) => setAccountForm({ ...accountForm, confirmPassword: t })}
+                        placeholder="Confirm new password" placeholderTextColor="#4B5563" secureTextEntry />
+                </View>
+            )}
+
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+                <TouchableOpacity style={[styles.saveBtn, { flex: 1 }]} onPress={handleSaveAccount} disabled={isLoading}>
+                    <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.saveBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                        {isLoading
+                            ? <ActivityIndicator color="#fff" />
+                            : <Text style={styles.saveBtnText}>Save</Text>}
+                    </LinearGradient>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.saveBtn, { flex: 1, backgroundColor: '#374151' }]} onPress={handleCancelEdit} disabled={isLoading}>
+                    <View style={[styles.saveBtnGrad, { backgroundColor: '#374151' }]}>
+                        <Text style={[styles.saveBtnText, { color: '#fff' }]}>Cancel</Text>
+                    </View>
+                </TouchableOpacity>
+            </View>
+        </View>
     );
 
     return (
@@ -292,10 +337,19 @@ const ProfileScreen = () => {
 
                 {/* ── Body ── */}
                 <View style={styles.body}>
-                    {isEditing ? renderEditForm() : renderDetails()}
+                    {isEditingAccount ? renderEditAccountForm() : renderDetails()}
 
-                    {!isEditing && (
-                        <View style={styles.menuSection}>
+                    <View style={styles.menuSection}>
+                        <TouchableOpacity style={styles.menuRow} onPress={() => setShowProfileModal(true)}>
+                                <View style={[styles.menuIcon, { backgroundColor: 'rgba(16,185,129,0.12)' }]}>
+                                    <Ionicons name="school-outline" size={20} color={COLORS.primary} />
+                                </View>
+                                <Text style={styles.menuLabel}>Profile Settings</Text>
+                                <Ionicons name="chevron-forward" size={18} color="#4B5563" />
+                            </TouchableOpacity>
+
+                            <View style={styles.menuDivider} />
+
                             <TouchableOpacity style={styles.menuRow} onPress={() => setShowFeedbackModal(true)}>
                                 <View style={[styles.menuIcon, { backgroundColor: 'rgba(16,185,129,0.12)' }]}>
                                     <Ionicons name="chatbox-ellipses-outline" size={20} color={COLORS.primary} />
@@ -314,11 +368,11 @@ const ProfileScreen = () => {
                                 <Ionicons name="chevron-forward" size={18} color="#4B5563" />
                             </TouchableOpacity>
                         </View>
-                    )}
                 </View>
             </ScrollView>
 
             {renderFeedbackModal()}
+            {renderProfileModal()}
         </View>
     );
 }
