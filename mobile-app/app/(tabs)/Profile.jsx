@@ -205,7 +205,6 @@ const ProfileScreen = () => {
                             { label: 'Proficiency Level', value: PROFICIENCY_LEVELS[profile?.proficiency] || 'Not set' },
                             { label: 'Learning Goal', value: profile?.learningGoal || 'Not set' },
                             { label: 'Daily Study Time', value: profile?.targetDuration ? `${profile.targetDuration} ${profile.durationUnit}` : 'Not set' },
-                            { label: 'Constraints', value: profile?.constraints || 'Not set' },
                         ].map(({ label, value }, i, arr) => (
                             <View key={label}>
                                 <View style={styles.detailRow}>
