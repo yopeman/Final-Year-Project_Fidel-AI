@@ -143,15 +143,6 @@ export default function BatchDetails() {
     const completedLessons = progress?.completedLessons || 0;
     const totalLessons = modules.reduce((sum, m) => sum + (m.lessons?.length || 0), 0);
 
-    // React to global premium unlock
-    useEffect(() => {
-        if (premiumUnlocked && enrollmentStatusGlobal === 'ENROLLED') {
-            setEnrollmentStatus('ENROLLED');
-            getModules();
-            getProgress();
-        }
-    }, [premiumUnlocked, enrollmentStatusGlobal]);
-
     // Tab fade
     useEffect(() => {
         fadeAnim.setValue(0);
@@ -180,18 +171,6 @@ export default function BatchDetails() {
     }, [enrollmentStatus, myEnrollmentId]);
 
     const checkAccess = async () => {
-        // Optimistic check: if global store says we're enrolled, trust it (handling dev skip / API delay)
-        if (enrollmentStatusGlobal === 'ENROLLED') {
-            if (enrollmentStatus !== 'ENROLLED') {
-                setEnrollmentStatus('ENROLLED');
-                if (!myEnrollmentId) setMyEnrollmentId('premium-access');
-                Alert.alert('🎉 Access Unlocked', 'You now have full premium access to this batch!');
-                getModules();
-                getProgress();
-            }
-            return;
-        }
-
         const result = await checkEnrollmentStatus(id);
         if (result.isEnrolled) {
             const wasNotEnrolled = enrollmentStatus !== 'ENROLLED';
