@@ -81,10 +81,10 @@ const LandingPage = () => {
   ];
 
   const stats = [
-    { number: "5000+", label: "Active Students" },
-    { number: "200+", label: "Certified Tutors" },
+    { number: "100%", label: "Platform Uptime" },
     { number: "98%", label: "Satisfaction Rate" },
-    { number: "24/7", label: "AI Support" }
+    { number: "24/7", label: "AI Support" },
+    { number: "4", label: "Skill Levels" },
   ];
 
   return (
