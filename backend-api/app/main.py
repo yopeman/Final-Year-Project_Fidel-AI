@@ -255,7 +255,9 @@ os.makedirs("static", exist_ok=True)
 
 def get_context_value(request: Request, *args):
     try:
-        print(request.__dict__['_body'])
+        print()
+        print(str(request.__dict__['_body'])[:150], '...')
+        print()
     except Exception as e:
         print(e)
 

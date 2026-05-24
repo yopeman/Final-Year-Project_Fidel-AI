@@ -83,8 +83,8 @@ const LandingPage = () => {
   const stats = [
     { number: "100%", label: "Platform Uptime" },
     { number: "98%", label: "Satisfaction Rate" },
+    { number: "365", label: "Available Days" },
     { number: "24/7", label: "AI Support" },
-    { number: "4", label: "Skill Levels" },
   ];
 
   return (
