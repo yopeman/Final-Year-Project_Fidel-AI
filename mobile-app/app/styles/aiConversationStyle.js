@@ -87,7 +87,9 @@ export default StyleSheet.create({
     },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     menuBtn: {
-        width: 38, height: 38, borderRadius: 12,
+        width: 38, 
+        top: -10,
+        height: 38, borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.08)',
         alignItems: 'center', justifyContent: 'center',
     },
