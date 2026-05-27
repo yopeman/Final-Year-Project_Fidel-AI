@@ -8,66 +8,104 @@ export default function TabLayout() {
         <Tabs
             screenOptions={{
                 headerShown: false,
+
                 tabBarActiveTintColor: COLORS.primary,
                 tabBarInactiveTintColor: COLORS.textSecondary,
+
+                tabBarHideOnKeyboard: true,
+
                 tabBarStyle: {
                     borderTopWidth: 1,
                     borderTopColor: COLORS.border,
                     backgroundColor: COLORS.surface,
+
                     height: Platform.OS === 'ios' ? 90 : 70,
+
                     paddingBottom: Platform.OS === 'ios' ? 30 : 10,
                     paddingTop: 10,
                 },
+
                 tabBarLabelStyle: {
                     fontSize: 12,
                     fontWeight: '500',
+                    marginBottom: Platform.OS === 'ios' ? 10 : 0,
                 },
-                tabBarHideOnKeyboard: true,
             }}
         >
+
+            {/* Home */}
             <Tabs.Screen
                 name="Home"
                 options={{
-                    title: 'Home',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="home" size={size} color={color} />
+                    title: '',
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? 'home' : 'home-outline'}
+                            size={focused ? 32 : 28}
+                            color={color}
+                        />
                     ),
                 }}
             />
+
+            {/* Modules */}
             <Tabs.Screen
                 name="Modules"
                 options={{
-                    title: 'Learn',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="book" size={size} color={color} />
+                    title: '',
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? 'book' : 'book-outline'}
+                            size={focused ? 32 : 28}
+                            color={color}
+                        />
                     ),
                 }}
             />
+
+            {/* AI Conversation */}
             <Tabs.Screen
                 name="AIConversation"
                 options={{
-                    title: 'Chat',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="chatbubbles" size={size} color={color} />
+                    title: '',
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? 'chatbubbles' : 'chatbubbles-outline'}
+                            size={focused ? 32 : 28}
+                            color={color}
+                        />
                     ),
                 }}
             />
+
+            {/* Batch */}
             <Tabs.Screen
                 name="Batch"
                 options={{
-                    title: 'Batch',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="stats-chart" size={size} color={color} />
+                    title: '',
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? 'stats-chart' : 'stats-chart-outline'}
+                            size={focused ? 32 : 28}
+                            color={color}
+                        />
                     ),
                 }}
             />
+
+            {/* Hidden Tabs */}
+
             <Tabs.Screen
                 name="Resources"
                 options={{
                     href: null,
                     title: 'Resources',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="book-outline" size={size} color={color} />
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? 'book' : 'book-outline'}
+                            size={focused ? 32 : 28}
+                            color={color}
+                        />
                     ),
                 }}
             />
@@ -77,8 +115,12 @@ export default function TabLayout() {
                 options={{
                     href: null,
                     title: 'Community',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="people-outline" size={size} color={color} />
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? 'people' : 'people-outline'}
+                            size={focused ? 32 : 28}
+                            color={color}
+                        />
                     ),
                 }}
             />
@@ -88,20 +130,31 @@ export default function TabLayout() {
                 options={{
                     href: null,
                     title: 'Live Classes',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="videocam-outline" size={size} color={color} />
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? 'videocam' : 'videocam-outline'}
+                            size={focused ? 32 : 28}
+                            color={color}
+                        />
                     ),
                 }}
             />
+
+            {/* Profile */}
             <Tabs.Screen
                 name="Profile"
                 options={{
-                    title: 'Profile',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="person" size={size} color={color} />
+                    title: '',
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? 'person' : 'person-outline'}
+                            size={focused ? 32 : 28}
+                            color={color}
+                        />
                     ),
                 }}
             />
+
         </Tabs>
     );
 }

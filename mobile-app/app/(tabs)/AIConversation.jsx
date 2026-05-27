@@ -184,11 +184,6 @@ export default function AIConversationScreen() {
                                 </LinearGradient>
                                 <View style={styles.historyInfo}>
                                     <Text style={styles.historyTitle}>{conv.startingTopic}</Text>
-                                    <Text style={styles.historyDate}>
-                                        {new Date(conv.createdAt).toLocaleDateString('en-US', {
-                                            month: 'short', day: 'numeric', year: 'numeric'
-                                        })}
-                                    </Text>
                                 </View>
                                 <View style={styles.resumeChip}>
                                     <Text style={styles.resumeText}>Resume</Text>

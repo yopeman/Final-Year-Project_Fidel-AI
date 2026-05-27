@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useBatchStore } from '../../src/stores/batchStore';
 import { useAuthStore } from '../../src/stores/authStore';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { COLORS } from '../../src/constants/theme';
 import PremiumMenu from '../../src/components/PremiumMenu';
 import styles from '../styles/liveClassesStyle';
 

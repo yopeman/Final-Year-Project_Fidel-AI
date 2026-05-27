@@ -8,7 +8,7 @@ export default StyleSheet.create({
     heroBanner: {
         paddingTop: 48,
         paddingHorizontal: 20,
-        paddingBottom: 24,
+        paddingBottom: 14,
         overflow: 'hidden',
     },
     headerTopRow: {
@@ -16,7 +16,9 @@ export default StyleSheet.create({
         alignItems: 'center',
     },
     menuBtn: {
-        width: 38, height: 38, borderRadius: 12,
+        width: 38, 
+        top: -30,
+        height: 38, borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.08)',
         alignItems: 'center', justifyContent: 'center',
     },
@@ -25,16 +27,25 @@ export default StyleSheet.create({
         width: 180, height: 180, borderRadius: 90,
         backgroundColor: 'rgba(16,185,129,0.1)',
     },
-    headerTitle: { fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
-    headerSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.45)', marginTop: 4 },
+    headerTitle: { 
+        top: -20,
+        fontSize: 28, 
+        fontWeight: '800', 
+        color: '#fff', 
+        letterSpacing: -0.5 },
+    headerSubtitle: { fontSize: 14, 
+        top: -22,
+        color: 'rgba(255,255,255,0.45)', marginTop: 4 },
     premiumBanner: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
+        top: -22,
         marginTop: 12, alignSelf: 'flex-start',
         backgroundColor: 'rgba(16,185,129,0.12)',
         borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)',
         paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20,
     },
-    premiumBannerText: { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
+    premiumBannerText: { color: COLORS.primary,
+         fontSize: 12, fontWeight: '700' },
 
     // List
     listContent: { paddingVertical: 20, paddingBottom: 40 },

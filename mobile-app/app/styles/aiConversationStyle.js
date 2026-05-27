@@ -18,8 +18,10 @@ export default StyleSheet.create({
         backgroundColor: 'rgba(16,185,129,0.1)',
     },
     statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 5, gap: 6 },
-    onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary },
-    statusText: { color: COLORS.primary, fontSize: 13, fontWeight: '500' },
+    onlineDot: { width: 8,top: -10, height: 8, borderRadius: 4, backgroundColor: COLORS.primary },
+    statusText: { color: COLORS.primary, 
+        top: -10,
+        fontSize: 13, fontWeight: '500' },
     historyBtn: {
         width: 42, height: 42, borderRadius: 14,
         backgroundColor: 'rgba(16,185,129,0.1)',
@@ -32,7 +34,9 @@ export default StyleSheet.create({
     scrollContent: { paddingHorizontal: SPACING.lg, paddingBottom: 40, paddingTop: 24 },
 
     // Hero
-    heroWrapper: { marginBottom: 30 },
+    heroWrapper: { marginBottom: 30,
+        top: -10,
+     },
     heroCard: {
         borderRadius: 28, padding: 15, alignItems: 'center',
         borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)',
@@ -83,11 +87,13 @@ export default StyleSheet.create({
     },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     menuBtn: {
-        width: 38, height: 38, borderRadius: 12,
+        width: 38, 
+        top: -10,
+        height: 38, borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.08)',
         alignItems: 'center', justifyContent: 'center',
     },
-    headerTitle: { fontSize: 24, fontWeight: '800', color: '#fff' },
+    headerTitle: { fontSize: 24, top: -10, fontWeight: '800', color: '#fff' },
     sectionCount: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
 
     // History

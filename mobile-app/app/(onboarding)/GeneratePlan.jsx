@@ -110,12 +110,12 @@ export default function GeneratePlan() {
                             <Text style={styles.cardValue}>{user?.profile?.learningGoal || 'General Fluency'}</Text>
                         </View>
 
-                        {error && (
+                        {/* {error && (
                             <View style={styles.errorContainer}>
                                 <Ionicons name="alert-circle" size={18} color="#EF4444" />
                                 <Text style={styles.errorText}>{error}</Text>
                             </View>
-                        )}
+                        )} */}
 
                         <TouchableOpacity style={styles.button} onPress={handleGenerate} activeOpacity={0.8}>
                             <LinearGradient
