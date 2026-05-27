@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     ActivityIndicator, SafeAreaView, TextInput, Image, Linking,
-    Modal, Platform, Animated, StatusBar
+    Modal, Platform, Animated, StatusBar, KeyboardAvoidingView
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Markdown from 'react-native-markdown-display';
@@ -453,7 +453,10 @@ export default function LessonScreen() {
     const tabAccent = { vocab: ACCENT, article: GOLD, video: ACCENT2, ai: GOLD };
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView 
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
             <StatusBar barStyle="light-content" />
 
             {/* ── Dark Gradient Header ── */}
@@ -515,6 +518,6 @@ export default function LessonScreen() {
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLearningStore } from '../../src/stores/learningStore';
 import { useAuthStore } from '../../src/stores/authStore';
@@ -80,7 +80,10 @@ export default function ReviewPlan() {
 
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView 
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
             <StatusBar barStyle="light-content" />
             <LinearGradient
                 colors={['#0A2540', '#0D1B2A', '#080C14']}
@@ -178,7 +181,7 @@ export default function ReviewPlan() {
                     </TouchableOpacity>
                 </View>
             )}
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

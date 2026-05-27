@@ -247,7 +247,7 @@ export default function ResourcesScreen() {
                         </View>
                     </View>
 
-                    <Text style={styles.heroTitle}>Course{'\n'}Library</Text>
+                    <Text style={styles.heroTitle}>Course Library</Text>
                     <Text style={styles.heroSub}>
                         Explore curated materials, guides & references for every course.
                     </Text>

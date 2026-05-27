@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Linking } from 'react-native';
 import { useNotificationStore } from '../src/stores/notificationStore';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS } from '../src/constants';
@@ -50,6 +50,26 @@ const NotificationsScreen = () => {
         );
     };
 
+    const renderContentWithLinks = (text) => {
+        if (!text) return null;
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const parts = text.split(urlRegex);
+        return parts.map((part, index) => {
+            if (part.match(urlRegex)) {
+                return (
+                    <Text
+                        key={index}
+                        style={{ color: COLORS.primary, textDecorationLine: 'underline' }}
+                        onPress={() => Linking.openURL(part)}
+                    >
+                        {part}
+                    </Text>
+                );
+            }
+            return <Text key={index}>{part}</Text>;
+        });
+    };
+
     const renderNotification = ({ item }) => (
         <TouchableOpacity
             style={[styles.notificationCard, !item.isRead && styles.unreadCard]}
@@ -67,7 +87,9 @@ const NotificationsScreen = () => {
                     <Text style={[styles.notificationTitle, !item.isRead && styles.unreadText]}>
                         {item.title}
                     </Text>
-                    <Text style={styles.notificationContent}>{item.content}</Text>
+                    <Text style={styles.notificationContent}>
+                        {renderContentWithLinks(item.content)}
+                    </Text>
                     <Text style={styles.notificationDate}>
                         {formatDate(item.createdAt)}
                     </Text>
@@ -99,11 +121,6 @@ const NotificationsScreen = () => {
                         {unreadCount > 0 ? `You have ${unreadCount} unread messages` : 'Up to date!'}
                     </Text>
                 </View>
-                {/* {unreadCount > 0 && (
-                    <TouchableOpacity style={styles.markReadBtn} onPress={handleMarkAllRead}>
-                        <Text style={styles.markReadBtnText}>Mark all as read</Text>
-                    </TouchableOpacity>
-                )} */}
             </View>
 
             <FlatList
