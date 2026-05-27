@@ -74,7 +74,6 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
         **{
             "age_range": profile.age_range,
             "proficiency": profile.proficiency,
-            "native_language": profile.native_language,
             "learning_goal": profile.learning_goal,
             "learning_plan": profile.ai_learning_plan,
         }
@@ -245,7 +244,6 @@ def _generate_content_for_lesson(
         **{
             "age_range": profile.age_range,
             "proficiency": profile.proficiency,
-            "native_language": profile.native_language,
             "learning_goal": profile.learning_goal,
             "module_title": module_title,
             "lesson_title": lesson_title,
@@ -260,7 +258,6 @@ def _generate_vocabularies_for_lesson(
     prompts = PromptTemplate.from_template(VOCABULARY_GENERATION_PROMPT).format(
         **{
             "proficiency": profile.proficiency,
-            "native_language": profile.native_language,
             "lesson_title": lesson_title,
         }
     )

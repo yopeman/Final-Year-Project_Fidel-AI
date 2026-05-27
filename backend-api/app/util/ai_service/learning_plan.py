@@ -28,7 +28,6 @@ def generate_learning_plan(profile: StudentProfile) -> str:
             {
                 "age_range": profile.age_range,
                 "proficiency": profile.proficiency,
-                "native_language": profile.native_language,
                 "learning_goal": profile.learning_goal,
                 "target_duration": profile.target_duration,
                 "duration_unit": profile.duration_unit,
@@ -59,7 +58,6 @@ def update_learning_plan(profile: StudentProfile, improvements: str) -> str:
         response = chain.invoke(
             {
                 "proficiency": profile.proficiency,
-                "native_language": profile.native_language,
                 "learning_goal": profile.learning_goal,
                 "target_duration": profile.target_duration,
                 "duration_unit": profile.duration_unit,

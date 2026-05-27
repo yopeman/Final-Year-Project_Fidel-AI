@@ -47,7 +47,6 @@ def ai_generated_topic(profile: StudentProfile) -> str:
         {
             "age_range": profile.age_range,
             "proficiency": profile.proficiency,
-            "native_language": profile.native_language,
             "learning_goal": profile.learning_goal,
         }
     )
@@ -88,7 +87,6 @@ def ask_on_conversation(
             {
                 "age_range": profile.age_range,
                 "proficiency": profile.proficiency,
-                "native_language": profile.native_language,
                 "learning_goal": profile.learning_goal,
                 "starting_topic": conversation.starting_topic,
                 "topic_summary_phrase": conversation.topic_summary_phrase,
@@ -153,7 +151,6 @@ def generate_possible_talk(
             {
                 "age_range": profile.age_range,
                 "proficiency": profile.proficiency,
-                "native_language": profile.native_language,
                 "learning_goal": profile.learning_goal,
                 "starting_topic": conversation.starting_topic,
                 "topic_summary_phrase": conversation.topic_summary_phrase,
