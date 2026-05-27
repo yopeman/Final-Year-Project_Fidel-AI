@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     smtp_password: str
     email_from: str
 
+    # Resend email settings
+    resend_api_key: str
+
     # AI settings
     groq_api_key: str
 
