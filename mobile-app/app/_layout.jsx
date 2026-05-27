@@ -1,7 +1,7 @@
 import { Stack, useSegments, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { useAuthStore } from '../src/stores/authStore';
-import { View, ActivityIndicator, StatusBar } from 'react-native';
+import { View, ActivityIndicator, StatusBar, BackHandler, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../src/constants/theme';
 
@@ -44,6 +44,27 @@ export default function Layout() {
             }
         }
     }, [isAuthenticated, hasProfile, hasPlan, isLoading, segments]);
+
+    useEffect(() => {
+        const onBackPress = () => {
+            if (!router.canGoBack()) {
+                Alert.alert(
+                    'Exit App',
+                    'Are you sure you want to exit?',
+                    [
+                        { text: 'Cancel', onPress: () => null, style: 'cancel' },
+                        { text: 'YES', onPress: () => BackHandler.exitApp() },
+                    ]
+                );
+                return true; // prevent default behavior (closing without confirmation)
+            }
+            return false; // let system handle it if we can go back via navigation
+        };
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+        return () => backHandler.remove();
+    }, [router]);
 
     if (isLoading) {
         return (

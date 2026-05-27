@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, StatusBar } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
@@ -185,7 +185,10 @@ const CreateProfile = () => {
     };
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView 
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
             <StatusBar barStyle="light-content" />
             <LinearGradient
                 colors={['#0A2540', '#0D1B2A', '#080C14']}
@@ -248,7 +251,7 @@ const CreateProfile = () => {
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

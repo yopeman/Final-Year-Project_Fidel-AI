@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
     View, Text, TouchableOpacity, ScrollView,
-    StatusBar, Animated, Dimensions, TextInput
+    StatusBar, Animated, Dimensions, TextInput, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -66,7 +66,10 @@ export default function AIConversationScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView 
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
             <StatusBar barStyle="light-content" />
             <PremiumMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
 
@@ -232,6 +235,6 @@ export default function AIConversationScreen() {
                     </Text>
                 </View>
             </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
