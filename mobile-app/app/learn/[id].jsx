@@ -514,7 +514,7 @@ export default function LessonScreen() {
                     <LinearGradient colors={[ACCENT, '#059669']}
                         style={styles.completeBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                         <Ionicons name="checkmark-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
-                        <Text style={styles.completeButtonText}>Mark Complete</Text>
+                        <Text style={styles.completeButtonText}>Mark as Complete</Text>
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
