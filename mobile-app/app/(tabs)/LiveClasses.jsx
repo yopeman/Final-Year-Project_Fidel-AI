@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
     View, Text, FlatList, TouchableOpacity,
-    RefreshControl, StatusBar, Dimensions, ActivityIndicator,
+    RefreshControl, StatusBar, ActivityIndicator,
     Alert, Linking
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useBatchStore } from '../../src/stores/batchStore';
@@ -12,9 +13,8 @@ import { COLORS } from '../../src/constants/theme';
 import PremiumMenu from '../../src/components/PremiumMenu';
 import styles from '../styles/liveClassesStyle';
 
-const { width } = Dimensions.get('window');
-
 const LiveClassesScreen = () => {
+    const router = useRouter();
     const { user } = useAuthStore();
     const {
         activeBatchId, enrollments, schedules, isLoading,
@@ -27,15 +27,11 @@ const LiveClassesScreen = () => {
     const batchId = activeBatchId || enrollments.find(e => e.status === 'ENROLLED')?.batch?.id;
 
     useEffect(() => {
-        if (batchId) {
-            fetchSchedules();
-        }
+        if (batchId) fetchSchedules();
     }, [batchId]);
 
     const fetchSchedules = useCallback(async () => {
-        if (batchId) {
-            await getBatchSchedules(batchId);
-        }
+        if (batchId) await getBatchSchedules(batchId);
     }, [batchId]);
 
     const onRefresh = useCallback(async () => {
@@ -50,7 +46,6 @@ const LiveClassesScreen = () => {
         if (res.success && res.data?.meetingLink) {
             Linking.openURL(res.data.meetingLink);
         } else {
-            console.log("Join Class Error:", res.error);
             if (res.error?.includes('not paid') || res.error?.includes('payment')) {
                 Alert.alert(
                     "Payment Required",
@@ -60,7 +55,6 @@ const LiveClassesScreen = () => {
                         {
                             text: "Complete Payment",
                             onPress: () => {
-                                // Find the enrollment for this batch to get ID
                                 const enrollment = enrollments.find(e => e.batch?.id === batchId);
                                 if (enrollment) router.push(`/payment/${enrollment.id}`);
                                 else Alert.alert("Error", "Could not find your enrollment details.");
@@ -76,7 +70,6 @@ const LiveClassesScreen = () => {
 
     const renderSchedule = ({ item }) => {
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        // Fix for dayOfWeek if it's a string from backend
         const dayIdx = parseInt(item.schedule?.dayOfWeek);
         const dayName = isNaN(dayIdx) ? item.schedule?.dayOfWeek : (days[dayIdx] || 'Scheduled');
 
@@ -91,19 +84,14 @@ const LiveClassesScreen = () => {
                             <Text style={styles.liveText}>Upcoming</Text>
                         </View>
                     </View>
-
                     <View style={styles.infoRow}>
                         <Ionicons name="calendar-outline" size={16} color="rgba(255,255,255,0.4)" />
                         <Text style={styles.infoText}>{dayName}</Text>
                         <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.4)" style={{ marginLeft: 15 }} />
                         <Text style={styles.infoText}>{item.schedule?.startTime} - {item.schedule?.endTime}</Text>
                     </View>
-
                     <TouchableOpacity style={styles.joinBtn} onPress={() => handleJoinClass(item.id)}>
-                        <LinearGradient
-                            colors={[COLORS.primary, '#059669']}
-                            style={styles.joinGradient}
-                        >
+                        <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.joinGradient}>
                             <Text style={styles.joinBtnText}>Join Class</Text>
                             <Ionicons name="arrow-forward" size={18} color="#fff" />
                         </LinearGradient>
@@ -118,26 +106,37 @@ const LiveClassesScreen = () => {
             <StatusBar barStyle="light-content" />
             <PremiumMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
 
-            <LinearGradient
-                colors={['#0A2540', '#0D1B2A', '#080C14']}
-                style={styles.heroBanner}
-            >
-                <View style={styles.headerRow}>
-                    <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuBtn}>
-                        <Ionicons name="menu" size={26} color="#fff" />
-                    </TouchableOpacity>
-                    <View style={styles.titleGroup}>
-                        <Text style={styles.headerTitle}>Live Classes</Text>
-                        <Text style={styles.headerSubtitle}>Real-time learning with tutors</Text>
-                    </View>
-                </View>
-            </LinearGradient>
+            {/* ── FIXED HERO BANNER (no parallax, zIndex to stay on top) ── */}
+            <View style={{ zIndex: 10 }}>
+                <LinearGradient
+                    colors={['#0A2540', '#0D1B2A', '#080C14']}
+                    style={styles.heroBanner}
+                >
+                    {/* Header Row – menu + title perfectly horizontal */}
+                    <View style={styles.headerRow}>
+                        <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuBtn}>
+                            <Ionicons name="menu" size={26} color="#fff" />
+                        </TouchableOpacity>
 
+                        {/* Title centered in remaining space */}
+                        <View style={styles.titleContainer}>
+                            <Text style={styles.headerTitle}>Live Classes</Text>
+                        </View>
+
+                        {/* Invisible spacer to keep title exactly centered */}
+                        <View style={[styles.menuBtn, { opacity: 0 }]} />
+                    </View>
+                    <Text style={styles.headerSubtitle}>Real‑time learning with tutors</Text>
+                </LinearGradient>
+            </View>
+
+            {/* Scrollable list starts right below the fixed header */}
             <FlatList
                 data={schedules}
                 renderItem={renderSchedule}
                 keyExtractor={(item, index) => index.toString()}
                 contentContainerStyle={styles.listContent}
+                style={{ marginTop: -10 }}   // tiny overlap for seamless look
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
                 }
@@ -149,7 +148,7 @@ const LiveClassesScreen = () => {
                         >
                             <Ionicons name="videocam" size={24} color={COLORS.primary} />
                             <Text style={styles.bannerText}>
-                                Join your scheduled sessions to interact with tutors in real-time.
+                                Join your scheduled sessions to interact with tutors in real‑time.
                             </Text>
                         </LinearGradient>
                     </View>
@@ -169,6 +168,6 @@ const LiveClassesScreen = () => {
             />
         </View>
     );
-}
+};
 
 export default LiveClassesScreen;

@@ -55,6 +55,7 @@ export default StyleSheet.create({
         letterSpacing: 0.5,
     },
     middleSection: {
+        top: -40,
         alignItems: 'center',
         width: '100%',
     },

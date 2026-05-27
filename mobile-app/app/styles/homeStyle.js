@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native';
 import { COLORS } from '../../src/constants/theme';
 export default StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#080C14' },
+    container: { flex: 1,
+        backgroundColor: '#080C14' },
     scrollView: { flex: 1 },
 
     // Hero
@@ -18,20 +19,23 @@ export default StyleSheet.create({
     },
     topBar: {
         flexDirection: 'row', justifyContent: 'space-between',
-        alignItems: 'center', marginBottom: 28,
+        alignItems: 'center', marginBottom: 8,
     },
     topBarLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
     menuBtn: {
-        width: 38, height: 38, borderRadius: 12,
+        width: 40,
+        height: 40,
+        borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.08)',
-        alignItems: 'center', justifyContent: 'center',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     greeting: { fontSize: 20, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
     userName: { fontSize: 20, fontWeight: '700', color: '#fff', letterSpacing: -0.3 },
     subGreeting: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 3 },
     topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     notifBtn: {
-        width: 38, height: 38, borderRadius: 12,
+        width: 40, height: 40 , borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.08)',
         alignItems: 'center', justifyContent: 'center',
     },
@@ -53,9 +57,10 @@ export default StyleSheet.create({
 
     // Hero progress card
     heroProgressCard: {
+        height: 100,
         flexDirection: 'row', alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 20, padding: 18, marginBottom: 16,
+        borderRadius: 20, padding: 18, marginBottom: 10,
         borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
     },
     heroProgressLeft: { flex: 1 },

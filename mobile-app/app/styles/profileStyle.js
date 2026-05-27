@@ -10,6 +10,7 @@ export default StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 18,
         overflow: 'hidden',
+        height: 180,
         alignItems: 'center',
     },
     menuBtn: {
@@ -32,7 +33,7 @@ export default StyleSheet.create({
         padding: 3, marginBottom: 14,
     },
     avatarInner: {
-        width: 80, height: 80, borderRadius: 40,
+        width: 70, height: 70, borderRadius: 35,
         backgroundColor: '#0D1B2A',
         alignItems: 'center', justifyContent: 'center',
     },
