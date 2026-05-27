@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+
 // ─── Design tokens (consistent with app theme) ────────────────────────────────
 export const DARK_BG = '#080C14';
 export const DARK_CARD = 'rgba(255,255,255,0.04)';
@@ -6,13 +7,18 @@ export const DARK_BORDER = 'rgba(255,255,255,0.07)';
 export const ACCENT = '#10B981';   // emerald green
 export const GOLD = '#F59E0B';   // amber
 export const INDIGO = '#6366F1';
+
 export default StyleSheet.create({
     root: { flex: 1, backgroundColor: DARK_BG },
     scrollView: { flex: 1 },
 
     // ── Hero Banner ───────────────────────────────────────────────────────────
     heroBanner: {
-        paddingTop: 52, paddingHorizontal: 20,
+        height: 120,
+        marginbottom: 20,
+        paddingTop: 22, paddingHorizontal: 20,
+        paddingBottom: 24, overflow: 'hidden',
+        paddingTop: 22, paddingHorizontal: 20,
         paddingBottom: 24, overflow: 'hidden',
     },
     glowBlob: {
@@ -35,10 +41,39 @@ export default StyleSheet.create({
     premiumText: {
         color: GOLD, fontWeight: '800', fontSize: 10, letterSpacing: 1.5,
     },
-    heroTitle: {
-        fontSize: 38, fontWeight: '900', color: '#fff',
-        letterSpacing: -1.5, marginBottom: 8, lineHeight: 44,
+
+    // ─── NEW: Perfectly horizontal menu + title ──────────────────────────────
+    headerTopRow: {
+        height: 40, flexDirection: 'row', alignItems: 'center',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        marginBottom: 6,
+        gap: 12,
     },
+    menuBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    titleContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    heroTitle: {
+        fontSize: 32,
+        fontWeight: '900',
+        color: '#fff',
+        letterSpacing: -1,
+        lineHeight: 36,
+        marginBottom: 0,   // reset old margin
+    },
+    // ──────────────────────────────────────────────────────────────────────────
+
     heroSub: {
         color: 'rgba(255,255,255,0.45)', fontSize: 14, lineHeight: 21, marginBottom: 20,
     },
@@ -54,7 +89,7 @@ export default StyleSheet.create({
     heroStatDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.08)' },
 
     // ── Section ───────────────────────────────────────────────────────────────
-    section: { paddingHorizontal: 16, paddingTop: 20 },
+    section: { paddingHorizontal: 16, paddingTop: 40 },
     sectionHeader: {
         flexDirection: 'row', alignItems: 'center',
         justifyContent: 'space-between', marginBottom: 14,
@@ -148,7 +183,7 @@ export default StyleSheet.create({
     fileSize: { color: 'rgba(255,255,255,0.3)', fontSize: 11 },
 
     // ── States ────────────────────────────────────────────────────────────────
-    loadingBox: { paddingTop: 40, alignItems: 'center', gap: 12 },
+    loadingBox: { paddingTop: 30, alignItems: 'center', gap: 12 },
     loadingSpinner: {
         width: 60, height: 60, borderRadius: 30,
         backgroundColor: 'rgba(245,158,11,0.08)', alignItems: 'center', justifyContent: 'center',

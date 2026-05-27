@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
-    View, StyleSheet, ScrollView, RefreshControl,Text,
+    View, StyleSheet, ScrollView, RefreshControl, Text,
     StatusBar, ActivityIndicator, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -154,19 +154,8 @@ const HomeScreen = () => {
                 <PremiumMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
                 <PremiumUpgradeModal visible={upgradeModalVisible} onClose={() => setUpgradeModalVisible(false)} />
 
-                <ScrollView
-                    style={styles.scrollView}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={isLoading || batchLoading}
-                            onRefresh={onRefresh}
-                            tintColor={COLORS.primary}
-                            colors={[COLORS.primary]}
-                        />
-                    }
-                >
+                {/* ── FIXED HERO BANNER (no parallax, zIndex to stay on top) ── */}
+                <View style={{ zIndex: 10 }}>
                     <HeroBanner
                         user={user}
                         overallProgress={overallProgress}
@@ -177,7 +166,23 @@ const HomeScreen = () => {
                         onNotificationPress={() => router.push('/notifications')}
                         onProfilePress={() => router.push('/(tabs)/Profile')}
                     />
+                </View>
 
+                {/* ScrollView starts right below the fixed hero (negative margin) */}
+                <ScrollView
+                    style={[styles.scrollView, { marginTop: -10 }]} // tiny negative to overlap glow
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={isLoading || batchLoading}
+                            onRefresh={onRefresh}
+                            tintColor={COLORS.primary}
+                            colors={[COLORS.primary]}
+                        />
+                    }
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                >
                     <View style={styles.body}>
                         <UpNextSection
                             currentPosition={currentPosition}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, TouchableOpacity, ScrollView,Modal,
+    View, Text, TouchableOpacity, ScrollView, Modal,
     Alert, StatusBar, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -131,18 +131,23 @@ const ProfileScreen = () => {
                 <StatusBar barStyle="light-content" />
                 <PremiumMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
 
-                <ScrollView
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.scrollContent}
-                    keyboardShouldPersistTaps="handled"
-                >
+                {/* ── FIXED HERO BANNER (no parallax, zIndex to stay on top) ── */}
+                <View style={{ zIndex: 10 }}>
                     <ProfileHero
                         user={user}
                         profile={profile}
                         isPremium={isPremium}
                         onMenuPress={() => setMenuVisible(true)}
                     />
+                </View>
 
+                {/* ScrollView starts right below the fixed hero */}
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    style={{ marginTop: -10 }}   // tiny overlap for seamless look
+                >
                     <View style={styles.body}>
                         <AccountSection
                             isEditing={isEditingAccount}
@@ -200,7 +205,7 @@ const ProfileScreen = () => {
                     isSubmitting={isSubmittingFeedback}
                 />
 
-                {/* Profile Modal */}
+                {/* Profile Details Modal */}
                 <Modal visible={showProfileModal} animationType="slide" transparent onRequestClose={() => setShowProfileModal(false)}>
                     <View style={styles.overlay}>
                         <View style={styles.modalBox}>
