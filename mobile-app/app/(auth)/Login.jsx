@@ -7,7 +7,8 @@ import {
     Platform,
     ScrollView,
     StatusBar,
-    TextInput
+    TextInput,
+    ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
@@ -18,16 +19,25 @@ import styles from '../styles/loginStyle';
 
 const LoginScreen = () => {
     const router = useRouter();
-    const { login, isLoading, error, clearError } = useAuthStore();
+    const { login, resendVerification, isLoading, error, clearError } = useAuthStore();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleLogin = async () => {
         clearError();
-        const res = await login({ email, password });
-        if (res.success) {
-            router.replace('/(tabs)/Home');
+        setIsSubmitting(true);
+        try {
+            const res = await login({ email, password });
+            if (res.success) {
+                router.replace('/(tabs)/Home');
+            } else if (res.error === 'Your email is not verified') {
+                await resendVerification(email);
+                router.push({ pathname: '/(auth)/Verify', params: { email } });
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -104,7 +114,7 @@ const LoginScreen = () => {
                                 <TouchableOpacity
                                     style={styles.loginButton}
                                     onPress={handleLogin}
-                                    disabled={isLoading}
+                                    disabled={isSubmitting}
                                     activeOpacity={0.8}
                                 >
                                     <LinearGradient
@@ -113,7 +123,7 @@ const LoginScreen = () => {
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                     >
-                                        {isLoading ? (
+                                        {isSubmitting ? (
                                             <ActivityIndicator color="#fff" />
                                         ) : (
                                             <>

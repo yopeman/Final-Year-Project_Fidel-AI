@@ -29,8 +29,8 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        # return f"mysql+pymysql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
-        return f"sqlite:///fidel_ai.db"
+        return f"mysql+pymysql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        # return f"sqlite:///fidel_ai.db"
 
     class Config:
         env_file = ".env"
