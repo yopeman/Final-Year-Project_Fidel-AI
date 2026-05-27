@@ -3,6 +3,7 @@ import { communityAPI } from '../services/api';
 
 export const useCommunityStore = create((set, get) => ({
     posts: [],
+    comments: {}, // { [postId]: [...comments] }
     selectedFiles: [], // [{ uri, name, size, type }]
     isLoading: false,
     error: null,
@@ -207,6 +208,87 @@ export const useCommunityStore = create((set, get) => ({
                     } : p)
                 }));
             }
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+    updateComment: async (postId, commentId, content) => {
+        try {
+            const response = await communityAPI.updateComment(commentId, content);
+            set(state => ({
+                posts: state.posts.map(p =>
+                    p.id === postId
+                        ? {
+                            ...p,
+                            comments: p.comments.map(c =>
+                                c.id === commentId ? { ...c, content, isEdited: true } : c
+                            )
+                        }
+                        : p
+                )
+            }));
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+    deleteComment: async (postId, commentId) => {
+        try {
+            await communityAPI.deleteComment(commentId);
+            set(state => ({
+                posts: state.posts.map(p =>
+                    p.id === postId
+                        ? { ...p, comments: p.comments.filter(c => c.id !== commentId) }
+                        : p
+                )
+            }));
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+    uploadAttachments: async (postId, files) => {
+        try {
+            await communityAPI.uploadAttachments(postId, files);
+            // Refetch the post to get updated attachments
+            const updatedResponse = await communityAPI.getPost(postId);
+            set(state => ({
+                posts: state.posts.map(p =>
+                    p.id === postId ? updatedResponse.data.post : p
+                )
+            }));
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+    deleteAttachment: async (postId, attachmentId) => {
+        try {
+            await communityAPI.deleteAttachment(attachmentId);
+            set(state => ({
+                posts: state.posts.map(p =>
+                    p.id === postId
+                        ? { ...p, attachments: p.attachments.filter(a => a.id !== attachmentId) }
+                        : p
+                )
+            }));
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+
+    getComments: async (postId) => {
+        try {
+            const response = await communityAPI.getComments(postId);
+            set(state => ({
+                comments: { ...state.comments, [postId]: response.data.comments }
+            }));
             return { success: true };
         } catch (error) {
             return { success: false, error: error.message };

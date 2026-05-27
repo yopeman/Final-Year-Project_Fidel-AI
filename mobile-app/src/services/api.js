@@ -915,6 +915,13 @@ export const communityAPI = {
                     userId
                     reactionType
                 }
+                attachments {
+                    id
+                    fileName
+                    filePath
+                    fileExtension
+                    fileSize
+                }
             }
         }
         `;
@@ -963,6 +970,7 @@ export const communityAPI = {
                         fileName
                         filePath
                         fileExtension
+                        fileSize
                     }
                 }
             }
@@ -987,6 +995,13 @@ export const communityAPI = {
                     firstName
                     lastName
                 }
+                attachments {
+                    id
+                    fileName
+                    filePath
+                    fileExtension
+                    fileSize
+                }
             }
         }
         `;
@@ -1002,6 +1017,13 @@ export const communityAPI = {
                     content
                     isEdited
                     updatedAt
+                    attachments {
+                        id
+                        fileName
+                        filePath
+                        fileExtension
+                        fileSize
+                    }
                 }
             }
         `;
@@ -1060,6 +1082,20 @@ export const communityAPI = {
         const res = await graphQLRequest(query, { communityId });
         const comments = res.data.comments.map(c => ({ ...c, author: c.user }));
         return { data: { comments } };
+    },
+    updateComment: async (id, content) => {
+        const query = `
+            mutation updateComment($id: ID!, $content: String!) {
+                updateComment(id: $id, content: $content) {
+                    id
+                    content
+                    isEdited
+                    updatedAt
+                }
+            }
+        `;
+        const res = await graphQLRequest(query, { id, content });
+        return { data: { comment: res.data.updateComment } };
     },
     deleteComment: async (id) => {
         const query = `
@@ -1129,19 +1165,45 @@ export const communityAPI = {
         return { data: res.data.deleteCommentReaction };
     },
     uploadAttachments: async (communityId, files) => {
-        const query = `
-            mutation uploadAttachments($communityId: ID!, $files: [Upload!]!) {
-                uploadAttachments(communityId: $communityId, files: $files) {
-                    id
-                    fileName
-                    filePath
-                    fileExtension
-                    fileSize
+        try {
+            const token = await AsyncStorage.getItem('accessToken');
+            const BASE_URL = API_BASE_URL.replace('/graphql', '');
+
+            const formData = new FormData();
+            files.forEach((file) => {
+                if (file.file) {
+                    formData.append('files', file.file);
+                } else {
+                    formData.append('files', {
+                        uri: file.uri,
+                        name: file.name,
+                        type: file.type || 'application/octet-stream',
+                    });
                 }
+            });
+
+            const response = await fetch(
+                `${BASE_URL}/api/upload/community/${communityId}/files`,
+                {
+                    method: 'POST',
+                    headers: {
+                        ...(token && { Authorization: `Bearer ${token}` }),
+                        'ngrok-skip-browser-warning': 'true',
+                    },
+                    body: formData,
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Upload failed with status ${response.status}`);
             }
-        `;
-        const res = await uploadGraphQLRequest(query, { communityId }, files);
-        return { data: { attachments: res.data.uploadAttachments } };
+
+            const result = await response.json();
+            return { data: { attachments: result } };
+        } catch (error) {
+            console.log('Upload attachments error:', error.message);
+            throw error;
+        }
     },
     deleteAttachment: async (id) => {
         const query = `
