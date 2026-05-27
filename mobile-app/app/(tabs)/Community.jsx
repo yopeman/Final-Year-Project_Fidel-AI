@@ -296,9 +296,11 @@ const CommunityScreen = () => {
                         }}
                     >
                         <Image
-                            source={{ uri: item.attachments.find(a => /jpg|jpeg|png|gif/i.test(a.fileExtension || a.fileName))?.filePath?.startsWith('http')
-                                ? item.attachments.find(a => /jpg|jpeg|png|gif/i.test(a.fileExtension || a.fileName)).filePath
-                                : `${FILE_BASE_URL}/${item.attachments.find(a => /jpg|jpeg|png|gif/i.test(a.fileExtension || a.fileName)).filePath}` }}
+                            source={{
+                                uri: item.attachments.find(a => /jpg|jpeg|png|gif/i.test(a.fileExtension || a.fileName))?.filePath?.startsWith('http')
+                                    ? item.attachments.find(a => /jpg|jpeg|png|gif/i.test(a.fileExtension || a.fileName)).filePath
+                                    : `${FILE_BASE_URL}/${item.attachments.find(a => /jpg|jpeg|png|gif/i.test(a.fileExtension || a.fileName)).filePath}`
+                            }}
                             style={styles.postImage}
                             resizeMode="cover"
                         />
@@ -317,7 +319,7 @@ const CommunityScreen = () => {
                                     <Ionicons
                                         name={/jpg|jpeg|png|gif/i.test(att.fileExtension || att.fileName) ? 'image-outline'
                                             : /mp4|mov|avi/i.test(att.fileExtension || att.fileName) ? 'videocam-outline'
-                                            : 'document-attach-outline'}
+                                                : 'document-attach-outline'}
                                         size={14}
                                         color={COLORS.primary}
                                     />

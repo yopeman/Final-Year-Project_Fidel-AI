@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, TouchableOpacity, ScrollView,
-    Alert, ActivityIndicator, TextInput, Modal, Switch, StatusBar
+    Alert, ActivityIndicator, TextInput, Modal, Switch, StatusBar,
+    KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
@@ -142,7 +143,10 @@ const ProfileScreen = () => {
     /* ── Feedback Modal ── */
     const renderFeedbackModal = () => (
         <Modal visible={showFeedbackModal} animationType="slide" transparent onRequestClose={() => setShowFeedbackModal(false)}>
-            <View style={styles.overlay}>
+            <KeyboardAvoidingView 
+                style={styles.overlay} 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
                 <View style={styles.modalBox}>
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Platform Feedback</Text>
@@ -182,7 +186,7 @@ const ProfileScreen = () => {
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
         </Modal>
     );
 

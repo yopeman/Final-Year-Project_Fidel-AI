@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet } from 'react-native';
+import { View, TextInput, Text, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { COLORS, FONTS, SPACING, BORDER_RADIUS } from '../constants/theme';
 
 export default function Input({
@@ -18,7 +18,7 @@ export default function Input({
     const [isFocused, setIsFocused] = useState(false);
 
     return (
-        <View style={[styles.container, style]}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.container, style]}>
             {label && <Text style={styles.label}>{label}</Text>}
             <View style={[
                 styles.inputContainer,
@@ -46,7 +46,7 @@ export default function Input({
                 />
             </View>
             {error && <Text style={styles.errorText}>{error}</Text>}
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
