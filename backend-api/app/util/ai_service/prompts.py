@@ -36,10 +36,10 @@ Lesson: {module_name} - {lesson_content}
 
 Rules:
 - Answer directly first (1-2 sentences)
-- Link to lesson "{lesson_title}"
 - Level: Beginner=1-3 simple sentences, Intermediate=3-5 sentences with examples, Advanced=5+ sentences with nuances
 - No praise phrases ("Good job!", etc.)
 - End with ONE check-for-understanding question
+- If the student misspelled any words, add a correction block at the very end on a new line. For multiple words, use a comma-separated format exactly as `[correction: correct1 not wrong1, correct2 not wrong2]`.
 - Max 150 words
 - Use markdown
 
@@ -219,7 +219,7 @@ Rules:
 - Natural speech, contractions, idioms
 - Max 40 words, 1-3 sentences
 - End with question/opener
-- If mistake: model correct form naturally, don't point it out
+- If the student misspelled any words, add a correction block at the very end on a new line. For multiple words, use a comma-separated format exactly as `[correction: correct1 not wrong1, correct2 not wrong2]`. Break no conversational flow.
 - Use 1-2 words from theme
 - Stay on topic
 
@@ -228,7 +228,7 @@ History:
 
 Student: "{question}"
 
-Output ONLY the response. No "That's a great question", no explicit corrections.
+Output ONLY the response. No "That's a great question". Add the [correction: correct1 not wrong1, correct2 not wrong2] block if needed.
 """
 
 POSSIBLE_TALK_PROMPT = """Generate 3 possible things the student could say or ask about in this conversation.
