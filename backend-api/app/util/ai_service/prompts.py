@@ -31,16 +31,15 @@ TTS_USER_PROMPT = """Text to normalize:\n\n{text}"""
 
 LESSON_QA_PROMPT = """Answer student's question about lesson "{lesson_title}".
 
-Student: {proficiency} level, native {native_language}, age {age_range}, goal: {learning_goal}
+Student: {proficiency} level, age {age_range}, goal: {learning_goal}
 Lesson: {module_name} - {lesson_content}
 
 Rules:
 - Answer directly first (1-2 sentences)
-- Link to lesson "{lesson_title}"
 - Level: Beginner=1-3 simple sentences, Intermediate=3-5 sentences with examples, Advanced=5+ sentences with nuances
-- If relevant, mention {native_language} comparison (1 sentence)
 - No praise phrases ("Good job!", etc.)
 - End with ONE check-for-understanding question
+- If the student misspelled any words, add a correction block at the very end on a new line. For multiple words, use a comma-separated format exactly as `[correction: correct1 not wrong1, correct2 not wrong2]`.
 - Max 150 words
 - Use markdown
 
@@ -57,13 +56,12 @@ Question: "{question}"
 
 LEARNING_PLAN_GENERATION_PROMPT = """Create learning plan from {proficiency} to goal: {learning_goal}.
 
-Student: {proficiency}, native {native_language}, age {age_range}, time: {target_duration} {duration_unit}, constraints: {constraints}
+Student: {proficiency}, age {age_range}, time: {target_duration} {duration_unit}, constraints: {constraints}
 
 Rules:
 - 4-6 modules, 5-8 lessons each
 - Lessons: 15-45 min each, total fits {target_duration} {duration_unit}
 - Modules build progressively
-- Target {native_language} common mistakes
 - Action-oriented titles, practical skills
 
 Output (Markdown):
@@ -82,7 +80,7 @@ No preamble, no generic lessons ("Introduction"), no placeholders.
 
 LEARNING_PLAN_UPDATE_PROMPT = """Update learning plan based on feedback.
 
-Student: {proficiency}, native {native_language}, goal: {learning_goal}
+Student: {proficiency}, goal: {learning_goal}
 
 Current plan:
 {current_plan}
@@ -112,7 +110,7 @@ No "Here is the updated plan", output full plan not just changes.
 
 INSTALL_LEARNING_PLAN_PROMPT = """Extract structure from learning plan.
 
-Student: {age_range}, native {native_language}, {proficiency}, goal: {learning_goal}
+Student: {age_range}, {proficiency}, goal: {learning_goal}
 
 Plan:
 {learning_plan}
@@ -123,14 +121,14 @@ Output structure:
 - Module: name, description (2-3 sentences), lessons[]
 - Lesson: name (action-oriented), description (1-2 sentences)
 
-Verify: lessons fit {proficiency}, relevant to {learning_goal}, address {native_language} challenges, logical progression.
+Verify: lessons fit {proficiency}, relevant to {learning_goal}, logical progression.
 
 No adding/removing content, no preamble.
 """
 
 LESSON_CONTENT_GENERATION_PROMPT = """Write lesson "{lesson_title}" from module "{module_title}".
 
-Student: {proficiency}, native {native_language}, age {age_range}, goal: {learning_goal}
+Student: {proficiency}, age {age_range}, goal: {learning_goal}
 
 Structure (Markdown):
 ## Objectives
@@ -143,9 +141,6 @@ Structure (Markdown):
 - Explanation with analogies
 - 3-5 examples
 - 1 thinking question
-
-## The "{native_language}" Trap
-1 common mistake, how to avoid (2-3 sentences)
 
 ## Power Moves
 2 realistic scenarios (3-5 lines each)
@@ -164,12 +159,11 @@ Max 800 words. Use icons, bold key terms. No preamble.
 
 VOCABULARY_GENERATION_PROMPT = """Select 8-12 essential words for lesson "{lesson_title}".
 
-Student: {proficiency}, native {native_language}
+Student: {proficiency}
 
 Criteria:
 - High-frequency, practical use
 - Essential to lesson topic
-- {native_language} confusion points
 - {proficiency}-appropriate
 - Mix parts of speech
 
@@ -204,7 +198,6 @@ TOPIC_GENERATION_PROMPT = """Generate a unique, high-engagement conversation sta
 - **Level**: {proficiency}
 - **Goal**: {learning_goal}
 - **Age**: {age_range}
-- **Native Language**: {native_language}
 
 # 📏 THE CHALLENGE
 Produce ONE scenario or question that:
@@ -218,7 +211,7 @@ Provide only the topic text. No introductions.
 
 CONVERSATION_RESPONSE_PROMPT = """You are `Fidel AI`, an AI English teacher. Respond naturally to student.
 
-Student: {proficiency}, age {age_range}, native {native_language}, goal: {learning_goal}
+Student: {proficiency}, age {age_range}, goal: {learning_goal}
 Theme: {topic_summary_phrase}
 Prompt: {starting_topic}
 
@@ -226,7 +219,7 @@ Rules:
 - Natural speech, contractions, idioms
 - Max 40 words, 1-3 sentences
 - End with question/opener
-- If mistake: model correct form naturally, don't point it out
+- If the student misspelled any words, add a correction block at the very end on a new line. For multiple words, use a comma-separated format exactly as `[correction: correct1 not wrong1, correct2 not wrong2]`. Break no conversational flow.
 - Use 1-2 words from theme
 - Stay on topic
 
@@ -235,12 +228,12 @@ History:
 
 Student: "{question}"
 
-Output ONLY the response. No "That's a great question", no explicit corrections.
+Output ONLY the response. No "That's a great question". Add the [correction: correct1 not wrong1, correct2 not wrong2] block if needed.
 """
 
 POSSIBLE_TALK_PROMPT = """Generate 3 possible things the student could say or ask about in this conversation.
 
-Student: {proficiency}, age {age_range}, native {native_language}, goal: {learning_goal}
+Student: {proficiency}, age {age_range}, goal: {learning_goal}
 Theme: {topic_summary_phrase}
 Topic: {starting_topic}
 

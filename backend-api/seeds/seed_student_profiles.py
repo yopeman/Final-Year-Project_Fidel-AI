@@ -90,7 +90,7 @@ def seed_student_profiles(db, user_ids=None):
                 target_duration=(i % 12) + 1,
                 duration_unit=duration_units[i % len(duration_units)],
                 constraints=f"Available {2 + (i % 5)} hours per week" if i % 3 else None,
-                ai_learning_plan=f"Personalized plan #{i + 1}" if i % 4 == 0 else None,
+                ai_learning_plan=f"Personalized plan #{i + 1}",
             )
         )
 

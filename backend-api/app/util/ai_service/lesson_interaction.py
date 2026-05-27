@@ -49,7 +49,6 @@ def ask_on_lesson(
             {
                 "age_range": profile.age_range,
                 "proficiency": profile.proficiency,
-                "native_language": profile.native_language,
                 "learning_goal": profile.learning_goal,
                 "module_name": module.name,
                 "lesson_title": lesson.title,
