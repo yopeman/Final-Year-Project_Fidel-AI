@@ -2,19 +2,19 @@ import { StyleSheet } from 'react-native';
 import { COLORS } from '../../src/constants/theme';
 export default StyleSheet.create({
     container: { flex: 1, backgroundColor: '#080C14' },
-    scrollContent: { paddingBottom: 50 },
+    scrollContent: { paddingBottom: 30 },
 
     // Hero Banner
     heroBanner: {
-        paddingTop: 32,
+        paddingTop: 22,
         paddingHorizontal: 20,
-        paddingBottom: 28,
+        paddingBottom: 18,
         overflow: 'hidden',
         alignItems: 'center',
     },
     menuBtn: {
         position: 'absolute',
-        top: 32,
+        top: 22,
         left: 20,
         width: 38, height: 38, borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.08)',

@@ -6,13 +6,16 @@ export default StyleSheet.create({
 
   // ── Hero Banner ──────────────────────────────────────────────────────────
   heroBanner: {
-    paddingTop: 32, paddingHorizontal: SPACING.lg,
+    height:200,
+    width: '100%',
+    paddingTop: 10, paddingHorizontal: SPACING.lg,
     paddingBottom: SPACING.xl, overflow: 'hidden',
   },
   headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    top: -22,
     marginBottom: 12,
   },
   menuBtn: {
