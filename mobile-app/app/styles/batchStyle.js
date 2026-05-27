@@ -17,6 +17,7 @@ export default StyleSheet.create({
   
   headerTopRow: {
     top: 10,
+    left: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between', // Changed from gap to space-between
@@ -24,7 +25,6 @@ export default StyleSheet.create({
   },
 
   menuBtn: {
-      
         width: 38, 
         height: 38, borderRadius: 12,
         backgroundColor: 'rgba(255,255,255,0.08)',
