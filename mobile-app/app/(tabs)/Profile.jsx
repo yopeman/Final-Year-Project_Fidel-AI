@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, TouchableOpacity, ScrollView,
-    Alert, ActivityIndicator, TextInput, Modal, Switch, StatusBar
+    Alert, ActivityIndicator, TextInput, Modal, Switch, StatusBar,
+    KeyboardAvoidingView, Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useProfileStore } from '../../src/stores/profileStore';
 import { useFeedbackStore } from '../../src/stores/feedbackStore';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../src/constants/theme';
+import { COLORS } from '../../src/constants/theme';
 import { AGE_RANGES, PROFICIENCY_LEVELS } from '../../src/constants/index';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useBatchStore } from '../../src/stores/batchStore';
@@ -142,47 +143,52 @@ const ProfileScreen = () => {
     /* ── Feedback Modal ── */
     const renderFeedbackModal = () => (
         <Modal visible={showFeedbackModal} animationType="slide" transparent onRequestClose={() => setShowFeedbackModal(false)}>
-            <View style={styles.overlay}>
-                <View style={styles.modalBox}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Platform Feedback</Text>
-                        <TouchableOpacity onPress={() => setShowFeedbackModal(false)} style={styles.modalCloseBtn}>
-                            <Ionicons name="close" size={20} color="#9CA3AF" />
+            <KeyboardAvoidingView 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+                style={{ flex: 1, justifyContent: 'flex-end' }}
+            >
+                <View style={styles.overlay}>
+                    <View style={styles.modalBox}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Platform Feedback</Text>
+                            <TouchableOpacity onPress={() => setShowFeedbackModal(false)} style={styles.modalCloseBtn}>
+                                <Ionicons name="close" size={20} color="#9CA3AF" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.inputLabel}>Rate your experience</Text>
+                        <View style={styles.starsRow}>
+                            {[1, 2, 3, 4, 5].map((s) => (
+                                <TouchableOpacity key={s} onPress={() => setFeedbackForm({ ...feedbackForm, rate: s })}>
+                                    <Ionicons name={feedbackForm.rate >= s ? 'star' : 'star-outline'}
+                                        size={30} color={feedbackForm.rate >= s ? '#F59E0B' : '#374151'} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <Text style={styles.inputLabel}>Your Feedback</Text>
+                        <TextInput style={[styles.input, styles.textArea]} multiline numberOfLines={4}
+                            placeholder="Tell us what you think..." placeholderTextColor="#4B5563"
+                            value={feedbackForm.content}
+                            onChangeText={(t) => setFeedbackForm({ ...feedbackForm, content: t })} />
+
+                        <View style={styles.anonRow}>
+                            <Text style={styles.inputLabel}>Submit Anonymously</Text>
+                            <Switch value={feedbackForm.isAnonymous}
+                                onValueChange={(v) => setFeedbackForm({ ...feedbackForm, isAnonymous: v })}
+                                trackColor={{ false: '#374151', true: COLORS.primary }} thumbColor="#fff" />
+                        </View>
+
+                        <TouchableOpacity style={styles.saveBtn} onPress={handleFeedbackSubmit} disabled={isSubmittingFeedback}>
+                            <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.saveBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                                {isSubmittingFeedback
+                                    ? <ActivityIndicator color="#fff" />
+                                    : <Text style={styles.saveBtnText}>Submit Feedback</Text>}
+                            </LinearGradient>
                         </TouchableOpacity>
                     </View>
-
-                    <Text style={styles.inputLabel}>Rate your experience</Text>
-                    <View style={styles.starsRow}>
-                        {[1, 2, 3, 4, 5].map((s) => (
-                            <TouchableOpacity key={s} onPress={() => setFeedbackForm({ ...feedbackForm, rate: s })}>
-                                <Ionicons name={feedbackForm.rate >= s ? 'star' : 'star-outline'}
-                                    size={30} color={feedbackForm.rate >= s ? '#F59E0B' : '#374151'} />
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    <Text style={styles.inputLabel}>Your Feedback</Text>
-                    <TextInput style={[styles.input, styles.textArea]} multiline numberOfLines={4}
-                        placeholder="Tell us what you think..." placeholderTextColor="#4B5563"
-                        value={feedbackForm.content}
-                        onChangeText={(t) => setFeedbackForm({ ...feedbackForm, content: t })} />
-
-                    <View style={styles.anonRow}>
-                        <Text style={styles.inputLabel}>Submit Anonymously</Text>
-                        <Switch value={feedbackForm.isAnonymous}
-                            onValueChange={(v) => setFeedbackForm({ ...feedbackForm, isAnonymous: v })}
-                            trackColor={{ false: '#374151', true: COLORS.primary }} thumbColor="#fff" />
-                    </View>
-
-                    <TouchableOpacity style={styles.saveBtn} onPress={handleFeedbackSubmit} disabled={isSubmittingFeedback}>
-                        <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.saveBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                            {isSubmittingFeedback
-                                ? <ActivityIndicator color="#fff" />
-                                : <Text style={styles.saveBtnText}>Submit Feedback</Text>}
-                        </LinearGradient>
-                    </TouchableOpacity>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
         </Modal>
     );
 
@@ -228,119 +234,130 @@ const ProfileScreen = () => {
 
     /* ── Edit Account Form ── */
     const renderEditAccountForm = () => (
-        <View style={styles.card}>
-            <Text style={styles.cardTitle}>Edit Account</Text>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <View style={styles.card}>
+                <Text style={styles.cardTitle}>Edit Account</Text>
 
-            <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>First Name</Text>
-                <TextInput style={styles.input} value={accountForm.firstName}
-                    onChangeText={(t) => setAccountForm({ ...accountForm, firstName: t })}
-                    placeholder="First Name" placeholderTextColor="#4B5563" />
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Last Name</Text>
-                <TextInput style={styles.input} value={accountForm.lastName}
-                    onChangeText={(t) => setAccountForm({ ...accountForm, lastName: t })}
-                    placeholder="Last Name" placeholderTextColor="#4B5563" />
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email</Text>
-                <TextInput style={styles.input} value={accountForm.email}
-                    onChangeText={(t) => setAccountForm({ ...accountForm, email: t })}
-                    placeholder="Email" placeholderTextColor="#4B5563" keyboardType="email-address" autoCapitalize="none" />
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>New Password (optional)</Text>
-                <TextInput style={styles.input} value={accountForm.password}
-                    onChangeText={(t) => setAccountForm({ ...accountForm, password: t })}
-                    placeholder="Leave blank to keep current" placeholderTextColor="#4B5563" secureTextEntry />
-            </View>
-
-            {accountForm.password.length > 0 && (
                 <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Confirm Password</Text>
-                    <TextInput style={styles.input} value={accountForm.confirmPassword}
-                        onChangeText={(t) => setAccountForm({ ...accountForm, confirmPassword: t })}
-                        placeholder="Confirm new password" placeholderTextColor="#4B5563" secureTextEntry />
+                    <Text style={styles.inputLabel}>First Name</Text>
+                    <TextInput style={styles.input} value={accountForm.firstName}
+                        onChangeText={(t) => setAccountForm({ ...accountForm, firstName: t })}
+                        placeholder="First Name" placeholderTextColor="#4B5563" />
                 </View>
-            )}
 
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
-                <TouchableOpacity style={[styles.saveBtn, { flex: 1 }]} onPress={handleSaveAccount} disabled={isLoading}>
-                    <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.saveBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                        {isLoading
-                            ? <ActivityIndicator color="#fff" />
-                            : <Text style={styles.saveBtnText}>Save</Text>}
-                    </LinearGradient>
-                </TouchableOpacity>
+                <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Last Name</Text>
+                    <TextInput style={styles.input} value={accountForm.lastName}
+                        onChangeText={(t) => setAccountForm({ ...accountForm, lastName: t })}
+                        placeholder="Last Name" placeholderTextColor="#4B5563" />
+                </View>
 
-                <TouchableOpacity style={[styles.saveBtn, { flex: 1, backgroundColor: '#374151' }]} onPress={handleCancelEdit} disabled={isLoading}>
-                    <View style={[styles.saveBtnGrad, { backgroundColor: '#374151' }]}>
-                        <Text style={[styles.saveBtnText, { color: '#fff' }]}>Cancel</Text>
+                <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Email</Text>
+                    <TextInput style={styles.input} value={accountForm.email}
+                        onChangeText={(t) => setAccountForm({ ...accountForm, email: t })}
+                        placeholder="Email" placeholderTextColor="#4B5563" keyboardType="email-address" autoCapitalize="none" />
+                </View>
+
+                <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>New Password (optional)</Text>
+                    <TextInput style={styles.input} value={accountForm.password}
+                        onChangeText={(t) => setAccountForm({ ...accountForm, password: t })}
+                        placeholder="Leave blank to keep current" placeholderTextColor="#4B5563" secureTextEntry />
+                </View>
+
+                {accountForm.password.length > 0 && (
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Confirm Password</Text>
+                        <TextInput style={styles.input} value={accountForm.confirmPassword}
+                            onChangeText={(t) => setAccountForm({ ...accountForm, confirmPassword: t })}
+                            placeholder="Confirm new password" placeholderTextColor="#4B5563" secureTextEntry />
                     </View>
-                </TouchableOpacity>
+                )}
+
+                <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+                    <TouchableOpacity style={[styles.saveBtn, { flex: 1 }]} onPress={handleSaveAccount} disabled={isLoading}>
+                        <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.saveBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                            {isLoading
+                                ? <ActivityIndicator color="#fff" />
+                                : <Text style={styles.saveBtnText}>Save</Text>}
+                        </LinearGradient>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={[styles.saveBtn, { flex: 1, backgroundColor: '#374151' }]} onPress={handleCancelEdit} disabled={isLoading}>
+                        <View style={[styles.saveBtnGrad, { backgroundColor: '#374151' }]}>
+                            <Text style={[styles.saveBtnText, { color: '#fff' }]}>Cancel</Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
-            <PremiumMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
+        <KeyboardAvoidingView 
+            style={{ flex: 1 }} 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+            <View style={styles.container}>
+                <StatusBar barStyle="light-content" />
+                <PremiumMenu visible={menuVisible} onClose={() => setMenuVisible(false)} />
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-
-                {/* ── Hero Banner ── */}
-                <LinearGradient
-                    colors={['#0A2540', '#0D1B2A', '#080C14']}
-                    style={styles.heroBanner}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                <ScrollView 
+                    showsVerticalScrollIndicator={false} 
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
                 >
-                    <View style={styles.glowBlob} />
 
-                    {isPremium && (
-                        <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuBtn}>
-                            <Ionicons name="menu" size={26} color="#fff" />
-                        </TouchableOpacity>
-                    )}
+                    {/* ── Hero Banner ── */}
+                    <LinearGradient
+                        colors={['#0A2540', '#0D1B2A', '#080C14']}
+                        style={styles.heroBanner}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                    >
+                        <View style={styles.glowBlob} />
 
-                    {/* Avatar */}
-                    <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.avatarRing}>
-                        <View style={styles.avatarInner}>
-                            <Text style={styles.avatarText}>{user?.firstName?.[0]?.toUpperCase() || 'U'}</Text>
+                        {isPremium && (
+                            <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuBtn}>
+                                <Ionicons name="menu" size={26} color="#fff" />
+                            </TouchableOpacity>
+                        )}
+
+                        {/* Avatar */}
+                        <LinearGradient colors={[COLORS.primary, '#059669']} style={styles.avatarRing}>
+                            <View style={styles.avatarInner}>
+                                <Text style={styles.avatarText}>{user?.firstName?.[0]?.toUpperCase() || 'U'}</Text>
+                            </View>
+                        </LinearGradient>
+
+                        <Text style={styles.heroName}>{user?.firstName} {user?.lastName}</Text>
+                        <Text style={styles.heroEmail}>{user?.email}</Text>
+
+                        {/* Stats row */}
+                        <View style={styles.statsRow}>
+                            <View style={styles.statPill}>
+                                <Ionicons name="school-outline" size={14} color={COLORS.primary} />
+                                <Text style={styles.statPillText}>
+                                    {PROFICIENCY_LEVELS[profile?.proficiency] || 'Beginner'}
+                                </Text>
+                            </View>
+                            <View style={styles.statPill}>
+                                <Ionicons name="language-outline" size={14} color="#6366F1" />
+                                <Text style={[styles.statPillText, { color: '#6366F1' }]}>
+                                    {profile?.nativeLanguage || 'Not set'}
+                                </Text>
+                            </View>
                         </View>
                     </LinearGradient>
 
-                    <Text style={styles.heroName}>{user?.firstName} {user?.lastName}</Text>
-                    <Text style={styles.heroEmail}>{user?.email}</Text>
+                    {/* ── Body ── */}
+                    <View style={styles.body}>
+                        {isEditingAccount ? renderEditAccountForm() : renderDetails()}
 
-                    {/* Stats row */}
-                    <View style={styles.statsRow}>
-                        <View style={styles.statPill}>
-                            <Ionicons name="school-outline" size={14} color={COLORS.primary} />
-                            <Text style={styles.statPillText}>
-                                {PROFICIENCY_LEVELS[profile?.proficiency] || 'Beginner'}
-                            </Text>
-                        </View>
-                        <View style={styles.statPill}>
-                            <Ionicons name="language-outline" size={14} color="#6366F1" />
-                            <Text style={[styles.statPillText, { color: '#6366F1' }]}>
-                                {profile?.nativeLanguage || 'Not set'}
-                            </Text>
-                        </View>
-                    </View>
-                </LinearGradient>
-
-                {/* ── Body ── */}
-                <View style={styles.body}>
-                    {isEditingAccount ? renderEditAccountForm() : renderDetails()}
-
-                    <View style={styles.menuSection}>
-                        <TouchableOpacity style={styles.menuRow} onPress={() => setShowProfileModal(true)}>
+                        <View style={styles.menuSection}>
+                            <TouchableOpacity style={styles.menuRow} onPress={() => setShowProfileModal(true)}>
                                 <View style={[styles.menuIcon, { backgroundColor: 'rgba(16,185,129,0.12)' }]}>
                                     <Ionicons name="school-outline" size={20} color={COLORS.primary} />
                                 </View>
@@ -368,12 +385,13 @@ const ProfileScreen = () => {
                                 <Ionicons name="chevron-forward" size={18} color="#4B5563" />
                             </TouchableOpacity>
                         </View>
-                </View>
-            </ScrollView>
+                    </View>
+                </ScrollView>
 
-            {renderFeedbackModal()}
-            {renderProfileModal()}
-        </View>
+                {renderFeedbackModal()}
+                {renderProfileModal()}
+            </View>
+        </KeyboardAvoidingView>
     );
 }
 

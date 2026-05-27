@@ -49,6 +49,8 @@ function PostCard({ item, currentUserId, onReact, onDeletePost, onEditPost, onDe
     const [showAttachPanel, setShowAttachPanel] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const emojiAnim = useRef(new Animated.Value(0)).current;
+    const commentInputRef = useRef(null);
+    const editCommentInputRef = useRef(null);
     const { addComment, updateComment, deleteComment } = useCommunityStore();
 
     const isOwner = item.author?.id === currentUserId || item.userId === currentUserId;
@@ -250,76 +252,80 @@ function PostCard({ item, currentUserId, onReact, onDeletePost, onEditPost, onDe
             {/* Comments section */}
             {showComments && (
                 <View style={card.commentSection}>
-                    {item.comments?.map((c) => {
-                        const isCommentOwner = c.author?.id === currentUserId || c.userId === currentUserId;
-                        const isEditingThis = editingComment?.id === c.id;
-                        return (
-                            <View key={c.id} style={card.commentBubble}>
-                                <View style={card.commentAvatar}>
-                                    <Text style={card.commentAvatarText}>{c.author?.firstName?.[0]?.toUpperCase() || '?'}</Text>
-                                </View>
-                                <View style={card.commentContent}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2, flexWrap: 'wrap' }}>
-                                        <Text style={card.commentAuthor}>{c.author?.firstName} {c.author?.lastName}</Text>
-                                        <Text style={card.commentTime}>{formatTime(c.createdAt)}</Text>
-                                        {c.isEdited && <Text style={card.editedLabel}>(edited)</Text>}
-                                        {isCommentOwner && !isEditingThis && (
-                                            <View style={{ flexDirection: 'row', gap: 6, marginLeft: 'auto' }}>
-                                                <TouchableOpacity onPress={() => { setEditingComment(c); setEditCommentText(c.content); }}>
-                                                    <Ionicons name="pencil-outline" size={12} color="rgba(255,255,255,0.35)" />
-                                                </TouchableOpacity>
-                                                <TouchableOpacity onPress={() => setDeleteCommentConfirm(c.id)}>
-                                                    <Ionicons name="trash-outline" size={12} color="#EF4444" />
-                                                </TouchableOpacity>
+                    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                        {item.comments?.map((c) => {
+                            const isCommentOwner = c.author?.id === currentUserId || c.userId === currentUserId;
+                            const isEditingThis = editingComment?.id === c.id;
+                            return (
+                                <View key={c.id} style={card.commentBubble}>
+                                    <View style={card.commentAvatar}>
+                                        <Text style={card.commentAvatarText}>{c.author?.firstName?.[0]?.toUpperCase() || '?'}</Text>
+                                    </View>
+                                    <View style={card.commentContent}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2, flexWrap: 'wrap' }}>
+                                            <Text style={card.commentAuthor}>{c.author?.firstName} {c.author?.lastName}</Text>
+                                            <Text style={card.commentTime}>{formatTime(c.createdAt)}</Text>
+                                            {c.isEdited && <Text style={card.editedLabel}>(edited)</Text>}
+                                            {isCommentOwner && !isEditingThis && (
+                                                <View style={{ flexDirection: 'row', gap: 6, marginLeft: 'auto' }}>
+                                                    <TouchableOpacity onPress={() => { setEditingComment(c); setEditCommentText(c.content); }}>
+                                                        <Ionicons name="pencil-outline" size={12} color="rgba(255,255,255,0.35)" />
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity onPress={() => setDeleteCommentConfirm(c.id)}>
+                                                        <Ionicons name="trash-outline" size={12} color="#EF4444" />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            )}
+                                        </View>
+                                        {isEditingThis ? (
+                                            <View>
+                                                <TextInput
+                                                    ref={editCommentInputRef}
+                                                    style={card.input}
+                                                    value={editCommentText}
+                                                    onChangeText={setEditCommentText}
+                                                    placeholder="Edit comment..."
+                                                    placeholderTextColor="#4B5563"
+                                                    multiline
+                                                />
+                                                <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
+                                                    <TouchableOpacity style={card.saveBtn} onPress={handleUpdateComment} disabled={!editCommentText.trim()}>
+                                                        <Text style={card.saveBtnText}>Save</Text>
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity onPress={() => { setEditingComment(null); setEditCommentText(''); }}>
+                                                        <Text style={card.cancelText}>Cancel</Text>
+                                                    </TouchableOpacity>
+                                                </View>
                                             </View>
+                                        ) : (
+                                            <Text style={card.commentText}>{c.content}</Text>
                                         )}
                                     </View>
-                                    {isEditingThis ? (
-                                        <View>
-                                            <TextInput
-                                                style={card.input}
-                                                value={editCommentText}
-                                                onChangeText={setEditCommentText}
-                                                placeholder="Edit comment..."
-                                                placeholderTextColor="#4B5563"
-                                                multiline
-                                            />
-                                            <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
-                                                <TouchableOpacity style={card.saveBtn} onPress={handleUpdateComment} disabled={!editCommentText.trim()}>
-                                                    <Text style={card.saveBtnText}>Save</Text>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity onPress={() => { setEditingComment(null); setEditCommentText(''); }}>
-                                                    <Text style={card.cancelText}>Cancel</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
-                                    ) : (
-                                        <Text style={card.commentText}>{c.content}</Text>
-                                    )}
                                 </View>
-                            </View>
-                        );
-                    })}
+                            );
+                        })}
 
-                    <View style={card.commentInput}>
-                        <TextInput
-                            style={card.input}
-                            placeholder="Write a comment..."
-                            placeholderTextColor="#4B5563"
-                            value={commentText}
-                            onChangeText={setCommentText}
-                            multiline
-                            onSubmitEditing={handleComment}
-                            returnKeyType="send"
-                        />
-                        <TouchableOpacity
-                            style={[card.sendBtn, !commentText.trim() && card.sendBtnDisabled]}
-                            onPress={handleComment}
-                            disabled={!commentText.trim() || sending}
-                        >
-                            {sending ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="send" size={16} color="#fff" />}
-                        </TouchableOpacity>
-                    </View>
+                        <View style={card.commentInput}>
+                            <TextInput
+                                ref={commentInputRef}
+                                style={card.input}
+                                placeholder="Write a comment..."
+                                placeholderTextColor="#4B5563"
+                                value={commentText}
+                                onChangeText={setCommentText}
+                                multiline
+                                onSubmitEditing={handleComment}
+                                returnKeyType="send"
+                            />
+                            <TouchableOpacity
+                                style={[card.sendBtn, !commentText.trim() && card.sendBtnDisabled]}
+                                onPress={handleComment}
+                                disabled={!commentText.trim() || sending}
+                            >
+                                {sending ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="send" size={16} color="#fff" />}
+                            </TouchableOpacity>
+                        </View>
+                    </KeyboardAvoidingView>
                 </View>
             )}
 
@@ -369,6 +375,7 @@ export default function CommunityScreen() {
     const [deleteAttachConfirm, setDeleteAttachConfirm] = useState(null); // { postId, id }
 
     const inputRef = useRef(null);
+    const editPostInputRef = useRef(null);
 
     useEffect(() => {
         if (id) checkAccess();
@@ -453,62 +460,66 @@ export default function CommunityScreen() {
     );
 
     return (
-        <View style={styles.container}>
-            <LinearGradient colors={['#0A1628', '#0D2137', '#0A1628']} style={StyleSheet.absoluteFillObject} />
+        <KeyboardAvoidingView 
+            style={{ flex: 1 }} 
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        >
+            <View style={styles.container}>
+                <LinearGradient colors={['#0A1628', '#0D2137', '#0A1628']} style={StyleSheet.absoluteFillObject} />
 
-            {/* Header */}
-            <View style={styles.topBar}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={22} color="#fff" />
-                </TouchableOpacity>
-                <View style={styles.topBarCenter}>
-                    <Ionicons name="people" size={18} color={COLORS.primary} />
-                    <Text style={styles.topBarTitle}>Community</Text>
-                </View>
-                <View style={{ width: 40 }} />
-            </View>
-
-            {isEnrolled === false ? (
-                <View style={[styles.emptyContainer, { justifyContent: 'center', flex: 1 }]}>
-                    <Ionicons name="lock-closed" size={64} color="#F59E0B" />
-                    <Text style={[styles.emptyTitle, { color: '#fff', marginTop: 16 }]}>Premium Access Required</Text>
-                    <Text style={styles.emptyDesc}>Join this batch to access the community discussion.</Text>
-                    <TouchableOpacity
-                        style={{ marginTop: 24, backgroundColor: '#F59E0B', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
-                        onPress={() => router.back()}
-                    >
-                        <Text style={{ fontWeight: 'bold', color: '#1A1A2E' }}>Go to Enrollment</Text>
+                {/* Header */}
+                <View style={styles.topBar}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                        <Ionicons name="arrow-back" size={22} color="#fff" />
                     </TouchableOpacity>
+                    <View style={styles.topBarCenter}>
+                        <Ionicons name="people" size={18} color={COLORS.primary} />
+                        <Text style={styles.topBarTitle}>Community</Text>
+                    </View>
+                    <View style={{ width: 40 }} />
                 </View>
-            ) : isLoading || isEnrolled === null ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={COLORS.primary} />
-                    <Text style={styles.loadingText}>Loading community...</Text>
-                </View>
-            ) : (
-                <FlatList
-                    data={posts}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={styles.listContent}
-                    ListHeaderComponent={ListHeader}
-                    ListEmptyComponent={ListEmpty}
-                    showsVerticalScrollIndicator={false}
-                    renderItem={({ item }) => (
-                        <PostCard
-                            item={item}
-                            currentUserId={user?.id}
-                            onReact={handleReact}
-                            onEditPost={(post) => { setEditPostModal(post); setEditPostContent(post.content); }}
-                            onDeletePost={(postId) => setDeletePostConfirm(postId)}
-                            onDeleteAttachment={(postId, attId) => setDeleteAttachConfirm({ postId, id: attId })}
-                            onUploadAttachments={handleUploadAttachments}
-                        />
-                    )}
-                />
-            )}
 
-            {/* Compose bar */}
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={80}>
+                {isEnrolled === false ? (
+                    <View style={[styles.emptyContainer, { justifyContent: 'center', flex: 1 }]}>
+                        <Ionicons name="lock-closed" size={64} color="#F59E0B" />
+                        <Text style={[styles.emptyTitle, { color: '#fff', marginTop: 16 }]}>Premium Access Required</Text>
+                        <Text style={styles.emptyDesc}>Join this batch to access the community discussion.</Text>
+                        <TouchableOpacity
+                            style={{ marginTop: 24, backgroundColor: '#F59E0B', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+                            onPress={() => router.back()}
+                        >
+                            <Text style={{ fontWeight: 'bold', color: '#1A1A2E' }}>Go to Enrollment</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : isLoading || isEnrolled === null ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color={COLORS.primary} />
+                        <Text style={styles.loadingText}>Loading community...</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        data={posts}
+                        keyExtractor={item => item.id}
+                        contentContainerStyle={styles.listContent}
+                        ListHeaderComponent={ListHeader}
+                        ListEmptyComponent={ListEmpty}
+                        showsVerticalScrollIndicator={false}
+                        renderItem={({ item }) => (
+                            <PostCard
+                                item={item}
+                                currentUserId={user?.id}
+                                onReact={handleReact}
+                                onEditPost={(post) => { setEditPostModal(post); setEditPostContent(post.content); }}
+                                onDeletePost={(postId) => setDeletePostConfirm(postId)}
+                                onDeleteAttachment={(postId, attId) => setDeleteAttachConfirm({ postId, id: attId })}
+                                onUploadAttachments={handleUploadAttachments}
+                            />
+                        )}
+                    />
+                )}
+
+                {/* Compose bar */}
                 <View style={styles.composeBar}>
                     {selectedFiles.length > 0 && (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
@@ -546,75 +557,79 @@ export default function CommunityScreen() {
                         </TouchableOpacity>
                     </View>
                 </View>
-            </KeyboardAvoidingView>
 
-            {/* Edit Post Modal */}
-            <Modal visible={!!editPostModal} transparent animationType="slide" onRequestClose={() => setEditPostModal(null)}>
-                <View style={card.modalOverlay}>
-                    <View style={card.modalCard}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                            <Ionicons name="pencil" size={18} color={COLORS.primary} />
-                            <Text style={[card.modalTitle, { flex: 1 }]}>Edit Post</Text>
-                            <TouchableOpacity onPress={() => { setEditPostModal(null); setEditPostContent(''); }}>
-                                <Ionicons name="close" size={20} color="rgba(255,255,255,0.5)" />
-                            </TouchableOpacity>
+                {/* Edit Post Modal */}
+                <Modal visible={!!editPostModal} transparent animationType="slide" onRequestClose={() => setEditPostModal(null)}>
+                    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end' }}>
+                        <View style={card.modalOverlay}>
+                            <View style={card.modalCard}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                                    <Ionicons name="pencil" size={18} color={COLORS.primary} />
+                                    <Text style={[card.modalTitle, { flex: 1 }]}>Edit Post</Text>
+                                    <TouchableOpacity onPress={() => { setEditPostModal(null); setEditPostContent(''); }}>
+                                        <Ionicons name="close" size={20} color="rgba(255,255,255,0.5)" />
+                                    </TouchableOpacity>
+                                </View>
+                                <TextInput
+                                    ref={editPostInputRef}
+                                    style={[card.input, { minHeight: 100, textAlignVertical: 'top', marginBottom: 8 }]}
+                                    value={editPostContent}
+                                    onChangeText={setEditPostContent}
+                                    placeholder="What would you like to share?"
+                                    placeholderTextColor="#4B5563"
+                                    multiline
+                                    autoFocus
+                                />
+                                <Text style={{ color: '#4B5563', fontSize: 11, textAlign: 'right', marginBottom: 14 }}>{editPostContent.length} characters</Text>
+                                <View style={card.modalActions}>
+                                    <TouchableOpacity style={card.modalCancelBtn} onPress={() => { setEditPostModal(null); setEditPostContent(''); }}>
+                                        <Text style={card.modalCancelText}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={[card.modalConfirmBtn, !editPostContent.trim() && { opacity: 0.5 }]} onPress={handleUpdatePost} disabled={!editPostContent.trim()}>
+                                        <Text style={card.modalConfirmText}>Update Post</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
                         </View>
-                        <TextInput
-                            style={[card.input, { minHeight: 100, textAlignVertical: 'top', marginBottom: 8 }]}
-                            value={editPostContent}
-                            onChangeText={setEditPostContent}
-                            placeholder="What would you like to share?"
-                            placeholderTextColor="#4B5563"
-                            multiline
-                        />
-                        <Text style={{ color: '#4B5563', fontSize: 11, textAlign: 'right', marginBottom: 14 }}>{editPostContent.length} characters</Text>
-                        <View style={card.modalActions}>
-                            <TouchableOpacity style={card.modalCancelBtn} onPress={() => { setEditPostModal(null); setEditPostContent(''); }}>
-                                <Text style={card.modalCancelText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[card.modalConfirmBtn, !editPostContent.trim() && { opacity: 0.5 }]} onPress={handleUpdatePost} disabled={!editPostContent.trim()}>
-                                <Text style={card.modalConfirmText}>Update Post</Text>
-                            </TouchableOpacity>
+                    </KeyboardAvoidingView>
+                </Modal>
+
+                {/* Delete Post Confirm */}
+                <Modal visible={!!deletePostConfirm} transparent animationType="fade" onRequestClose={() => setDeletePostConfirm(null)}>
+                    <View style={card.modalOverlay}>
+                        <View style={card.modalCard}>
+                            <Text style={card.modalTitle}>Delete Post</Text>
+                            <Text style={card.modalBody}>Are you sure? This will also remove all comments and reactions.</Text>
+                            <View style={card.modalActions}>
+                                <TouchableOpacity style={card.modalCancelBtn} onPress={() => setDeletePostConfirm(null)}>
+                                    <Text style={card.modalCancelText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={card.modalDeleteBtn} onPress={handleDeletePost}>
+                                    <Text style={card.modalDeleteText}>Delete</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
-                </View>
-            </Modal>
+                </Modal>
 
-            {/* Delete Post Confirm */}
-            <Modal visible={!!deletePostConfirm} transparent animationType="fade" onRequestClose={() => setDeletePostConfirm(null)}>
-                <View style={card.modalOverlay}>
-                    <View style={card.modalCard}>
-                        <Text style={card.modalTitle}>Delete Post</Text>
-                        <Text style={card.modalBody}>Are you sure? This will also remove all comments and reactions.</Text>
-                        <View style={card.modalActions}>
-                            <TouchableOpacity style={card.modalCancelBtn} onPress={() => setDeletePostConfirm(null)}>
-                                <Text style={card.modalCancelText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={card.modalDeleteBtn} onPress={handleDeletePost}>
-                                <Text style={card.modalDeleteText}>Delete</Text>
-                            </TouchableOpacity>
+                {/* Delete Attachment Confirm */}
+                <Modal visible={!!deleteAttachConfirm} transparent animationType="fade" onRequestClose={() => setDeleteAttachConfirm(null)}>
+                    <View style={card.modalOverlay}>
+                        <View style={card.modalCard}>
+                            <Text style={card.modalTitle}>Delete Attachment</Text>
+                            <Text style={card.modalBody}>Are you sure you want to delete this attachment? This cannot be undone.</Text>
+                            <View style={card.modalActions}>
+                                <TouchableOpacity style={card.modalCancelBtn} onPress={() => setDeleteAttachConfirm(null)}>
+                                    <Text style={card.modalCancelText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={card.modalDeleteBtn} onPress={handleDeleteAttachment}>
+                                    <Text style={card.modalDeleteText}>Delete</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
-                </View>
-            </Modal>
-
-            {/* Delete Attachment Confirm */}
-            <Modal visible={!!deleteAttachConfirm} transparent animationType="fade" onRequestClose={() => setDeleteAttachConfirm(null)}>
-                <View style={card.modalOverlay}>
-                    <View style={card.modalCard}>
-                        <Text style={card.modalTitle}>Delete Attachment</Text>
-                        <Text style={card.modalBody}>Are you sure you want to delete this attachment? This cannot be undone.</Text>
-                        <View style={card.modalActions}>
-                            <TouchableOpacity style={card.modalCancelBtn} onPress={() => setDeleteAttachConfirm(null)}>
-                                <Text style={card.modalCancelText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={card.modalDeleteBtn} onPress={handleDeleteAttachment}>
-                                <Text style={card.modalDeleteText}>Delete</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-        </View>
+                </Modal>
+            </View>
+        </KeyboardAvoidingView>
     );
 }
