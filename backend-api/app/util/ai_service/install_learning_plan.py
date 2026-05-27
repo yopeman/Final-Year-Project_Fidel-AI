@@ -1,6 +1,6 @@
 import json
 from typing import List
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_core.messages import HumanMessage
@@ -53,7 +53,7 @@ web_search = DuckDuckGoSearchResults(output_format="list")
 
 def youtube_search(search_terms: str, max_results=5, retries=3):
     """
-    Search YouTube video for educational videos and return results.
+    Search YouTube for educational videos and return results.
     """
     videos = YoutubeSearch(
         search_terms=search_terms, max_results=max_results, retries=retries
@@ -64,23 +64,12 @@ def youtube_search(search_terms: str, max_results=5, retries=3):
     return videos
 
 
-def _process_lesson_resources(profile: StudentProfile, module: ModuleOutput, lesson: LessonOutput, content: str):
-    """Process vocabulary generation, web search, and YouTube search in parallel for a lesson."""
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        vocab_future = executor.submit(
-            _generate_vocabularies, profile, module, lesson, content
-        )
-        articles_future = executor.submit(web_search.invoke, lesson.name)
-        videos_future = executor.submit(youtube_search, lesson.name)
-        
-        vocabularies = vocab_future.result()
-        articles = articles_future.result()[:5]
-        videos = videos_future.result()[:5]
-    
-    return vocabularies, articles, videos
-
-
 def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
+    """
+    Parse the AI learning plan into a module/lesson skeleton and persist it.
+    Content, vocabularies, articles, and videos are generated lazily on first
+    lesson access (see resolve_lesson in module_lessons resolver).
+    """
     prompts = PromptTemplate.from_template(INSTALL_LEARNING_PLAN_PROMPT).format(
         **{
             "age_range": profile.age_range,
@@ -92,20 +81,22 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
     )
 
     try:
-        # Use JSON mode instead of structured output to avoid function call confusion
-        json_prompt = prompts + "\n\nIMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no preamble. Use this exact format:\n{\"modules\": [{\"name\": \"module_name\", \"description\": \"module_description\", \"lessons\": [{\"name\": \"lesson_name\", \"description\": \"lesson_description\"}]}]}"
-        
+        json_prompt = (
+            prompts
+            + "\n\nIMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no preamble. "
+            "Use this exact format:\n"
+            '{"modules": [{"name": "module_name", "description": "module_description", '
+            '"lessons": [{"name": "lesson_name", "description": "lesson_description"}]}]}'
+        )
+
         response = llm.invoke([HumanMessage(content=json_prompt)])
-        
-        # Debug logging
+
         print(f"LLM raw response: {repr(response.content)}")
-        
-        # Handle empty response
+
         if not response.content or not response.content.strip():
             print("Error: LLM returned empty response")
             return False
-        
-        # Clean up response - remove markdown code blocks if present
+
         content = response.content.strip()
         if content.startswith("```json"):
             content = content[7:]
@@ -114,37 +105,39 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
         if content.endswith("```"):
             content = content[:-3]
         content = content.strip()
-        
+
         print(f"Cleaned content for parsing: {repr(content[:200])}...")
-        
-        # Parse the JSON response
+
         response_data = json.loads(content)
-        
-        # Create ModuleResponse object
+
         modules = []
         for module_data in response_data.get("modules", []):
-            lessons = []
-            for lesson_data in module_data.get("lessons", []):
-                lessons.append(LessonOutput(
+            lessons = [
+                LessonOutput(
                     name=lesson_data.get("name", ""),
-                    description=lesson_data.get("description", "")
-                ))
-            
-            modules.append(ModuleOutput(
-                name=module_data.get("name", ""),
-                description=module_data.get("description", ""),
-                lessons=lessons
-            ))
-        
-        response = ModuleResponse(modules=modules)
+                    description=lesson_data.get("description", ""),
+                )
+                for lesson_data in module_data.get("lessons", [])
+            ]
+            modules.append(
+                ModuleOutput(
+                    name=module_data.get("name", ""),
+                    description=module_data.get("description", ""),
+                    lessons=lessons,
+                )
+            )
+
+        module_response = ModuleResponse(modules=modules)
         print(f"Successfully parsed {len(modules)} modules")
+
     except Exception as e:
         print(f"Error generating modules: {e}")
         import traceback
         traceback.print_exc()
         return False
 
-    for i, module in enumerate(response.modules, start=1):
+    # Persist skeleton — no content/vocab/articles/videos yet
+    for i, module in enumerate(module_response.modules, start=1):
         new_module = Modules(
             profile_id=profile.id,
             name=module.name,
@@ -155,82 +148,98 @@ def install_learning_plan(profile: StudentProfile, db: Session) -> bool:
         db.add(new_module)
         db.flush()
 
-        # Generate content for all lessons in parallel
-        lesson_data = []
-        with ThreadPoolExecutor() as executor:
-            future_to_lesson = {
-                executor.submit(_generate_content, profile, module, lesson): (j, lesson)
-                for j, lesson in enumerate(module.lessons, start=1)
-            }
-            
-            for future in as_completed(future_to_lesson):
-                j, lesson = future_to_lesson[future]
-                try:
-                    content = future.result()
-                    lesson_data.append((j, lesson, content))
-                except Exception as e:
-                    print(f"Error generating content for lesson {lesson.name}: {e}")
-        
-        # Sort lessons by display order to maintain sequence
-        lesson_data.sort(key=lambda x: x[0])
-        
-        for j, lesson, content in lesson_data:
+        for j, lesson in enumerate(module.lessons, start=1):
             new_lesson = ModuleLessons(
                 module_id=new_module.id,
                 title=lesson.name,
-                content=content,
+                description=lesson.description,
+                content=None,  # generated lazily on first access
                 display_order=j,
                 is_locked=not (i == 1 and j == 1),
             )
             db.add(new_lesson)
-            db.flush()
-
-            # Process vocabularies, articles, and videos in parallel
-            vocabularies, articles, videos = _process_lesson_resources(
-                profile, module, lesson, content
-            )
-            
-            for vocabulary in vocabularies.vocabularies:
-                new_vocabulary = LessonVocabularies(
-                    lesson_id=new_lesson.id,
-                    vocabulary=vocabulary.vocabulary,
-                    meaning=vocabulary.meaning,
-                    description=vocabulary.description,
-                )
-                db.add(new_vocabulary)
-
-            for article in articles:
-                new_article = LessonOnlineArticles(
-                    lesson_id=new_lesson.id,
-                    title=article.get("title", "")[:200],
-                    favicon_url=article.get("favicon_url", [None]),
-                    description=article.get("snippet", ""),
-                    page_url=article.get("link", ""),
-                )
-                db.add(new_article)
-
-            for video in videos:
-                new_video = LessonYouTubeVideos(
-                    lesson_id=new_lesson.id,
-                    title=video.get("title", "")[:200],
-                    thumbnail_url=(
-                        video.get("thumbnails", [None])[0]
-                        if video.get("thumbnails")
-                        else None
-                    ),
-                    description=video.get("long_desc", ""),
-                    video_url=video.get("full_url", ""),
-                )
-                db.add(new_video)
-            
-            db.flush()
 
     db.commit()
     return True
 
 
-def _generate_content(
-    profile: StudentProfile, module: ModuleOutput, lesson: LessonOutput
+# ---------------------------------------------------------------------------
+# Lazy content generation — called from resolve_lesson on first access
+# ---------------------------------------------------------------------------
+
+def generate_lesson_content(
+    profile: StudentProfile,
+    module_name: str,
+    lesson: ModuleLessons,
+    db: Session,
+) -> ModuleLessons:
+    """
+    Generate and persist content, vocabularies, articles, and YouTube videos
+    for a lesson that has not yet been populated.  Runs the three resource
+    tasks (vocab, web search, YouTube) in parallel after content is ready.
+    """
+    # 1. Generate lesson content (LLM)
+    content = _generate_content_for_lesson(profile, module_name, lesson.title)
+
+    # 2. Generate vocab + fetch articles + fetch videos in parallel
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        vocab_future = executor.submit(
+            _generate_vocabularies_for_lesson, profile, lesson.title
+        )
+        articles_future = executor.submit(web_search.invoke, lesson.title)
+        videos_future = executor.submit(youtube_search, lesson.title)
+
+        vocabularies: VocabularyResponse = vocab_future.result()
+        articles = articles_future.result()[:5]
+        videos = videos_future.result()[:5]
+
+    # 3. Persist everything
+    lesson.content = content
+    db.flush()
+
+    for vocabulary in vocabularies.vocabularies:
+        db.add(
+            LessonVocabularies(
+                lesson_id=lesson.id,
+                vocabulary=vocabulary.vocabulary,
+                meaning=vocabulary.meaning,
+                description=vocabulary.description,
+            )
+        )
+
+    for article in articles:
+        db.add(
+            LessonOnlineArticles(
+                lesson_id=lesson.id,
+                title=article.get("title", "")[:200],
+                favicon_url=article.get("favicon_url", [None]),
+                description=article.get("snippet", ""),
+                page_url=article.get("link", ""),
+            )
+        )
+
+    for video in videos:
+        db.add(
+            LessonYouTubeVideos(
+                lesson_id=lesson.id,
+                title=video.get("title", "")[:200],
+                thumbnail_url=(
+                    video.get("thumbnails", [None])[0]
+                    if video.get("thumbnails")
+                    else None
+                ),
+                description=video.get("long_desc", ""),
+                video_url=video.get("full_url", ""),
+            )
+        )
+
+    db.commit()
+    db.refresh(lesson)
+    return lesson
+
+
+def _generate_content_for_lesson(
+    profile: StudentProfile, module_title: str, lesson_title: str
 ) -> str:
     prompts = PromptTemplate.from_template(LESSON_CONTENT_GENERATION_PROMPT).format(
         **{
@@ -238,44 +247,40 @@ def _generate_content(
             "proficiency": profile.proficiency,
             "native_language": profile.native_language,
             "learning_goal": profile.learning_goal,
-            "module_title": module.name,
-            "lesson_title": lesson.name,
+            "module_title": module_title,
+            "lesson_title": lesson_title,
         }
     )
-
-    response: str = (
-        llm.invoke([HumanMessage(content=prompts)]).content
-    )
-
-    return response
+    return llm.invoke([HumanMessage(content=prompts)]).content
 
 
-def _generate_vocabularies(
-    profile: StudentProfile, module: ModuleOutput, lesson: LessonOutput, content: str
+def _generate_vocabularies_for_lesson(
+    profile: StudentProfile, lesson_title: str
 ) -> VocabularyResponse:
     prompts = PromptTemplate.from_template(VOCABULARY_GENERATION_PROMPT).format(
         **{
             "proficiency": profile.proficiency,
             "native_language": profile.native_language,
-            "lesson_title": lesson.name,
+            "lesson_title": lesson_title,
         }
     )
 
+    json_prompt = (
+        prompts
+        + "\n\nIMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no preamble. "
+        "Use this exact format:\n"
+        '{"vocabularies": [{"vocabulary": "word", "meaning": "definition", "description": "description"}]}'
+    )
+
     try:
-        # Use JSON mode instead of structured output to avoid function call confusion
-        json_prompt = prompts + "\n\nIMPORTANT: Output ONLY valid JSON. No markdown, no explanation, no preamble. Use this exact format:\n{\"vocabularies\": [{\"vocabulary\": \"word\", \"meaning\": \"definition\", \"description\": \"description\"}]}"
-        
         response = llm.invoke([HumanMessage(content=json_prompt)])
-        
-        # Debug logging
+
         print(f"Vocabulary LLM raw response: {repr(response.content)}")
-        
-        # Handle empty response
+
         if not response.content or not response.content.strip():
-            print(f"Error: LLM returned empty vocabulary response for lesson {lesson.name}")
+            print(f"Error: LLM returned empty vocabulary response for lesson {lesson_title}")
             return VocabularyResponse(vocabularies=[])
-        
-        # Clean up response - remove markdown code blocks if present
+
         content = response.content.strip()
         if content.startswith("```json"):
             content = content[7:]
@@ -284,24 +289,22 @@ def _generate_vocabularies(
         if content.endswith("```"):
             content = content[:-3]
         content = content.strip()
-        
-        # Parse the JSON response
+
         response_data = json.loads(content)
-        
-        # Create VocabularyResponse object
-        vocabularies = []
-        for vocab_data in response_data.get("vocabularies", []):
-            vocabularies.append(VocabularyOutput(
-                vocabulary=vocab_data.get("vocabulary", ""),
-                meaning=vocab_data.get("meaning", ""),
-                description=vocab_data.get("description", "")
-            ))
-        
-        print(f"Successfully parsed {len(vocabularies)} vocabularies for lesson {lesson.name}")
+        vocabularies = [
+            VocabularyOutput(
+                vocabulary=v.get("vocabulary", ""),
+                meaning=v.get("meaning", ""),
+                description=v.get("description", ""),
+            )
+            for v in response_data.get("vocabularies", [])
+        ]
+
+        print(f"Successfully parsed {len(vocabularies)} vocabularies for lesson {lesson_title}")
         return VocabularyResponse(vocabularies=vocabularies)
+
     except Exception as e:
-        print(f"Error generating vocabularies for lesson {lesson.name}: {e}")
+        print(f"Error generating vocabularies for lesson {lesson_title}: {e}")
         import traceback
         traceback.print_exc()
-        # Return empty response as fallback
         return VocabularyResponse(vocabularies=[])

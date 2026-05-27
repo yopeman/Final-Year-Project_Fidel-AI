@@ -9,7 +9,8 @@ class ModuleLessons(BaseModel):
 
     module_id = Column(String(36), ForeignKey("modules.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(200), nullable=False)
-    content = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    content = Column(Text, nullable=True)   # populated lazily on first lesson access
     display_order = Column(Integer, nullable=False)
     is_completed = Column(Boolean, default=False)
     is_locked = Column(Boolean, default=True)

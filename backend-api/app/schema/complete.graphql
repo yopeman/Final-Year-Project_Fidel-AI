@@ -674,7 +674,8 @@ type ModuleLessons {
   id: ID!
   moduleId: ID!
   title: String!
-  content: String!
+  description: String
+  content: String
   displayOrder: Int!
   isCompleted: Boolean!
   isLocked: Boolean!
