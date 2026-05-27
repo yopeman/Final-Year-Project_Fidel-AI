@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { COLORS, SPACING } from '../../src/constants/theme';
 
 export default StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#080C14' },
+ root: { flex: 1, backgroundColor: '#080C14' },
   scrollView: { flex: 1 },
 
   // ── Hero Banner ──────────────────────────────────────────────────────────
@@ -14,73 +14,43 @@ export default StyleSheet.create({
     paddingBottom: SPACING.xl,
     overflow: 'hidden',
   },
-  
   headerTopRow: {
     top: 10,
-    left: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Changed from gap to space-between
-    marginBottom: 10,
+    justifyContent: 'flex-start',   // items left & spacer handles centering
+    marginBottom: SPACING.md,
+    gap: 12,
   },
-
   menuBtn: {
-        width: 38, 
-        height: 38, borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        alignItems: 'center', justifyContent: 'center',
-    },
-
-  heroEyebrow: {
-    flexDirection: 'row',
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
-    justifyContent: 'center', // Center the title
+    justifyContent: 'center',
+  },
+  titleContainer: {
     flex: 1,
-  },
-  
-  liveIndicator: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(16,185,129,0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.3)',
+    justifyContent: 'center',
   },
-  
-  livePulse: { 
-    width: 8, 
-    height: 8, 
-    borderRadius: 4, 
-    backgroundColor: '#10B981' 
-  },
-  
-  liveText: { 
-    color: '#10B981', 
-    fontWeight: '800', 
-    fontSize: 11, 
-    letterSpacing: 1 
-  },
-
   heroTitle: {
     fontSize: 38,
+    padding:4,
+    left: -10,
     fontWeight: '900',
     color: '#fff',
     letterSpacing: -1.5,
-    marginBottom: 8,
-    lineHeight: 34,
-    left: -20,
+    marginBottom: 0,
+    lineHeight: 38,
   },
-  
   heroSub: {
     color: 'rgba(255,255,255,0.45)',
     fontSize: 14,
     lineHeight: 15,
     marginBottom: 10,
   },
-  
   heroStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -91,32 +61,27 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.07)',
   },
-  
-  heroStat: { 
-    flex: 1, 
-    alignItems: 'center' 
+  heroStat: {
+    flex: 1,
+    alignItems: 'center',
   },
-  
-  heroStatNum: { 
-    fontSize: 20, 
-    fontWeight: '800', 
-    color: '#fff' 
+  heroStatNum: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#fff',
   },
-  
-  heroStatLabel: { 
-    fontSize: 10, 
-    color: 'rgba(255,255,255,0.4)', 
-    marginTop: 2, 
-    fontWeight: '600', 
-    letterSpacing: 0.5 
+  heroStatLabel: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.4)',
+    marginTop: 2,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
-  
-  heroStatDivider: { 
-    width: 1, 
-    height: 30, 
-    backgroundColor: 'rgba(255,255,255,0.08)' 
+  heroStatDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-
   // Trust chips
   trustRow: { 
     paddingHorizontal: SPACING.lg, 
