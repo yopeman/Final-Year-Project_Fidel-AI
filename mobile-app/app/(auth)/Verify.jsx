@@ -31,7 +31,7 @@ const VerifyScreen = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const inputRefs = useRef([]);
 
-    const { verify, resendVerification, isLoading, error, clearError } = useAuthStore();
+    const { verify, resendVerification, error, clearError } = useAuthStore();
 
     useEffect(() => {
         if (!email) {
@@ -238,7 +238,7 @@ const VerifyScreen = () => {
                                 <TouchableOpacity
                                     style={styles.backButton}
                                     onPress={goBackToRegister}
-                                    disabled={isLoading || isSubmitting}
+                                    disabled={isSubmitting}
                                 >
                                     <Ionicons name="arrow-back" size={24} color="rgba(255,255,255,0.7)" />
                                 </TouchableOpacity>
@@ -276,7 +276,7 @@ const VerifyScreen = () => {
                                         style={[
                                             styles.codeInput,
                                             digit && styles.codeInputFilled,
-                                            (isLoading || isSubmitting) && styles.codeInputDisabled,
+                                            isSubmitting && styles.codeInputDisabled,
                                         ]}
                                         value={digit}
                                         onChangeText={(value) => handleCodeChange(value, index)}
@@ -284,7 +284,7 @@ const VerifyScreen = () => {
                                         keyboardType="number-pad"
                                         maxLength={1}
                                         selectTextOnFocus
-                                        editable={!isLoading && !isSubmitting}
+                                        editable={!isSubmitting}
                                         placeholder="0"
                                         placeholderTextColor="rgba(255,255,255,0.1)"
                                     />
@@ -299,7 +299,7 @@ const VerifyScreen = () => {
                             <TouchableOpacity
                                 style={styles.verifyButton}
                                 onPress={() => handleVerify()}
-                                disabled={isLoading || isSubmitting || code.join('').length !== 6}
+                                disabled={isSubmitting || code.join('').length !== 6}
                                 activeOpacity={0.8}
                             >
                                 <LinearGradient
@@ -308,7 +308,7 @@ const VerifyScreen = () => {
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 0 }}
                                 >
-                                    {isLoading || isSubmitting ? (
+                                    {isSubmitting ? (
                                         <ActivityIndicator color="#fff" size="small" />
                                     ) : (
                                         <>
@@ -326,7 +326,7 @@ const VerifyScreen = () => {
                                 </Text>
                                 <TouchableOpacity
                                     onPress={handleResendCode}
-                                    disabled={!canResend || isLoading || isSubmitting}
+                                    disabled={!canResend || isSubmitting}
                                     activeOpacity={0.7}
                                 >
                                     {canResend ? (

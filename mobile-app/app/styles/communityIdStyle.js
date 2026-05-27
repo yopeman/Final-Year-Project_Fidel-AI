@@ -115,4 +115,144 @@ export const card = StyleSheet.create({
         backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
     },
     sendBtnDisabled: { backgroundColor: '#1E2D44' },
+
+    // Reaction buttons (always visible, 3 per post)
+    reactionsGroup: {
+        flexDirection: 'row',
+        gap: 5,
+        flex: 1,
+    },
+    reactionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 9,
+        paddingVertical: 6,
+        borderRadius: 10,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderWidth: 1,
+        borderColor: '#1E2D44',
+    },
+    reactionBtnEmoji: { fontSize: 14 },
+    reactionBtnCount: {
+        color: '#6B7280',
+        fontSize: 12,
+        fontWeight: '600',
+        minWidth: 8,
+    },
+
+    // Role badge & edited label
+    roleBadge: {
+        backgroundColor: 'rgba(255,255,255,0.07)',
+        borderRadius: 6,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+    },
+    roleBadgeText: { color: 'rgba(255,255,255,0.4)', fontSize: 10 },
+    editedLabel: { color: 'rgba(255,255,255,0.25)', fontSize: 10 },
+    commentTime: { color: 'rgba(255,255,255,0.25)', fontSize: 10 },
+
+    // Post image
+    postImage: {
+        width: '100%',
+        height: 200,
+        borderRadius: 12,
+        marginBottom: SPACING.sm,
+        backgroundColor: 'rgba(255,255,255,0.02)',
+    },
+
+    // Attachments
+    attachmentsList: { marginBottom: SPACING.sm, gap: 6 },
+    attachmentRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    attachmentBadge: {
+        flex: 1,
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        backgroundColor: 'rgba(16,185,129,0.08)',
+        paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
+    },
+    attachmentName: { flex: 1, color: COLORS.primary, fontSize: 12 },
+    attachmentSize: { color: 'rgba(255,255,255,0.3)', fontSize: 11 },
+
+    // Attach panel
+    attachPanel: {
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: 12,
+        padding: 10,
+        marginBottom: SPACING.sm,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.06)',
+    },
+    attachPickBtn: {
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
+    },
+    attachPickBtnText: { color: '#000', fontWeight: '700', fontSize: 12 },
+    attachFileCount: { color: 'rgba(255,255,255,0.35)', fontSize: 11 },
+    attachFileRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 3,
+    },
+    attachFileName: { flex: 1, color: '#E5E7EB', fontSize: 11 },
+    attachFileSize: { color: 'rgba(255,255,255,0.3)', fontSize: 10 },
+    attachUploadBtn: {
+        backgroundColor: '#10B981',
+        paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8,
+    },
+    attachUploadBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+    attachCancelBtn: {
+        paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    },
+    attachCancelBtnText: { color: 'rgba(255,255,255,0.4)', fontSize: 12 },
+
+    // Owner icon button
+    iconBtn: {
+        padding: 5, borderRadius: 7,
+        backgroundColor: 'rgba(255,255,255,0.04)',
+    },
+
+    // Comment save/cancel
+    saveBtn: {
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: 12, paddingVertical: 5, borderRadius: 7,
+    },
+    saveBtnText: { color: '#000', fontWeight: '700', fontSize: 12 },
+    cancelText: { color: 'rgba(255,255,255,0.4)', fontSize: 12, paddingVertical: 5 },
+
+    // Modals
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.75)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalCard: {
+        backgroundColor: '#0D1E35',
+        borderRadius: BORDER_RADIUS.xl,
+        padding: SPACING.md,
+        width: '100%',
+        borderWidth: 1,
+        borderColor: '#1E2D44',
+    },
+    modalTitle: { color: '#E5E7EB', fontWeight: '700', fontSize: 15, marginBottom: 8 },
+    modalBody: { color: '#6B7280', fontSize: 13, lineHeight: 19, marginBottom: 16 },
+    modalActions: { flexDirection: 'row', gap: 10, justifyContent: 'flex-end' },
+    modalCancelBtn: {
+        paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10,
+        borderWidth: 1, borderColor: '#1E2D44',
+    },
+    modalCancelText: { color: '#6B7280', fontWeight: '600', fontSize: 13 },
+    modalConfirmBtn: {
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10,
+    },
+    modalConfirmText: { color: '#000', fontWeight: '700', fontSize: 13 },
+    modalDeleteBtn: {
+        backgroundColor: '#EF4444',
+        paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10,
+    },
+    modalDeleteText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 });

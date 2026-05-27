@@ -84,51 +84,44 @@ export const useAuthStore = create((set, get) => ({
 
     register: async (input) => {
         try {
-            set({ isLoading: true, error: null });
-            // Input: { firstName, lastName, email, password, role }
+            set({ error: null });
             const response = await authAPI.register(input);
-            set({ isLoading: false });
-            return { success: response.data }; // api.js returns { data: res.data.register } which is Boolean
+            return { success: response.data };
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || 'Registration failed';
-            set({ error: errorMsg, isLoading: false });
+            set({ error: errorMsg });
             return { success: false, error: errorMsg };
         }
     },
 
     verify: async (input) => {
         try {
-            set({ isLoading: true, error: null });
-            // Input: { email, verificationCode }
+            set({ error: null });
             const response = await authAPI.verify(input);
-            set({ isLoading: false });
-            return { success: response.data }; // Returns Boolean
+            return { success: response.data };
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || 'Verification failed';
-            set({ error: errorMsg, isLoading: false });
+            set({ error: errorMsg });
             return { success: false, error: errorMsg };
         }
     },
 
     resendVerification: async (email) => {
         try {
-            set({ isLoading: true, error: null });
+            set({ error: null });
             const response = await authAPI.resendVerification(email);
-            set({ isLoading: false });
             return { success: response.data };
         } catch (error) {
             const errorMsg = error.response?.data?.message || 'Failed to resend code';
-            set({ error: errorMsg, isLoading: false });
+            set({ error: errorMsg });
             return { success: false, error: errorMsg };
         }
     },
 
     login: async (input) => {
         try {
-            set({ isLoading: true, error: null });
-            // Input: { email, password }
+            set({ error: null });
             const response = await authAPI.login(input);
-            // api.js returns { data: { token, user } }
             const { token, user } = response.data;
 
             await AsyncStorage.setItem('accessToken', token);
@@ -138,7 +131,6 @@ export const useAuthStore = create((set, get) => ({
                 token,
                 user,
                 isAuthenticated: true,
-                isLoading: false
             });
 
             if (user?.profile) {
@@ -148,7 +140,7 @@ export const useAuthStore = create((set, get) => ({
             return { success: true, user };
         } catch (error) {
             const errorMsg = error.response?.data?.message || error.message || 'Login failed';
-            set({ error: errorMsg, isLoading: false });
+            set({ error: errorMsg });
             return { success: false, error: errorMsg };
         }
     },

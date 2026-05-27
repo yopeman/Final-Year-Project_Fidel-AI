@@ -19,7 +19,7 @@ import styles from '../styles/registerStyle';
 
 const RegisterScreen = () => {
     const router = useRouter();
-    const { register, isLoading, error, clearError } = useAuthStore();
+    const { register, error, clearError } = useAuthStore();
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -27,6 +27,7 @@ const RegisterScreen = () => {
         email: '',
         password: '',
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -34,25 +35,28 @@ const RegisterScreen = () => {
 
     const handleRegister = async () => {
         clearError();
-        // Basic validation
         if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-            // Should show error
             return;
         }
 
-        const result = await register({
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            password: formData.password,
-            role: 'STUDENT',
-        });
-
-        if (result.success) {
-            router.push({
-                pathname: '/(auth)/Verify',
-                params: { email: formData.email }
+        setIsSubmitting(true);
+        try {
+            const result = await register({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                email: formData.email,
+                password: formData.password,
+                role: 'STUDENT',
             });
+
+            if (result.success) {
+                router.push({
+                    pathname: '/(auth)/Verify',
+                    params: { email: formData.email }
+                });
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -159,7 +163,7 @@ const RegisterScreen = () => {
                                 <TouchableOpacity
                                     style={styles.registerButton}
                                     onPress={handleRegister}
-                                    disabled={isLoading}
+                                    disabled={isSubmitting}
                                     activeOpacity={0.8}
                                 >
                                     <LinearGradient
@@ -168,7 +172,7 @@ const RegisterScreen = () => {
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                     >
-                                        {isLoading ? (
+                                        {isSubmitting ? (
                                             <ActivityIndicator color="#fff" />
                                         ) : (
                                             <>

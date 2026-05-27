@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..model.module_lessons import ModuleLessons
 from ..model.modules import Modules
 from ..model.user import User, UserRole
+from ..util.ai_service.install_learning_plan import generate_lesson_content
 from ..util.email_service import send_notification
 
 query = QueryType()
@@ -68,7 +69,7 @@ def resolve_lesson(_, info, id: str):
     if not lesson:
         raise Exception("Lesson not found")
 
-    # Check ownership through module and profile
+    # Check ownership through module → profile chain
     module = db.query(Modules).filter(Modules.id == lesson.module_id).first()
 
     from ..model.student_profile import StudentProfile
@@ -79,6 +80,16 @@ def resolve_lesson(_, info, id: str):
 
     if current_user.role != UserRole.admin and profile.user_id != current_user.id:
         raise Exception("Unauthorized")
+
+    # Lazy content generation: if this lesson has never been opened before,
+    # generate content, vocabularies, articles, and YouTube videos now in parallel.
+    if not lesson.content:
+        lesson = generate_lesson_content(
+            profile=profile,
+            module_name=module.name,
+            lesson=lesson,
+            db=db,
+        )
 
     return lesson
 
@@ -273,6 +284,11 @@ def resolve_module_id(lesson, info):
 @module_lessons.field("title")
 def resolve_title(lesson, info):
     return lesson.title
+
+
+@module_lessons.field("description")
+def resolve_description(lesson, info):
+    return lesson.description
 
 
 @module_lessons.field("content")

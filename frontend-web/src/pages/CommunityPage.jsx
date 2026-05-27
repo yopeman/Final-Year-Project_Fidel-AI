@@ -520,6 +520,24 @@ const CommunityPage = () => {
                   <p className="text-white/90 whitespace-pre-wrap leading-relaxed">{community.content}</p>
                 </div>
 
+                {/* Image Preview */}
+                {community.attachments && community.attachments.some(a => /jpg|jpeg|png|gif|webp/i.test(a.fileExtension || a.fileName)) && (
+                  <div className="mb-4">
+                    <a
+                      href={`${BASE_URL}/${community.attachments.find(a => /jpg|jpeg|png|gif|webp/i.test(a.fileExtension || a.fileName)).filePath}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block rounded-2xl overflow-hidden border border-white/10 hover:opacity-90 transition-opacity"
+                    >
+                      <img 
+                        src={`${BASE_URL}/${community.attachments.find(a => /jpg|jpeg|png|gif|webp/i.test(a.fileExtension || a.fileName)).filePath}`} 
+                        alt="Attachment preview" 
+                        className="w-full h-auto max-h-[400px] object-cover"
+                      />
+                    </a>
+                  </div>
+                )}
+
                 {/* Attachments */}
                 {community.attachments && community.attachments.length > 0 && (
                   <div className="mb-4">
