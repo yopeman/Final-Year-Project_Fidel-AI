@@ -46,27 +46,27 @@ const SkillTestModal = ({
   const [activeTab, setActiveTab] = useState('overview');
   const [skillData, setSkillData] = useState({
     readingSkill: {
-      comprehension: 'A_PLUS',
-      speed: 'A_PLUS',
-      vocabulary: 'A_PLUS'
+      comprehension: 'A',
+      speed: 'A',
+      vocabulary: 'A'
     },
     writingSkill: {
-      coherence: 'A_PLUS',
-      grammar: 'A_PLUS',
-      vocabulary: 'A_PLUS',
-      punctuation: 'A_PLUS'
+      coherence: 'A',
+      grammar: 'A',
+      vocabulary: 'A',
+      punctuation: 'A'
     },
     speakingSkill: {
-      pronunciation: 'A_PLUS',
-      fluency: 'A_PLUS',
-      grammar: 'A_PLUS',
-      vocabulary: 'A_PLUS',
-      coherence: 'A_PLUS'
+      pronunciation: 'A',
+      fluency: 'A',
+      grammar: 'A',
+      vocabulary: 'A',
+      coherence: 'A'
     },
     listeningSkill: {
-      comprehension: 'A_PLUS',
-      retention: 'A_PLUS',
-      interpretation: 'A_PLUS'
+      comprehension: 'A',
+      retention: 'A',
+      interpretation: 'A'
     }
   });
   const [examDate, setExamDate] = useState(new Date().toISOString().split('T')[0]);
@@ -139,53 +139,53 @@ const SkillTestModal = ({
     if (student.skill) {
       setSkillData({
         readingSkill: student.skill.readingSkill || {
-          comprehension: 'A_PLUS',
-          speed: 'A_PLUS',
-          vocabulary: 'A_PLUS'
+          comprehension: 'A',
+          speed: 'A',
+          vocabulary: 'A'
         },
         writingSkill: student.skill.writingSkill || {
-          coherence: 'A_PLUS',
-          grammar: 'A_PLUS',
-          vocabulary: 'A_PLUS',
-          punctuation: 'A_PLUS'
+          coherence: 'A',
+          grammar: 'A',
+          vocabulary: 'A',
+          punctuation: 'A'
         },
         speakingSkill: student.skill.speakingSkill || {
-          pronunciation: 'A_PLUS',
-          fluency: 'A_PLUS',
-          grammar: 'A_PLUS',
-          vocabulary: 'A_PLUS',
-          coherence: 'A_PLUS'
+          pronunciation: 'A',
+          fluency: 'A',
+          grammar: 'A',
+          vocabulary: 'A',
+          coherence: 'A'
         },
         listeningSkill: student.skill.listeningSkill || {
-          comprehension: 'A_PLUS',
-          retention: 'A_PLUS',
-          interpretation: 'A_PLUS'
+          comprehension: 'A',
+          retention: 'A',
+          interpretation: 'A'
         }
       });
     } else {
       setSkillData({
         readingSkill: {
-          comprehension: 'A_PLUS',
-          speed: 'A_PLUS',
-          vocabulary: 'A_PLUS'
+          comprehension: 'A',
+          speed: 'A',
+          vocabulary: 'A'
         },
         writingSkill: {
-          coherence: 'A_PLUS',
-          grammar: 'A_PLUS',
-          vocabulary: 'A_PLUS',
-          punctuation: 'A_PLUS'
+          coherence: 'A',
+          grammar: 'A',
+          vocabulary: 'A',
+          punctuation: 'A'
         },
         speakingSkill: {
-          pronunciation: 'A_PLUS',
-          fluency: 'A_PLUS',
-          grammar: 'A_PLUS',
-          vocabulary: 'A_PLUS',
-          coherence: 'A_PLUS'
+          pronunciation: 'A',
+          fluency: 'A',
+          grammar: 'A',
+          vocabulary: 'A',
+          coherence: 'A'
         },
         listeningSkill: {
-          comprehension: 'A_PLUS',
-          retention: 'A_PLUS',
-          interpretation: 'A_PLUS'
+          comprehension: 'A',
+          retention: 'A',
+          interpretation: 'A'
         }
       });
     }
@@ -218,24 +218,19 @@ const SkillTestModal = ({
     }
 
     const gradeValues = {
-      'A_PLUS': 100, 'A': 95, 'A_MINUS': 90,
-      'B_PLUS': 85, 'B': 80, 'B_MINUS': 75,
-      'C_PLUS': 70, 'C': 65, 'C_MINUS': 60,
-      'D': 55, 'F': 0, 'FX': 0
+      'A': 100,
+      'B': 80,
+      'C': 60
     };
 
-    const average = grades.reduce((sum, grade) => sum + gradeValues[grade], 0) / grades.length;
+    const validGrades = grades.filter(Boolean);
+    const average = validGrades.length > 0 
+      ? validGrades.reduce((sum, grade) => sum + (gradeValues[grade] || 0), 0) / validGrades.length 
+      : 0;
 
-    if (average >= 95) return 'A_PLUS';
-    if (average >= 90) return 'A';
-    if (average >= 85) return 'A_MINUS';
-    if (average >= 80) return 'B_PLUS';
-    if (average >= 75) return 'B';
-    if (average >= 70) return 'B_MINUS';
-    if (average >= 65) return 'C_PLUS';
-    if (average >= 60) return 'C';
-    if (average >= 55) return 'C_MINUS';
-    return 'F';
+    if (average >= 85) return 'A';
+    if (average >= 65) return 'B';
+    return 'C';
   };
 
   const handleSubmitSkill = async () => {
@@ -365,18 +360,9 @@ const SkillTestModal = ({
 
   const getGradeColor = (grade) => {
     switch (grade) {
-      case 'A_PLUS': return 'bg-green-500/10 text-green-400 border border-green-500/20';
       case 'A': return 'bg-green-500/10 text-green-400 border border-green-500/20';
-      case 'A_MINUS': return 'bg-green-500/10 text-green-400 border border-green-500/20';
-      case 'B_PLUS': return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
       case 'B': return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
-      case 'B_MINUS': return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
-      case 'C_PLUS': return 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20';
       case 'C': return 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20';
-      case 'C_MINUS': return 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20';
-      case 'D': return 'bg-orange-500/10 text-orange-400 border border-orange-500/20';
-      case 'F': return 'bg-red-500/10 text-red-400 border border-red-500/20';
-      case 'FX': return 'bg-red-500/10 text-red-400 border border-red-500/20';
       default: return 'bg-white/10 text-accent-secondary border border-white/10';
     }
   };
@@ -389,18 +375,9 @@ const SkillTestModal = ({
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 border border-white/10 bg-[#0B111B]/80 text-white rounded-xl focus:ring-2 focus:ring-primary/40 focus:border-primary/50"
       >
-        <option value="A_PLUS">A+ (Excellent)</option>
         <option value="A">A (Very Good)</option>
-        <option value="A_MINUS">A- (Good)</option>
-        <option value="B_PLUS">B+ (Above Average)</option>
         <option value="B">B (Average)</option>
-        <option value="B_MINUS">B- (Below Average)</option>
-        <option value="C_PLUS">C+ (Satisfactory)</option>
         <option value="C">C (Pass)</option>
-        <option value="C_MINUS">C- (Marginal Pass)</option>
-        <option value="D">D (Fail)</option>
-        <option value="F">F (Fail)</option>
-        <option value="FX">FX (Fail)</option>
       </select>
     </div>
   );
