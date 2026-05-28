@@ -22,31 +22,24 @@ skill = ObjectType("Skill")
 # Helper function to calculate final grade
 def calculate_final_grade(grades):
     """Calculate final grade based on average of input grades"""
-    if not grades:
-        return Grade.F
+    valid_grades = [g for g in grades if g]
+    if not valid_grades:
+        return Grade.C
     
     # Convert grades to numeric values for averaging (matching frontend logic)
     grade_values = {
-        Grade.A_PLUS.name: 100, Grade.A.name: 95, Grade.A_MINUS.name: 90,
-        Grade.B_PLUS.name: 85, Grade.B.name: 80, Grade.B_MINUS.name: 75,
-        Grade.C_PLUS.name: 70, Grade.C.name: 65, Grade.C_MINUS.name: 60,
-        Grade.D.name: 55, Grade.F.name: 0, Grade.FX.name: 0
+        Grade.A.name: 100,
+        Grade.B.name: 80,
+        Grade.C.name: 60
     }
     
-    numeric_grades = [grade_values.get(g, 0.0) for g in grades]
+    numeric_grades = [grade_values.get(g, 0.0) for g in valid_grades]
     avg = sum(numeric_grades) / len(numeric_grades)
 
     # Convert back to letter grade (matching frontend logic)
-    if avg >= 95: return Grade.A_PLUS
-    if avg >= 90: return Grade.A
-    if avg >= 85: return Grade.A_MINUS
-    if avg >= 80: return Grade.B_PLUS
-    if avg >= 75: return Grade.B
-    if avg >= 70: return Grade.B_MINUS
-    if avg >= 65: return Grade.C_PLUS
-    if avg >= 60: return Grade.C
-    if avg >= 55: return Grade.C_MINUS
-    return Grade.F
+    if avg >= 85: return Grade.A
+    if avg >= 65: return Grade.B
+    return Grade.C
 
 
 @query.field("skills")
@@ -264,7 +257,7 @@ def resolve_create_skill(_, info, input):
         skill = Skill(
             enrollment_id=enrollment_id,
             instructor_id=instructor_id,
-            final_result=Grade.F  # Will be calculated below
+            final_result=Grade.C  # Will be calculated below
         )
     
         db.add(skill)
@@ -570,13 +563,13 @@ def resolve_update_skill(_, info, id, input):
     # Recalculate final skill grade
     final_grades = []
     if speaking_input or skill.speaking_skill:
-        final_grades.append(skill.speaking_skill.final_result.name if skill.speaking_skill else Grade.F.value)
+        final_grades.append(skill.speaking_skill.final_result.name if skill.speaking_skill else Grade.C.value)
     if reading_input or skill.reading_skill:
-        final_grades.append(skill.reading_skill.final_result.name if skill.reading_skill else Grade.F.value)
+        final_grades.append(skill.reading_skill.final_result.name if skill.reading_skill else Grade.C.value)
     if writing_input or skill.writing_skill:
-        final_grades.append(skill.writing_skill.final_result.name if skill.writing_skill else Grade.F.value)
+        final_grades.append(skill.writing_skill.final_result.name if skill.writing_skill else Grade.C.value)
     if listening_input or skill.listening_skill:
-        final_grades.append(skill.listening_skill.final_result.name if skill.listening_skill else Grade.F.value)
+        final_grades.append(skill.listening_skill.final_result.name if skill.listening_skill else Grade.C.value)
     
     skill.final_result = calculate_final_grade(final_grades)
     skill.updated_at = datetime.utcnow()

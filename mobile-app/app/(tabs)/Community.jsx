@@ -5,7 +5,7 @@ import {
     ActivityIndicator, Alert, Modal, TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { DocumentPicker } from 'expo-document-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCommunityStore } from '../../src/stores/communityStore';
 import { useBatchStore } from '../../src/stores/batchStore';
